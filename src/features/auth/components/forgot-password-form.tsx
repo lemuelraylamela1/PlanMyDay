@@ -1,0 +1,61 @@
+"use client";
+
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Loader2, MailCheck } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { forgotPasswordSchema, type ForgotPasswordInput } from "@/features/auth/schemas";
+import { forgotPasswordAction } from "@/features/auth/actions";
+
+export function ForgotPasswordForm() {
+  const [pending, setPending] = React.useState(false);
+  const [sent, setSent] = React.useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ForgotPasswordInput>({ resolver: zodResolver(forgotPasswordSchema) });
+
+  async function onSubmit(values: ForgotPasswordInput) {
+    setPending(true);
+    const res = await forgotPasswordAction(values);
+    setPending(false);
+    if (res.success) {
+      setSent(true);
+      toast.success(res.message ?? "Reset link sent.");
+    } else {
+      toast.error(res.error);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <MailCheck className="h-10 w-10 text-emerald-500" />
+        <p className="text-sm text-muted-foreground">
+          If an account exists for that email, a password reset link is on its way.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" type="email" autoComplete="email" {...register("email")} />
+        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+      </div>
+      <Button type="submit" className="w-full" disabled={pending}>
+        {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+        Send reset link
+      </Button>
+    </form>
+  );
+}
