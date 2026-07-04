@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -6,6 +6,10 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { authConfig } from "@/lib/auth.config";
 import { loginSchema } from "@/features/auth/schemas";
+
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email_not_verified";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -29,12 +33,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
+        if (!user.emailVerified) {
+          throw new EmailNotVerifiedError();
+        }
+
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           image: user.image,
           role: user.role,
+          isEmailVerified: true,
         };
       },
     }),
@@ -45,16 +54,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role ?? "COUPLE";
-      } else if (token.id && !token.role) {
-        const dbUser = await db.user.findUnique({ where: { id: String(token.id) } });
-        if (dbUser) token.role = dbUser.role;
+        const fromAdapter = (user as { emailVerified?: Date | boolean | null }).emailVerified;
+        token.isEmailVerified =
+          typeof user.isEmailVerified === "boolean"
+            ? user.isEmailVerified
+            : Boolean(fromAdapter);
+      } else if (token.id) {
+        // Keep role in sync and refresh verification until it becomes true
+        // (so middleware updates after the user clicks the email link).
+        const needsRole = !token.role;
+        const needsVerifyCheck = token.isEmailVerified !== true;
+        if (needsRole || needsVerifyCheck) {
+          const dbUser = await db.user.findUnique({
+            where: { id: String(token.id) },
+            select: { role: true, emailVerified: true },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.isEmailVerified = Boolean(dbUser.emailVerified);
+          }
+        }
       }
       return token;
-    },
-    async session({ session, token }) {
-      if (token.id) session.user.id = String(token.id);
-      if (token.role) session.user.role = token.role as "COUPLE" | "ADMIN";
-      return session;
     },
   },
 });

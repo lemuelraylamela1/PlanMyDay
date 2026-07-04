@@ -11,6 +11,8 @@ const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
+  // Strict checks: legacy JWTs omit isEmailVerified; only trust explicit booleans.
+  const emailVerified = req.auth?.user?.isEmailVerified;
   const path = nextUrl.pathname;
 
   // Allow API auth, public invitation endpoints, and static assets through.
@@ -25,7 +27,10 @@ export default auth((req) => {
   const isAuthRoute = AUTH_ROUTES.some((r) => path.startsWith(r));
   const isPublicRoute = PUBLIC_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
 
-  if (isAuthRoute && isLoggedIn) {
+  // Only send fully verified users away from auth pages. Unverified (or legacy)
+  // sessions must still reach /login and /register — otherwise every landing CTA
+  // bounces through /dashboard → /verify-email.
+  if (isAuthRoute && isLoggedIn && emailVerified === true) {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
@@ -33,6 +38,10 @@ export default auth((req) => {
     const redirectUrl = new URL("/login", nextUrl);
     redirectUrl.searchParams.set("callbackUrl", path);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  if (!isPublicRoute && isLoggedIn && emailVerified === false) {
+    return NextResponse.redirect(new URL("/verify-email", nextUrl));
   }
 
   return NextResponse.next();

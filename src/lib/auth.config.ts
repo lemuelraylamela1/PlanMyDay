@@ -21,8 +21,18 @@ export const authConfig = {
       : []),
   ],
   callbacks: {
-    authorized({ auth }) {
-      return !!auth?.user;
+    // Custom middleware owns public/protected routing; always allow the request through.
+    authorized() {
+      return true;
+    },
+    session({ session, token }) {
+      if (token.id) session.user.id = String(token.id);
+      if (token.role) session.user.role = token.role as "COUPLE" | "ADMIN";
+      // Preserve "unknown" for legacy tokens so middleware does not treat them as unverified.
+      if (typeof token.isEmailVerified === "boolean") {
+        session.user.isEmailVerified = token.isEmailVerified;
+      }
+      return session;
     },
   },
 } satisfies NextAuthConfig;

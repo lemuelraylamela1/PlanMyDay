@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { verifyEmailAction } from "@/features/auth/actions";
 import { ResendVerification } from "@/features/auth/components/resend-verification";
+import { SignOutLink } from "@/features/auth/components/sign-out-link";
 
 export const metadata: Metadata = { title: "Verify email" };
 
@@ -33,7 +34,9 @@ export default async function VerifyEmailPage({
         </CardHeader>
         <CardContent>
           <Button asChild className="w-full">
-            <Link href="/login">Continue to login</Link>
+            <Link href={res.success ? "/dashboard" : "/login"}>
+              {res.success ? "Continue to dashboard" : "Back to login"}
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -55,6 +58,8 @@ export default async function VerifyEmailPage({
           <Link href="/login" className="text-primary hover:underline">
             Log in
           </Link>
+          {" · "}
+          <SignOutLink />
         </p>
       </CardContent>
     </Card>

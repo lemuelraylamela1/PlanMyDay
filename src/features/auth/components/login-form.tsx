@@ -37,6 +37,11 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     setPending(false);
 
     if (res?.error) {
+      if (res.code === "email_not_verified") {
+        toast.error("Please verify your email before logging in.");
+        router.push("/verify-email");
+        return;
+      }
       toast.error("Invalid email or password.");
       return;
     }
