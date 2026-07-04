@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/features/auth/schemas";
 import { forgotPasswordAction } from "@/features/auth/actions";
+import { AuthFormLoading } from "@/features/auth/components/auth-form-loading";
 
 export function ForgotPasswordForm() {
   const [pending, setPending] = React.useState(false);
@@ -24,13 +25,16 @@ export function ForgotPasswordForm() {
 
   async function onSubmit(values: ForgotPasswordInput) {
     setPending(true);
-    const res = await forgotPasswordAction(values);
-    setPending(false);
-    if (res.success) {
-      setSent(true);
-      toast.success(res.message ?? "Reset link sent.");
-    } else {
-      toast.error(res.error);
+    try {
+      const res = await forgotPasswordAction(values);
+      if (res.success) {
+        setSent(true);
+        toast.success(res.message ?? "Reset link sent.");
+      } else {
+        toast.error(res.error);
+      }
+    } finally {
+      setPending(false);
     }
   }
 
@@ -46,16 +50,27 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="email" {...register("email")} />
-        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-      </div>
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-        Send reset link
-      </Button>
-    </form>
+    <div className="relative">
+      {pending && <AuthFormLoading label="Sending reset link…" />}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" aria-busy={pending}>
+        <fieldset disabled={pending} className="space-y-4 disabled:opacity-60">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" autoComplete="email" {...register("email")} />
+            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sending…
+              </>
+            ) : (
+              "Send reset link"
+            )}
+          </Button>
+        </fieldset>
+      </form>
+    </div>
   );
 }

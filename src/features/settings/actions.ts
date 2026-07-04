@@ -12,7 +12,7 @@ import { ACTIVE_WEDDING_COOKIE } from "@/lib/wedding-context";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Enter your name").max(80),
-  locale: z.string().min(2).max(10).default("en-US"),
+  locale: z.string().min(2).max(10).default("en-PH"),
 });
 
 const localizationSchema = z.object({

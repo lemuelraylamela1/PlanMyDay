@@ -147,7 +147,7 @@ model User {
   passwordHash   String?
   image          String?
   role           Role      @default(COUPLE)
-  locale         String    @default("en-US")
+  locale         String    @default("en-PH")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -236,9 +236,9 @@ model Wedding {
   receptionTime DateTime?
   venueName     String?
   venueAddress  String?
-  currency      String        @default("USD")
-  timezone      String        @default("UTC")
-  locale        String        @default("en-US")
+  currency      String        @default("PHP")
+  timezone      String        @default("GMT")
+  locale        String        @default("en-PH")
   rsvpDeadline  DateTime?
   status        WeddingStatus @default(DRAFT)
   createdAt     DateTime      @default(now())

@@ -21,7 +21,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <PageHeader title="Settings" description="Manage your account and wedding preferences" />
       <div className="grid gap-6 lg:grid-cols-2">
-        <ProfileForm name={user?.name ?? ""} locale={user?.locale ?? "en-US"} />
+        <ProfileForm name={user?.name ?? ""} locale={user?.locale ?? "en-PH"} />
         <LocalizationForm currency={wedding.currency} timezone={wedding.timezone} locale={wedding.locale} />
       </div>
       {role === "OWNER" && <DangerZone />}

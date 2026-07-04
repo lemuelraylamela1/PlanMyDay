@@ -1,16 +1,31 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { CalendarHeart } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { requireVerifiedUser } from "@/lib/authz";
+import { getActiveWeddingForUser, requireVerifiedUser } from "@/lib/authz";
+import { ACTIVE_WEDDING_COOKIE } from "@/lib/wedding-context";
 import { CreateWeddingForm } from "@/features/weddings/components/create-wedding-form";
 
 export const metadata: Metadata = { title: "Create your wedding" };
 
 export default async function OnboardingPage() {
-  await requireVerifiedUser();
+  const user = await requireVerifiedUser();
+  const existing = await getActiveWeddingForUser(user.id);
+  if (existing) {
+    const cookieStore = await cookies();
+    cookieStore.set(ACTIVE_WEDDING_COOKIE, existing.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+    redirect("/dashboard");
+  }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-accent/40 via-background to-background">

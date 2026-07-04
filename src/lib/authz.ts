@@ -18,7 +18,7 @@ export const requireUser = cache(async () => {
   return session.user;
 });
 
-/** Ensures the current user has verified their email. */
+/** Ensures the current user is signed in (email verification is currently disabled). */
 export const requireVerifiedUser = cache(async () => {
   const user = await requireUser();
   const dbUser = await db.user.findUnique({
@@ -26,7 +26,6 @@ export const requireVerifiedUser = cache(async () => {
     select: { id: true, email: true, name: true, emailVerified: true, role: true },
   });
   if (!dbUser) redirect("/login");
-  if (!dbUser.emailVerified) redirect("/verify-email");
   return dbUser;
 });
 

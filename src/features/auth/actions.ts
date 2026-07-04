@@ -57,12 +57,12 @@ export async function registerAction(input: unknown): Promise<ActionResult> {
   if (existing) return fail("An account with this email already exists.");
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await db.user.create({
-    data: { name, email, passwordHash },
+  // Email verification is disabled for now — mark accounts verified on signup.
+  await db.user.create({
+    data: { name, email, passwordHash, emailVerified: new Date() },
   });
 
-  await issueVerificationEmail(user.id, email, name);
-  return ok(undefined, "Account created. Check your email to verify your address.");
+  return ok(undefined, "Account created!");
 }
 
 export async function verifyEmailAction(token: string): Promise<ActionResult> {

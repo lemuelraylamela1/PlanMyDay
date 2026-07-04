@@ -7,15 +7,14 @@ const { auth } = NextAuth(authConfig);
 
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
+/** Keep in sync with ACTIVE_WEDDING_COOKIE in wedding-context (edge-safe literal). */
+const WEDDING_COOKIE = "pmd_active_wedding";
 
 export default auth((req) => {
   const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
-  // Strict checks: legacy JWTs omit isEmailVerified; only trust explicit booleans.
-  const emailVerified = req.auth?.user?.isEmailVerified;
+  const isLoggedIn = Boolean(req.auth?.user?.id);
   const path = nextUrl.pathname;
 
-  // Allow API auth, public invitation endpoints, and static assets through.
   if (
     path.startsWith("/api/auth") ||
     path.startsWith("/api/public") ||
@@ -26,22 +25,17 @@ export default auth((req) => {
 
   const isAuthRoute = AUTH_ROUTES.some((r) => path.startsWith(r));
   const isPublicRoute = PUBLIC_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
+  const hasWedding = Boolean(req.cookies.get(WEDDING_COOKIE)?.value);
+  const appHome = hasWedding ? "/dashboard" : "/onboarding";
 
-  // Only send fully verified users away from auth pages. Unverified (or legacy)
-  // sessions must still reach /login and /register — otherwise every landing CTA
-  // bounces through /dashboard → /verify-email.
-  if (isAuthRoute && isLoggedIn && emailVerified === true) {
-    return NextResponse.redirect(new URL("/dashboard", nextUrl));
+  if (isAuthRoute && isLoggedIn) {
+    return NextResponse.redirect(new URL(appHome, nextUrl));
   }
 
   if (!isPublicRoute && !isLoggedIn) {
     const redirectUrl = new URL("/login", nextUrl);
     redirectUrl.searchParams.set("callbackUrl", path);
     return NextResponse.redirect(redirectUrl);
-  }
-
-  if (!isPublicRoute && isLoggedIn && emailVerified === false) {
-    return NextResponse.redirect(new URL("/verify-email", nextUrl));
   }
 
   return NextResponse.next();

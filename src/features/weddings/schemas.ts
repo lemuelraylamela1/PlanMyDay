@@ -17,8 +17,8 @@ export const updateWeddingSchema = z.object({
   receptionTime: z.string().optional().or(z.literal("")),
   venueName: z.string().max(160).optional().or(z.literal("")),
   venueAddress: z.string().max(300).optional().or(z.literal("")),
-  currency: z.string().min(3).max(3).default("USD"),
-  timezone: z.string().default("UTC"),
+  currency: z.string().min(3).max(3).default("PHP"),
+  timezone: z.string().default("GMT"),
   rsvpDeadline: z.string().optional().or(z.literal("")),
 });
 

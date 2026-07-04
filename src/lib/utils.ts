@@ -5,11 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = "USD", locale = "en-US") {
+export function formatCurrency(amount: number, currency = "PHP", locale = "en-PH") {
   return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
 }
 
-export function formatDate(date: Date | string | null | undefined, locale = "en-US") {
+export function formatDate(date: Date | string | null | undefined, locale = "en-PH") {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat(locale, {
