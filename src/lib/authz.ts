@@ -14,7 +14,7 @@ export class AuthorizationError extends Error {
 /** Returns the current session user or redirects to login. */
 export const requireUser = cache(async () => {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) redirect("/");
   return session.user;
 });
 
@@ -26,9 +26,9 @@ export const requireVerifiedUser = cache(async () => {
     select: { id: true, email: true, name: true, emailVerified: true, role: true },
   });
   if (!dbUser) {
-    // Stale session (e.g. after a DB reset) — sign out to avoid /dashboard ↔ /login redirect loop.
-    await signOut({ redirectTo: "/login" });
-    redirect("/login");
+    // Stale session (e.g. after a DB reset) — sign out to avoid redirect loops.
+    await signOut({ redirectTo: "/" });
+    redirect("/");
   }
   return dbUser;
 });

@@ -1,11 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { verifyEmailAction } from "@/features/auth/actions";
-import { ResendVerification } from "@/features/auth/components/resend-verification";
+import { VerifyEmailCodeForm } from "@/features/auth/components/verify-email-code-form";
 import { SignOutLink } from "@/features/auth/components/sign-out-link";
 
 export const metadata: Metadata = { title: "Verify email" };
@@ -13,46 +11,22 @@ export const metadata: Metadata = { title: "Verify email" };
 export default async function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ email?: string }>;
 }) {
-  const { token } = await searchParams;
-
-  if (token) {
-    const res = await verifyEmailAction(token);
-    return (
-      <Card>
-        <CardHeader className="items-center text-center">
-          {res.success ? (
-            <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-          ) : (
-            <XCircle className="h-12 w-12 text-destructive" />
-          )}
-          <CardTitle className="text-2xl">
-            {res.success ? "Email verified" : "Verification failed"}
-          </CardTitle>
-          <CardDescription>{res.success ? res.message : res.error}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild className="w-full">
-            <Link href={res.success ? "/dashboard" : "/login"}>
-              {res.success ? "Continue to dashboard" : "Back to login"}
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const { email } = await searchParams;
 
   return (
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Verify your email</CardTitle>
         <CardDescription>
-          Please verify your email address to activate your account.
+          Enter the 6-digit code we sent to your email address.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ResendVerification />
+        <Suspense fallback={null}>
+          <VerifyEmailCodeForm defaultEmail={email ?? ""} />
+        </Suspense>
         <p className="text-center text-sm text-muted-foreground">
           Already verified?{" "}
           <Link href="/login" className="text-primary hover:underline">

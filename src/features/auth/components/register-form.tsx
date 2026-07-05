@@ -1,23 +1,23 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { registerSchema, type RegisterInput } from "@/features/auth/schemas";
 import { registerAction } from "@/features/auth/actions";
 import { AuthFormLoading } from "@/features/auth/components/auth-form-loading";
-import { GoogleButton } from "@/features/auth/components/google-button";
 
-export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function RegisterForm() {
+  const router = useRouter();
   const [pending, setPending] = React.useState(false);
-  const [done, setDone] = React.useState(false);
 
   const {
     register,
@@ -42,26 +42,11 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
         return;
       }
 
-      setDone(true);
-      toast.success(res.message ?? "Account created!");
+      toast.success(res.message ?? "Check your email for a verification code.");
+      router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
     } catch {
       setPending(false);
     }
-  }
-
-  if (done) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-6 text-center">
-        <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-        <div className="space-y-1">
-          <p className="text-lg font-medium">Account created!</p>
-          <p className="text-sm text-muted-foreground">You can log in with your new credentials.</p>
-        </div>
-        <Button asChild className="w-full">
-          <Link href="/login">Go to login</Link>
-        </Button>
-      </div>
-    );
   }
 
   return (
@@ -81,9 +66,8 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               {...register("password")}
             />
@@ -91,9 +75,8 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               autoComplete="new-password"
               {...register("confirmPassword")}
             />
@@ -111,16 +94,6 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
               "Create account"
             )}
           </Button>
-
-          {googleEnabled && (
-            <>
-              <div className="relative py-2 text-center text-xs text-muted-foreground">
-                <span className="relative z-10 bg-card px-2">or</span>
-                <span className="absolute inset-x-0 top-1/2 -z-0 h-px bg-border" />
-              </div>
-              <GoogleButton callbackUrl="/dashboard" />
-            </>
-          )}
         </fieldset>
       </form>
     </div>

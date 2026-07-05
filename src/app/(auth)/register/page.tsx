@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegisterForm } from "@/features/auth/components/register-form";
-import { isGoogleAuthEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Create account" };
 
@@ -15,7 +14,7 @@ export default function RegisterPage() {
         <CardDescription>Start planning your wedding in minutes</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <RegisterForm googleEnabled={isGoogleAuthEnabled} />
+        <RegisterForm />
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="text-primary hover:underline">

@@ -1,7 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
-import Google from "next-auth/providers/google";
 
-import { env, isGoogleAuthEnabled } from "@/lib/env";
+import { env } from "@/lib/env";
 
 /**
  * Edge-compatible Auth.js configuration (no database or Node-only deps).
@@ -28,11 +27,7 @@ export const authConfig = {
     signIn: "/login",
     error: "/login",
   },
-  providers: [
-    ...(isGoogleAuthEnabled
-      ? [Google({ clientId: env.googleId, clientSecret: env.googleSecret })]
-      : []),
-  ],
+  providers: [],
   callbacks: {
     // Custom middleware owns public/protected routing; always allow the request through.
     authorized() {

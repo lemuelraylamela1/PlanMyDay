@@ -29,9 +29,7 @@ export default auth((req) => {
   }
 
   if (!isPublicRoute && !isLoggedIn) {
-    const redirectUrl = new URL("/login", nextUrl);
-    redirectUrl.searchParams.set("callbackUrl", path);
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   return NextResponse.next();

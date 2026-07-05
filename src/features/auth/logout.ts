@@ -6,5 +6,5 @@ import { clearSessionCookiesAction } from "@/features/auth/actions";
 
 export async function logout(): Promise<void> {
   await clearSessionCookiesAction();
-  await signOut({ callbackUrl: "/login", redirect: true });
+  await signOut({ callbackUrl: "/", redirect: true });
 }

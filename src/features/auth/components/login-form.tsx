@@ -12,15 +12,17 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { loginSchema, type LoginInput } from "@/features/auth/schemas";
 import { AuthFormLoading } from "@/features/auth/components/auth-form-loading";
-import { GoogleButton } from "@/features/auth/components/google-button";
+import { checkEmailVerificationAction } from "@/features/auth/actions";
 
-export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const preferredPath = params.get("callbackUrl");
   const [pending, setPending] = React.useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = React.useState<string | null>(null);
 
   const {
     register,
@@ -30,6 +32,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   async function onSubmit(values: LoginInput) {
     setPending(true);
+    setUnverifiedEmail(null);
     try {
       const res = await signIn("credentials", {
         email: values.email,
@@ -38,7 +41,13 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       });
 
       if (res?.error) {
-        toast.error("Invalid email or password.");
+        const hint = await checkEmailVerificationAction(values.email);
+        if (hint.unverified) {
+          setUnverifiedEmail(values.email);
+          toast.error("Please verify your email before logging in.");
+        } else {
+          toast.error("Invalid email or password.");
+        }
         setPending(false);
         return;
       }
@@ -76,9 +85,8 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
                 Forgot password?
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               {...register("password")}
             />
@@ -94,15 +102,16 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               "Log in"
             )}
           </Button>
-
-          {googleEnabled && (
-            <>
-              <div className="relative py-2 text-center text-xs text-muted-foreground">
-                <span className="relative z-10 bg-card px-2">or</span>
-                <span className="absolute inset-x-0 top-1/2 -z-0 h-px bg-border" />
-              </div>
-              <GoogleButton callbackUrl={preferredPath ?? "/dashboard"} />
-            </>
+          {unverifiedEmail && (
+            <p className="text-center text-xs text-muted-foreground">
+              Haven&apos;t verified yet?{" "}
+              <Link
+                href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                className="text-primary hover:underline"
+              >
+                Enter your verification code
+              </Link>
+            </p>
           )}
         </fieldset>
       </form>

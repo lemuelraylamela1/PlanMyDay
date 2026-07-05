@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -14,8 +15,8 @@ import { forgotPasswordAction } from "@/features/auth/actions";
 import { AuthFormLoading } from "@/features/auth/components/auth-form-loading";
 
 export function ForgotPasswordForm() {
+  const router = useRouter();
   const [pending, setPending] = React.useState(false);
-  const [sent, setSent] = React.useState(false);
 
   const {
     register,
@@ -27,31 +28,21 @@ export function ForgotPasswordForm() {
     setPending(true);
     try {
       const res = await forgotPasswordAction(values);
-      if (res.success) {
-        setSent(true);
-        toast.success(res.message ?? "Reset link sent.");
-      } else {
+      if (!res.success) {
         toast.error(res.error);
+        setPending(false);
+        return;
       }
-    } finally {
+      toast.success(res.message ?? "Verification code sent.");
+      router.push(`/reset-password?email=${encodeURIComponent(values.email)}`);
+    } catch {
       setPending(false);
     }
   }
 
-  if (sent) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-6 text-center">
-        <MailCheck className="h-10 w-10 text-emerald-500" />
-        <p className="text-sm text-muted-foreground">
-          If an account exists for that email, a password reset link is on its way.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="relative">
-      {pending && <AuthFormLoading label="Sending reset link…" />}
+      {pending && <AuthFormLoading label="Sending code…" />}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" aria-busy={pending}>
         <fieldset disabled={pending} className="space-y-4 disabled:opacity-60">
           <div className="space-y-2">
@@ -66,7 +57,7 @@ export function ForgotPasswordForm() {
                 Sending…
               </>
             ) : (
-              "Send reset link"
+              "Send verification code"
             )}
           </Button>
         </fieldset>

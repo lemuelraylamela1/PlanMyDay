@@ -4,48 +4,101 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
 import { ActionResult, fail, ok } from "@/lib/action-result";
-import { generateToken, hashToken } from "@/lib/tokens";
+import { generateVerificationCode, hashToken } from "@/lib/tokens";
 import { sendEmail, baseEmailTemplate } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { ACTIVE_WEDDING_COOKIE } from "@/lib/wedding-context";
 import {
   forgotPasswordSchema,
   registerSchema,
-  resetPasswordSchema,
+  resetPasswordWithCodeSchema,
+  verifyEmailCodeSchema,
 } from "@/features/auth/schemas";
 
-const VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
-const RESET_TTL_MS = 60 * 60 * 1000;
+const VERIFY_CODE_TTL_MS = 15 * 60 * 1000;
+const RESET_CODE_TTL_MS = 15 * 60 * 1000;
 
-async function issueVerificationEmail(userId: string, email: string, name?: string | null) {
-  const rawToken = generateToken();
-  await db.authToken.create({
-    data: {
-      userId,
-      tokenHash: hashToken(rawToken),
-      purpose: "EMAIL_VERIFICATION",
-      expires: new Date(Date.now() + VERIFY_TTL_MS),
-    },
-  });
-
-  const url = `${env.appUrl}/verify-email?token=${rawToken}`;
-  await sendEmail({
-    to: email,
-    subject: "Verify your PlanMyDay email",
-    html: baseEmailTemplate(
-      "Welcome to PlanMyDay",
-      `<p>Hi ${name ?? "there"},</p>
-       <p>Confirm your email address to start planning your wedding.</p>
-       <p><a href="${url}" style="display:inline-block;background:#b03a5b;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Verify email</a></p>
-       <p style="font-size:12px;color:#888">This link expires in 24 hours.</p>`,
-    ),
-    text: `Verify your email: ${url}`,
+async function invalidateAuthTokens(userId: string, purpose: "EMAIL_VERIFICATION" | "PASSWORD_RESET") {
+  await db.authToken.updateMany({
+    where: { userId, purpose, usedAt: null },
+    data: { usedAt: new Date() },
   });
 }
 
-export async function registerAction(input: unknown): Promise<ActionResult> {
+async function issueVerificationCode(userId: string, email: string, name?: string | null) {
+  const code = generateVerificationCode();
+  await invalidateAuthTokens(userId, "EMAIL_VERIFICATION");
+  await db.authToken.create({
+    data: {
+      userId,
+      tokenHash: hashToken(code),
+      purpose: "EMAIL_VERIFICATION",
+      expires: new Date(Date.now() + VERIFY_CODE_TTL_MS),
+    },
+  });
+
+  await sendEmail({
+    to: email,
+    subject: "Your PlanMyDay verification code",
+    html: baseEmailTemplate(
+      "Verify your email",
+      `<p>Hi ${name ?? "there"},</p>
+       <p>Your verification code is:</p>
+       <p style="font-size:32px;font-weight:bold;letter-spacing:6px;color:#b03a5b">${code}</p>
+       <p style="font-size:12px;color:#888">This code expires in 15 minutes.</p>`,
+    ),
+    text: `Your PlanMyDay verification code is: ${code}. It expires in 15 minutes.`,
+  });
+}
+
+async function issuePasswordResetCode(userId: string, email: string, name?: string | null) {
+  const code = generateVerificationCode();
+  await invalidateAuthTokens(userId, "PASSWORD_RESET");
+  await db.authToken.create({
+    data: {
+      userId,
+      tokenHash: hashToken(code),
+      purpose: "PASSWORD_RESET",
+      expires: new Date(Date.now() + RESET_CODE_TTL_MS),
+    },
+  });
+
+  await sendEmail({
+    to: email,
+    subject: "Your PlanMyDay password reset code",
+    html: baseEmailTemplate(
+      "Reset your password",
+      `<p>Hi ${name ?? "there"},</p>
+       <p>Your password reset code is:</p>
+       <p style="font-size:32px;font-weight:bold;letter-spacing:6px;color:#b03a5b">${code}</p>
+       <p style="font-size:12px;color:#888">This code expires in 15 minutes. If you didn't request this, ignore this email.</p>`,
+    ),
+    text: `Your PlanMyDay password reset code is: ${code}. It expires in 15 minutes.`,
+  });
+}
+
+async function findValidAuthToken(
+  userId: string,
+  code: string,
+  purpose: "EMAIL_VERIFICATION" | "PASSWORD_RESET",
+) {
+  const record = await db.authToken.findFirst({
+    where: {
+      userId,
+      purpose,
+      usedAt: null,
+      expires: { gt: new Date() },
+      tokenHash: hashToken(code),
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  return record;
+}
+
+export async function registerAction(
+  input: unknown,
+): Promise<ActionResult<{ email: string }>> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success) {
     return fail("Please fix the highlighted fields.", parsed.error.flatten().fieldErrors);
@@ -59,29 +112,31 @@ export async function registerAction(input: unknown): Promise<ActionResult> {
   if (existing) return fail("An account with this email already exists.");
 
   const passwordHash = await bcrypt.hash(password, 10);
-  // Email verification is disabled for now — mark accounts verified on signup.
-  await db.user.create({
-    data: { name, email, passwordHash, emailVerified: new Date() },
+  const user = await db.user.create({
+    data: { name, email, passwordHash, emailVerified: null },
   });
 
-  return ok(undefined, "Account created!");
+  await issueVerificationCode(user.id, email, name);
+
+  return ok({ email }, "Check your email for a verification code.");
 }
 
-export async function verifyEmailAction(token: string): Promise<ActionResult> {
-  if (!token) return fail("Missing verification token.");
-
-  const record = await db.authToken.findUnique({
-    where: { tokenHash: hashToken(token) },
-  });
-  if (!record || record.purpose !== "EMAIL_VERIFICATION") {
-    return fail("This verification link is invalid.");
+export async function verifyEmailCodeAction(input: unknown): Promise<ActionResult> {
+  const parsed = verifyEmailCodeSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail("Please fix the highlighted fields.", parsed.error.flatten().fieldErrors);
   }
-  if (record.usedAt) return fail("This link has already been used.");
-  if (record.expires < new Date()) return fail("This verification link has expired.");
+
+  const { email, code } = parsed.data;
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user) return fail("Invalid verification code.");
+
+  const record = await findValidAuthToken(user.id, code, "EMAIL_VERIFICATION");
+  if (!record) return fail("Invalid or expired verification code.");
 
   await db.$transaction([
     db.user.update({
-      where: { id: record.userId },
+      where: { id: user.id },
       data: { emailVerified: new Date() },
     }),
     db.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
@@ -95,11 +150,11 @@ export async function resendVerificationAction(email: string): Promise<ActionRes
   if (!limited.success) return fail("Too many requests. Please wait a moment.");
 
   const user = await db.user.findUnique({ where: { email } });
-  // Always report success to avoid account enumeration.
   if (user && !user.emailVerified) {
-    await issueVerificationEmail(user.id, user.email, user.name);
+    await issueVerificationCode(user.id, user.email, user.name);
   }
-  return ok(undefined, "If an unverified account exists, a new link has been sent.");
+
+  return ok(undefined, "If an unverified account exists, a new code has been sent.");
 }
 
 export async function forgotPasswordAction(input: unknown): Promise<ActionResult> {
@@ -114,50 +169,28 @@ export async function forgotPasswordAction(input: unknown): Promise<ActionResult
 
   const user = await db.user.findUnique({ where: { email } });
   if (user) {
-    const rawToken = generateToken();
-    await db.authToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashToken(rawToken),
-        purpose: "PASSWORD_RESET",
-        expires: new Date(Date.now() + RESET_TTL_MS),
-      },
-    });
-
-    const url = `${env.appUrl}/reset-password?token=${rawToken}`;
-    await sendEmail({
-      to: email,
-      subject: "Reset your PlanMyDay password",
-      html: baseEmailTemplate(
-        "Reset your password",
-        `<p>We received a request to reset your password.</p>
-         <p><a href="${url}" style="display:inline-block;background:#b03a5b;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Reset password</a></p>
-         <p style="font-size:12px;color:#888">This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
-      ),
-      text: `Reset your password: ${url}`,
-    });
+    await issuePasswordResetCode(user.id, email, user.name);
   }
 
-  return ok(undefined, "If an account exists, a reset link has been sent.");
+  return ok(undefined, "If an account exists, a verification code has been sent.");
 }
 
-export async function resetPasswordAction(input: unknown): Promise<ActionResult> {
-  const parsed = resetPasswordSchema.safeParse(input);
+export async function resetPasswordWithCodeAction(input: unknown): Promise<ActionResult> {
+  const parsed = resetPasswordWithCodeSchema.safeParse(input);
   if (!parsed.success) {
     return fail("Please fix the highlighted fields.", parsed.error.flatten().fieldErrors);
   }
 
-  const { token, password } = parsed.data;
-  const record = await db.authToken.findUnique({ where: { tokenHash: hashToken(token) } });
-  if (!record || record.purpose !== "PASSWORD_RESET") {
-    return fail("This reset link is invalid.");
-  }
-  if (record.usedAt) return fail("This link has already been used.");
-  if (record.expires < new Date()) return fail("This reset link has expired.");
+  const { email, code, password } = parsed.data;
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user) return fail("Invalid verification code.");
+
+  const record = await findValidAuthToken(user.id, code, "PASSWORD_RESET");
+  if (!record) return fail("Invalid or expired verification code.");
 
   const passwordHash = await bcrypt.hash(password, 10);
   await db.$transaction([
-    db.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+    db.user.update({ where: { id: user.id }, data: { passwordHash } }),
     db.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
   ]);
 
@@ -167,4 +200,16 @@ export async function resetPasswordAction(input: unknown): Promise<ActionResult>
 export async function clearSessionCookiesAction(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(ACTIVE_WEDDING_COOKIE);
+}
+
+/** Used by login form to show a verify-email hint without revealing account existence. */
+export async function checkEmailVerificationAction(
+  email: string,
+): Promise<{ unverified: boolean }> {
+  const user = await db.user.findUnique({
+    where: { email },
+    select: { emailVerified: true, passwordHash: true, deletedAt: true },
+  });
+  if (!user || user.deletedAt || !user.passwordHash) return { unverified: false };
+  return { unverified: !user.emailVerified };
 }
