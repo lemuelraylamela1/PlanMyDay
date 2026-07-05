@@ -39,6 +39,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
       if (res?.error) {
         toast.error("Invalid email or password.");
+        setPending(false);
         return;
       }
 
@@ -50,10 +51,10 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         preferredPath !== "/login" &&
         preferredPath !== "/register"
           ? preferredPath
-          : "/onboarding";
+          : "/dashboard";
       router.replace(destination);
       router.refresh();
-    } finally {
+    } catch {
       setPending(false);
     }
   }
@@ -100,7 +101,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
                 <span className="relative z-10 bg-card px-2">or</span>
                 <span className="absolute inset-x-0 top-1/2 -z-0 h-px bg-border" />
               </div>
-              <GoogleButton callbackUrl={preferredPath ?? "/onboarding"} />
+              <GoogleButton callbackUrl={preferredPath ?? "/dashboard"} />
             </>
           )}
         </fieldset>

@@ -56,7 +56,7 @@ Leave the rest as-is for local testing:
 | `NEXTAUTH_URL` | `http://localhost:3000` | Required for auth |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Invitation links |
 | `AUTH_GOOGLE_*` | empty | Optional |
-| `RESEND_API_KEY` | empty | Emails print in the terminal |
+| `SMTP_USER` / `SMTP_PASS` | empty | Emails print in the terminal |
 
 ### Step 4 — Install dependencies
 
@@ -99,7 +99,7 @@ Open [http://localhost:3000](http://localhost:3000) → **Log in** with the demo
 3. Open **Invitations & RSVP** → generate an invite link.
 4. Open that link in a private window and submit an RSVP.
 
-Emails (invites, verify, reset) appear in the **terminal** while `RESEND_API_KEY` is empty.
+Emails (invites, verify, reset) appear in the **terminal** while `SMTP_USER` and `SMTP_PASS` are empty.
 
 ---
 
@@ -139,7 +139,10 @@ In Vercel: **Project → Settings → Environment Variables**, add:
 | `NEXTAUTH_URL` | `https://YOUR-PROJECT.vercel.app` | Production |
 | `NEXT_PUBLIC_APP_URL` | `https://YOUR-PROJECT.vercel.app` | Production |
 | `EMAIL_FROM` | optional | Production |
-| `RESEND_API_KEY` | optional | Production |
+| `SMTP_HOST` | `smtp.gmail.com` | Production |
+| `SMTP_PORT` | `587` | Production |
+| `SMTP_USER` | optional | Production |
+| `SMTP_PASS` | optional | Production |
 | `AUTH_GOOGLE_ID` | optional | Production |
 | `AUTH_GOOGLE_SECRET` | optional | Production |
 | `STORAGE_DRIVER` | `local` | Production |
@@ -188,15 +191,19 @@ Open `https://YOUR-PROJECT.vercel.app`.
 4. Paste Client ID / Secret into Vercel as `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
 5. Redeploy.
 
-### Step 7 — (Optional) Real email with Resend
+### Step 7 — (Optional) Real email with Gmail
 
-1. Sign up at [https://resend.com](https://resend.com).
-2. Verify a domain (or use their onboarding sender for tests).
-3. Create an API key.
-4. Set on Vercel:
-   - `RESEND_API_KEY=re_...`
-   - `EMAIL_FROM=PlanMyDay <no-reply@yourdomain.com>`
-5. Redeploy.
+1. Enable **2-Step Verification** on your Google account.
+2. Create an **App Password** at [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+3. Set on Vercel (and in local `.env` for testing):
+   - `SMTP_USER=your@gmail.com`
+   - `SMTP_PASS=xxxx xxxx xxxx xxxx` (the 16-character app password)
+   - `EMAIL_FROM=PlanMyDay <your@gmail.com>` (must match `SMTP_USER`)
+   - `SMTP_HOST=smtp.gmail.com`
+   - `SMTP_PORT=587`
+4. Redeploy.
+
+**Notes:** Free Gmail accounts can send ~500 emails/day. Never use your normal Gmail password — only an App Password.
 
 ---
 

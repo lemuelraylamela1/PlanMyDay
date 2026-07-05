@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronsUpDown, Heart, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Heart, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -49,8 +49,12 @@ export function WeddingSwitcher({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="w-full justify-between" disabled={pending}>
           <span className="flex items-center gap-2 truncate">
-            <Heart className="h-4 w-4 shrink-0 text-primary" />
-            <span className="truncate">{active?.title ?? "Select wedding"}</span>
+            {pending ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+            ) : (
+              <Heart className="h-4 w-4 shrink-0 text-primary" />
+            )}
+            <span className="truncate">{pending ? "Switching…" : (active?.title ?? "Select wedding")}</span>
           </span>
           <ChevronsUpDown className="h-4 w-4 opacity-50" />
         </Button>

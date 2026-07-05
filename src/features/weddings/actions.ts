@@ -56,7 +56,6 @@ export async function createWeddingAction(input: unknown): Promise<ActionResult<
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 365,
   });
 
   return ok({ id: wedding.id }, "Wedding created!");
@@ -69,10 +68,20 @@ export async function switchWeddingAction(weddingId: string): Promise<ActionResu
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 365,
   });
   revalidatePath("/dashboard");
   return ok();
+}
+
+/** Persists the active-wedding cookie when resolved from DB fallback (server action only). */
+export async function syncActiveWeddingCookieAction(weddingId: string): Promise<void> {
+  await requireWeddingAccess(weddingId);
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_WEDDING_COOKIE, weddingId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
 }
 
 export async function updateWeddingAction(

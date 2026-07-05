@@ -1,4 +1,6 @@
-import { env } from "@/lib/env";
+import nodemailer from "nodemailer";
+
+import { env, isSmtpConfigured } from "@/lib/env";
 
 export interface SendEmailInput {
   to: string;
@@ -14,11 +16,11 @@ export interface SendEmailResult {
 }
 
 /**
- * Sends a transactional email. Falls back to console logging in development
- * (or when no provider is configured) so flows are testable without secrets.
+ * Sends a transactional email via Gmail SMTP (Nodemailer).
+ * Falls back to console logging when SMTP is not configured.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  if (!env.resendApiKey) {
+  if (!isSmtpConfigured) {
     console.info("\n[email:dev] --------------------------------------------");
     console.info(`To:      ${input.to}`);
     console.info(`Subject: ${input.subject}`);
@@ -28,27 +30,25 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.resendApiKey}`,
-        "Content-Type": "application/json",
+    const transporter = nodemailer.createTransport({
+      host: env.smtpHost,
+      port: env.smtpPort,
+      secure: env.smtpPort === 465,
+      auth: {
+        user: env.smtpUser,
+        pass: env.smtpPass,
       },
-      body: JSON.stringify({
-        from: env.emailFrom,
-        to: input.to,
-        subject: input.subject,
-        html: input.html,
-        text: input.text,
-      }),
     });
 
-    if (!res.ok) {
-      const error = await res.text();
-      return { ok: false, error };
-    }
-    const data = (await res.json()) as { id?: string };
-    return { ok: true, id: data.id };
+    const info = await transporter.sendMail({
+      from: env.emailFrom,
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+    });
+
+    return { ok: true, id: info.messageId };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown email error" };
   }

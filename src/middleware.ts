@@ -7,8 +7,6 @@ const { auth } = NextAuth(authConfig);
 
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
-/** Keep in sync with ACTIVE_WEDDING_COOKIE in wedding-context (edge-safe literal). */
-const WEDDING_COOKIE = "pmd_active_wedding";
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -25,11 +23,9 @@ export default auth((req) => {
 
   const isAuthRoute = AUTH_ROUTES.some((r) => path.startsWith(r));
   const isPublicRoute = PUBLIC_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
-  const hasWedding = Boolean(req.cookies.get(WEDDING_COOKIE)?.value);
-  const appHome = hasWedding ? "/dashboard" : "/onboarding";
 
   if (isAuthRoute && isLoggedIn) {
-    return NextResponse.redirect(new URL(appHome, nextUrl));
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
   if (!isPublicRoute && !isLoggedIn) {

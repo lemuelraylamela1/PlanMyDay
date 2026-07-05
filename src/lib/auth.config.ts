@@ -10,7 +10,20 @@ import { env, isGoogleAuthEnabled } from "@/lib/env";
  */
 export const authConfig = {
   secret: env.authSecret,
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 8,
+  },
+  cookies: {
+    sessionToken: {
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: env.isProd,
+      },
+    },
+  },
   pages: {
     signIn: "/login",
     error: "/login",

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export class AuthorizationError extends Error {
@@ -25,7 +25,11 @@ export const requireVerifiedUser = cache(async () => {
     where: { id: user.id },
     select: { id: true, email: true, name: true, emailVerified: true, role: true },
   });
-  if (!dbUser) redirect("/login");
+  if (!dbUser) {
+    // Stale session (e.g. after a DB reset) — sign out to avoid /dashboard ↔ /login redirect loop.
+    await signOut({ redirectTo: "/login" });
+    redirect("/login");
+  }
   return dbUser;
 });
 

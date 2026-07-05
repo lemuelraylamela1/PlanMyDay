@@ -38,12 +38,13 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
           }
         }
         toast.error(res.error);
+        setPending(false);
         return;
       }
 
       setDone(true);
       toast.success(res.message ?? "Account created!");
-    } finally {
+    } catch {
       setPending(false);
     }
   }
@@ -117,7 +118,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
                 <span className="relative z-10 bg-card px-2">or</span>
                 <span className="absolute inset-x-0 top-1/2 -z-0 h-px bg-border" />
               </div>
-              <GoogleButton callbackUrl="/onboarding" />
+              <GoogleButton callbackUrl="/dashboard" />
             </>
           )}
         </fieldset>

@@ -18,6 +18,25 @@ export async function countUnread(weddingId: string, userId: string) {
   });
 }
 
+export async function getNotificationsPayload(weddingId: string, userId: string) {
+  const [items, unread] = await Promise.all([
+    listNotifications(weddingId, userId),
+    countUnread(weddingId, userId),
+  ]);
+
+  return {
+    items: items.map((n) => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      link: n.link,
+      readAt: n.readAt?.toISOString() ?? null,
+      createdAt: n.createdAt.toISOString(),
+    })),
+    unread,
+  };
+}
+
 export async function createNotification(input: {
   weddingId: string;
   userId?: string | null;

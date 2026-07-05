@@ -14,14 +14,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import type { SearchResult } from "@/features/search/service";
+import { useGlobalSearch } from "@/features/search/hooks/use-global-search";
 
-export function GlobalSearch() {
+export function GlobalSearch({ weddingId }: { weddingId: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
-  const [results, setResults] = React.useState<SearchResult[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
 
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -35,26 +34,17 @@ export function GlobalSearch() {
   }, []);
 
   React.useEffect(() => {
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    const timeout = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        setResults(data.results ?? []);
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
+    const timeout = setTimeout(() => setDebouncedQuery(query), 250);
     return () => clearTimeout(timeout);
   }, [query]);
+
+  const { data: results = [], isLoading, isFetching } = useGlobalSearch(weddingId, debouncedQuery);
+  const loading = (isLoading || isFetching) && debouncedQuery.trim().length >= 2;
 
   function go(href: string) {
     setOpen(false);
     setQuery("");
+    setDebouncedQuery("");
     router.push(href);
   }
 
@@ -88,11 +78,12 @@ export function GlobalSearch() {
         </div>
         <div className="max-h-80 overflow-y-auto">
           {loading && (
-            <div className="flex items-center justify-center py-6 text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Searching…</span>
             </div>
           )}
-          {!loading && query.length >= 2 && results.length === 0 && (
+          {!loading && debouncedQuery.trim().length >= 2 && results.length === 0 && (
             <p className="py-6 text-center text-sm text-muted-foreground">No results found.</p>
           )}
           <div className="space-y-1">

@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -8,6 +9,7 @@ import { ActionResult, fail, ok } from "@/lib/action-result";
 import { generateToken, hashToken } from "@/lib/tokens";
 import { sendEmail, baseEmailTemplate } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
+import { ACTIVE_WEDDING_COOKIE } from "@/lib/wedding-context";
 import {
   forgotPasswordSchema,
   registerSchema,
@@ -160,4 +162,9 @@ export async function resetPasswordAction(input: unknown): Promise<ActionResult>
   ]);
 
   return ok(undefined, "Password updated. You can now log in.");
+}
+
+export async function clearSessionCookiesAction(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_WEDDING_COOKIE);
 }

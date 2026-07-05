@@ -25,7 +25,7 @@ Motion · Recharts · Lucide**.
 - **Timeline** — wedding-day schedule builder.
 - **Invitations & RSVP** — secure per-guest tokens, QR codes, an extensible
   placeholder engine, and a tokenized public RSVP page.
-- **Email** — templates, delivery logs (Resend-ready, console fallback in dev).
+- **Email** — templates, delivery logs (Gmail SMTP via Nodemailer, console fallback in dev).
 - **Website config** — theme, SEO, domain, sections & visibility (rendering is
   intentionally deferred to a separate public-site implementation).
 - **Media** — uploads for images/video/audio/documents.
@@ -51,7 +51,7 @@ cp .env.example .env
 ```
 
 Set at least `DATABASE_URL` and `AUTH_SECRET` (generate with `npx auth secret`).
-Google OAuth and Resend are optional — without them, Google login is hidden and
+Google OAuth and Gmail SMTP are optional — without them, Google login is hidden and
 emails are logged to the console.
 
 ### 4. Set up the database

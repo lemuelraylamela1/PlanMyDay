@@ -1,8 +1,8 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
-import { LogOut, Settings, User as UserIcon } from "lucide-react";
+import { LogOut, Loader2, Settings, User as UserIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { logout } from "@/features/auth/logout";
 import { initials } from "@/lib/utils";
 
 interface UserMenuProps {
@@ -24,10 +25,21 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ name, email, image, isAdmin }: UserMenuProps) {
+  const [pending, setPending] = React.useState(false);
+
+  async function onLogout() {
+    setPending(true);
+    try {
+      await logout();
+    } catch {
+      setPending(false);
+    }
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="rounded-full" disabled={pending}>
           <Avatar>
             {image && <AvatarImage src={image} alt={name} />}
             <AvatarFallback>{initials(name || email)}</AvatarFallback>
@@ -58,8 +70,13 @@ export function UserMenu({ name, email, image, isAdmin }: UserMenuProps) {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
-          <LogOut className="h-4 w-4" /> Log out
+        <DropdownMenuItem onClick={onLogout} disabled={pending}>
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="h-4 w-4" />
+          )}
+          {pending ? "Logging out…" : "Log out"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
