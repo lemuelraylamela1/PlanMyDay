@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
+import { signOut as authSignOut } from "@/lib/auth";
+import { clearAuthCookies } from "@/lib/auth-cookies";
 import { ActionResult, fail, ok } from "@/lib/action-result";
 import { generateVerificationCode, hashToken } from "@/lib/tokens";
 import { sendEmail, baseEmailTemplate } from "@/lib/email";
@@ -200,6 +202,14 @@ export async function resetPasswordWithCodeAction(input: unknown): Promise<Actio
 export async function clearSessionCookiesAction(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(ACTIVE_WEDDING_COOKIE);
+}
+
+/** Full logout: invalidate the server session and clear wedding + Auth.js cookies. */
+export async function logoutAction(): Promise<void> {
+  await authSignOut({ redirect: false });
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_WEDDING_COOKIE);
+  clearAuthCookies(cookieStore);
 }
 
 /** Used by login form to show a verify-email hint without revealing account existence. */

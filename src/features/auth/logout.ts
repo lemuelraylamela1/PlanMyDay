@@ -1,10 +1,9 @@
 "use client";
 
-import { signOut } from "next-auth/react";
-
-import { clearSessionCookiesAction } from "@/features/auth/actions";
+import { logoutAction } from "@/features/auth/actions";
 
 export async function logout(): Promise<void> {
-  await clearSessionCookiesAction();
-  await signOut({ callbackUrl: "/", redirect: true });
+  await logoutAction();
+  // Hard navigation clears SessionProvider cache and ensures cookies are gone.
+  window.location.href = "/";
 }

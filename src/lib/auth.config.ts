@@ -11,6 +11,7 @@ export const authConfig = {
   secret: env.authSecret,
   session: {
     strategy: "jwt",
+    // Session JWT/cookie lifetime while the browser keeps the cookie (Auth.js sets expires on login).
     maxAge: 60 * 60 * 8,
   },
   cookies: {
