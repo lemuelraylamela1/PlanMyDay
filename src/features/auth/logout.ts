@@ -1,9 +1,19 @@
 "use client";
 
-import { logoutAction } from "@/features/auth/actions";
-
+/**
+ * Log out via Route Handler so Set-Cookie headers reach the browser in production.
+ * Server Actions do not reliably clear httpOnly cookies on Vercel.
+ */
 export async function logout(): Promise<void> {
-  await logoutAction();
-  // Hard navigation clears SessionProvider cache and ensures cookies are gone.
+  const res = await fetch("/api/logout", {
+    method: "POST",
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Logout failed");
+  }
+
   window.location.href = "/";
 }

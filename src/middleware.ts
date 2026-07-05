@@ -15,6 +15,7 @@ export default auth((req) => {
 
   if (
     path.startsWith("/api/auth") ||
+    path.startsWith("/api/logout") ||
     path.startsWith("/api/public") ||
     path.startsWith("/invite")
   ) {

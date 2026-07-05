@@ -4,8 +4,7 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
-import { signOut as authSignOut } from "@/lib/auth";
-import { clearAuthCookies } from "@/lib/auth-cookies";
+import { performLogout } from "@/lib/perform-logout";
 import { ActionResult, fail, ok } from "@/lib/action-result";
 import { generateVerificationCode, hashToken } from "@/lib/tokens";
 import { sendEmail, baseEmailTemplate } from "@/lib/email";
@@ -204,12 +203,9 @@ export async function clearSessionCookiesAction(): Promise<void> {
   cookieStore.delete(ACTIVE_WEDDING_COOKIE);
 }
 
-/** Full logout: invalidate the server session and clear wedding + Auth.js cookies. */
+/** @deprecated Prefer POST /api/logout — Server Actions may not clear cookies in production. */
 export async function logoutAction(): Promise<void> {
-  await authSignOut({ redirect: false });
-  const cookieStore = await cookies();
-  cookieStore.delete(ACTIVE_WEDDING_COOKIE);
-  clearAuthCookies(cookieStore);
+  await performLogout();
 }
 
 /** Used by login form to show a verify-email hint without revealing account existence. */
