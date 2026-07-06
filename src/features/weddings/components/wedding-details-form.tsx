@@ -70,11 +70,11 @@ export function WeddingDetailsForm({ weddingId, defaults }: Props) {
             <Input id="subtitle" placeholder="e.g. Together forever" {...register("subtitle")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="partner1Name">Partner 1</Label>
+            <Label htmlFor="partner1Name">Groom</Label>
             <Input id="partner1Name" {...register("partner1Name")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="partner2Name">Partner 2</Label>
+            <Label htmlFor="partner2Name">Bride</Label>
             <Input id="partner2Name" {...register("partner2Name")} />
           </div>
           <div className="space-y-2">
