@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export class AuthorizationError extends Error {
@@ -26,9 +26,9 @@ export const requireVerifiedUser = cache(async () => {
     select: { id: true, email: true, name: true, emailVerified: true, role: true },
   });
   if (!dbUser) {
-    // Stale session (e.g. after a DB reset) — sign out to avoid redirect loops.
-    await signOut({ redirectTo: "/" });
-    redirect("/");
+    // Stale session (e.g. after a DB reset). Cookie clearing must happen in a Route Handler,
+    // not during Server Component render — signOut() here causes a 500 in production.
+    redirect("/api/logout");
   }
   return dbUser;
 });

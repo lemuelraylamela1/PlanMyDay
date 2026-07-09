@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-export default function GlobalError({
+export default function RootError({
   error,
   reset,
 }: {
@@ -23,7 +24,12 @@ export default function GlobalError({
       <p className="max-w-md text-muted-foreground">
         An unexpected error occurred. Please try again.
       </p>
-      <Button onClick={reset}>Try again</Button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button onClick={reset}>Try again</Button>
+        <Button variant="outline" asChild>
+          <Link href="/api/logout">Sign out and go home</Link>
+        </Button>
+      </div>
     </div>
   );
 }
