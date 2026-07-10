@@ -11,33 +11,55 @@ export interface DashboardStats {
   rsvpDeadline: Date | null;
 }
 
+function countByKey<T extends string>(
+  rows: { key: T; count: number }[],
+  key: T,
+): number {
+  return rows.find((row) => row.key === key)?.count ?? 0;
+}
+
 export async function getDashboardStats(weddingId: string, weddingDate: Date | null): Promise<DashboardStats> {
-  const [
-    total,
-    accepted,
-    declined,
-    pending,
-    budgetItems,
-    tasksTotal,
-    tasksDone,
-    suppliersTotal,
-    suppliersBooked,
-    wedding,
-  ] = await Promise.all([
-    db.guest.count({ where: { weddingId, deletedAt: null } }),
-    db.guest.count({ where: { weddingId, deletedAt: null, rsvpStatus: "ACCEPTED" } }),
-    db.guest.count({ where: { weddingId, deletedAt: null, rsvpStatus: "DECLINED" } }),
-    db.guest.count({ where: { weddingId, deletedAt: null, rsvpStatus: "PENDING" } }),
+  const [guestGroups, budgetItems, taskGroups, supplierGroups, wedding] = await Promise.all([
+    db.guest.groupBy({
+      by: ["rsvpStatus"],
+      where: { weddingId, deletedAt: null },
+      _count: { _all: true },
+    }),
     db.budgetItem.findMany({
       where: { weddingId, deletedAt: null },
       select: { estimatedCost: true, actualCost: true, paidAmount: true },
     }),
-    db.task.count({ where: { weddingId, deletedAt: null } }),
-    db.task.count({ where: { weddingId, deletedAt: null, completed: true } }),
-    db.supplier.count({ where: { weddingId, deletedAt: null } }),
-    db.supplier.count({ where: { weddingId, deletedAt: null, status: "BOOKED" } }),
+    db.task.groupBy({
+      by: ["completed"],
+      where: { weddingId, deletedAt: null },
+      _count: { _all: true },
+    }),
+    db.supplier.groupBy({
+      by: ["status"],
+      where: { weddingId, deletedAt: null },
+      _count: { _all: true },
+    }),
     db.wedding.findUnique({ where: { id: weddingId }, select: { rsvpDeadline: true } }),
   ]);
+
+  const guestCounts = guestGroups.map((row) => ({
+    key: row.rsvpStatus,
+    count: row._count._all,
+  }));
+  const accepted = countByKey(guestCounts, "ACCEPTED");
+  const declined = countByKey(guestCounts, "DECLINED");
+  const pending = countByKey(guestCounts, "PENDING");
+  const total = guestCounts.reduce((sum, row) => sum + row.count, 0);
+
+  const tasksTotal = taskGroups.reduce((sum, row) => sum + row._count._all, 0);
+  const tasksDone = taskGroups.find((row) => row.completed)?._count._all ?? 0;
+
+  const supplierCounts = supplierGroups.map((row) => ({
+    key: row.status,
+    count: row._count._all,
+  }));
+  const suppliersTotal = supplierCounts.reduce((sum, row) => sum + row.count, 0);
+  const suppliersBooked = countByKey(supplierCounts, "BOOKED");
 
   const estimated = budgetItems.reduce((sum, i) => sum + Number(i.estimatedCost), 0);
   const actual = budgetItems.reduce((sum, i) => sum + Number(i.actualCost), 0);
