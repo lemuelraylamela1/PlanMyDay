@@ -23,7 +23,7 @@ You do **not** need Postgres installed on your PC.
 
 1. In Supabase: **Project Settings** (gear icon) → **Database**.
 2. Under **Connection string**, choose **URI**.
-3. Prefer **Session mode** / port **5432** (works best with Prisma `db push`).
+3. For **local dev**, use **Session mode** / port **5432** (works well with Prisma `db push`).
 4. Copy the string. It looks like one of these:
 
 ```text
@@ -40,12 +40,13 @@ postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
 
 ### Step 3 — Fill in your local `.env`
 
-Open [`.env`](.env) in the project root and set **only** `DATABASE_URL` to the string from Step 2.
+Open [`.env`](.env) in the project root and set `DATABASE_URL` and `DIRECT_URL` to the string from Step 2 (same value for both is fine locally).
 
 Example:
 
 ```env
 DATABASE_URL="postgresql://postgres:MyPass123@db.abcdefghijklmnop.supabase.co:5432/postgres"
+DIRECT_URL="postgresql://postgres:MyPass123@db.abcdefghijklmnop.supabase.co:5432/postgres"
 ```
 
 Leave the rest as-is for local testing:
@@ -134,7 +135,8 @@ In Vercel: **Project → Settings → Environment Variables**, add:
 
 | Name | Value | Environment |
 | --- | --- | --- |
-| `DATABASE_URL` | Same Supabase URI as local (or a prod project URI) | Production |
+| `DATABASE_URL` | **Transaction pooler** URI — port **6543** + `?pgbouncer=true&connection_limit=1` (see below) | Production |
+| `DIRECT_URL` | **Session/direct** URI — port **5432** (for `db push` from your laptop) | Production |
 | `AUTH_SECRET` | **New** secret (do not reuse local) | Production |
 | `NEXTAUTH_URL` | `https://YOUR-PROJECT.vercel.app` | Production |
 | `NEXT_PUBLIC_APP_URL` | `https://YOUR-PROJECT.vercel.app` | Production |
@@ -152,6 +154,22 @@ Generate a production secret:
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+**Important — Supabase pooler on Vercel**
+
+Vercel runs many short-lived serverless functions. Supabase **Session mode** (port `5432` on the pooler) allows only ~15 connections and will crash with `max clients reached in session mode`.
+
+Use **two** connection strings on Vercel:
+
+```env
+# Runtime (app on Vercel) — Transaction mode, port 6543
+DATABASE_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+
+# Migrations from your laptop — Session/direct, port 5432
+DIRECT_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+```
+
+In Supabase: **Project Settings → Database → Connection string → URI**, switch the **Pool mode** dropdown to **Transaction** when copying the `6543` URL.
 
 After the first deploy, if Vercel gives you a custom domain, update `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to that domain and redeploy.
 
@@ -229,6 +247,18 @@ Open `https://YOUR-PROJECT.vercel.app`.
 
 - Supabase project is paused (free tier pauses after inactivity) — open the dashboard and restore it.
 - Firewall / VPN blocking outbound Postgres.
+
+### `prepared statement "s1" already exists` (Vercel + Supabase)
+
+- Your `DATABASE_URL` uses the Transaction pooler (port `6543`) but is **missing** `?pgbouncer=true`.
+- Use: `...6543/postgres?pgbouncer=true&connection_limit=1`
+- URL-encode special characters in the password (`!` → `%21`, `@` → `%40`).
+
+### `max clients reached in session mode` (Vercel / Supabase)
+
+- Your Vercel `DATABASE_URL` is using **Session pooler** (port `5432`). Switch to **Transaction pooler** (port `6543`) with `?pgbouncer=true&connection_limit=1`.
+- Add `DIRECT_URL` (port `5432`) for `npm run db:push` from your laptop.
+- See **Part B — Step 3** above for the exact URLs.
 
 ### Auth redirects to wrong host after deploy
 
