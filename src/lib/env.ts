@@ -1,19 +1,27 @@
 /** Centralized, typed access to runtime environment values. */
+import { normalizePrivateKey } from "@/lib/google-credentials";
+
+function readEnv(name: string): string {
+  return process.env[name] ?? "";
+}
+
 export const env = {
-  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  authSecret: process.env.AUTH_SECRET ?? "",
-  googleId: process.env.AUTH_GOOGLE_ID ?? "",
-  googleSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
-  emailFrom: process.env.EMAIL_FROM ?? "PlanMyDay <no-reply@planmyday.app>",
-  smtpHost: process.env.SMTP_HOST ?? "smtp.gmail.com",
-  smtpPort: Number(process.env.SMTP_PORT ?? "587"),
-  smtpUser: process.env.SMTP_USER ?? "",
-  smtpPass: process.env.SMTP_PASS ?? "",
+  appUrl: readEnv("NEXT_PUBLIC_APP_URL") || "http://localhost:3000",
+  authSecret: readEnv("AUTH_SECRET"),
+  googleId: readEnv("AUTH_GOOGLE_ID"),
+  googleSecret: readEnv("AUTH_GOOGLE_SECRET"),
+  emailFrom: readEnv("EMAIL_FROM") || "PlanMyDay <no-reply@planmyday.app>",
+  smtpHost: readEnv("SMTP_HOST") || "smtp.gmail.com",
+  smtpPort: Number(readEnv("SMTP_PORT") || "587"),
+  smtpUser: readEnv("SMTP_USER"),
+  smtpPass: readEnv("SMTP_PASS"),
   isProd: process.env.NODE_ENV === "production",
-  guestMediaStorageDriver: process.env.GUEST_MEDIA_STORAGE_DRIVER ?? "google-drive",
-  googleDriveServiceAccountEmail: process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_EMAIL ?? "",
-  googleDriveServiceAccountPrivateKey: process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_PRIVATE_KEY ?? "",
-  googleDriveRootFolderId: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID ?? "",
+  guestMediaStorageDriver: readEnv("GUEST_MEDIA_STORAGE_DRIVER") || "google-drive",
+  googleDriveServiceAccountEmail: readEnv("GOOGLE_DRIVE_SERVICE_ACCOUNT_EMAIL"),
+  get googleDriveServiceAccountPrivateKey() {
+    return normalizePrivateKey(readEnv("GOOGLE_DRIVE_SERVICE_ACCOUNT_PRIVATE_KEY"));
+  },
+  googleDriveRootFolderId: readEnv("GOOGLE_DRIVE_ROOT_FOLDER_ID"),
 } as const;
 
 export const isGoogleAuthEnabled = Boolean(env.googleId && env.googleSecret);

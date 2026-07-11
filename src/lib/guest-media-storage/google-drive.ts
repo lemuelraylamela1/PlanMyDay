@@ -5,6 +5,7 @@ import { Readable } from "stream";
 import { google } from "googleapis";
 
 import { env } from "@/lib/env";
+import { normalizePrivateKey } from "@/lib/google-credentials";
 
 import type {
   GuestMediaStorageProvider,
@@ -17,14 +18,17 @@ const folderCache = new Map<string, WeddingFolders>();
 
 function getDriveClient() {
   const email = env.googleDriveServiceAccountEmail;
-  const key = env.googleDriveServiceAccountPrivateKey;
+  const key = normalizePrivateKey(env.googleDriveServiceAccountPrivateKey);
   if (!email || !key) {
     throw new Error("Google Drive is not configured. Set service account credentials.");
+  }
+  if (!key.includes("-----BEGIN") || !key.includes("-----END")) {
+    throw new Error("Google Drive private key is malformed. Check GOOGLE_DRIVE_SERVICE_ACCOUNT_PRIVATE_KEY.");
   }
 
   const auth = new google.auth.JWT({
     email,
-    key: key.replace(/\\n/g, "\n"),
+    key,
     scopes: ["https://www.googleapis.com/auth/drive"],
   });
 
@@ -72,7 +76,14 @@ async function findOrCreateFolder(
 }
 
 export class GoogleDriveGuestMediaStorage implements GuestMediaStorageProvider {
-  private drive = getDriveClient();
+  private driveClient: ReturnType<typeof getDriveClient> | null = null;
+
+  private get drive() {
+    if (!this.driveClient) {
+      this.driveClient = getDriveClient();
+    }
+    return this.driveClient;
+  }
 
   async ensureWeddingFolders(weddingId: string, weddingTitle: string): Promise<WeddingFolders> {
     const cached = folderCache.get(weddingId);
