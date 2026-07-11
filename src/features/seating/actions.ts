@@ -8,7 +8,10 @@ import { ActionResult, fail, ok } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { tableSchema } from "@/features/seating/schemas";
 
-export async function saveTableAction(id: string | null, input: unknown): Promise<ActionResult> {
+export async function saveTableAction(
+  id: string | null,
+  input: unknown,
+): Promise<ActionResult<{ id: string } | undefined>> {
   const { wedding } = await getCurrentWedding();
   const parsed = tableSchema.safeParse(input);
   if (!parsed.success) {
@@ -21,13 +24,15 @@ export async function saveTableAction(id: string | null, input: unknown): Promis
       data: { name: d.name, capacity: d.capacity, shape: d.shape },
     });
     if (res.count === 0) return fail("Table not found.");
+    revalidatePath("/seating");
+    return ok(undefined, "Table saved.");
   } else {
-    await db.seatingTable.create({
+    const created = await db.seatingTable.create({
       data: { weddingId: wedding.id, name: d.name, capacity: d.capacity, shape: d.shape },
     });
+    revalidatePath("/seating");
+    return ok({ id: created.id }, "Table saved.");
   }
-  revalidatePath("/seating");
-  return ok(undefined, "Table saved.");
 }
 
 export async function deleteTableAction(id: string): Promise<ActionResult> {

@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "db:generate": "prisma generate",
+    "db:switch": "node scripts/set-db-mode.mjs",
+    "db:local": "node scripts/set-db-mode.mjs local",
+    "db:supabase": "node scripts/set-db-mode.mjs supabase",
     "db:push": "prisma db push",
     "db:reset": "prisma db push --force-reset --accept-data-loss && npm run db:seed",
     "db:migrate": "prisma migrate dev",
@@ -21,6 +24,8 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^6.1.0",
     "@radix-ui/react-avatar": "^1.1.2",
