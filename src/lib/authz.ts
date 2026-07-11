@@ -55,6 +55,20 @@ export async function requireWeddingAccess(weddingId: string) {
   return { user, membership };
 }
 
+/** Confirms the current user is an owner or partner of the given wedding. */
+export async function requireWeddingOwner(weddingId: string) {
+  const user = await requireUser();
+  const membership = await db.weddingMember.findUnique({
+    where: { weddingId_userId: { weddingId, userId: user.id } },
+  });
+  const isOwnerRole =
+    membership?.role === "OWNER" || membership?.role === "PARTNER" || user.role === "ADMIN";
+  if (!isOwnerRole) {
+    throw new AuthorizationError("Only wedding owners can perform this action.");
+  }
+  return { user, membership };
+}
+
 /** Returns the user's active (most recent) wedding, or null if none exists. */
 export const getActiveWeddingForUser = cache(async (userId: string) => {
   const membership = await db.weddingMember.findFirst({

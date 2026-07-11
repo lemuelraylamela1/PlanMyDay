@@ -271,6 +271,8 @@ model Wedding {
   emailLogs       EmailDeliveryLog[]
   invitationTokens InvitationToken[]
   rsvpResponses   RsvpResponse[]
+  guestUploadToken GuestUploadToken?
+  guestMediaUploads GuestMediaUpload[]
   notifications   Notification[]
   activityLogs    ActivityLog[]
 
@@ -756,6 +758,44 @@ model RsvpResponse {
 
   @@index([weddingId, status])
   @@index([guestId])
+}
+
+// ---------------------------------------------------------------------------
+// Guest media uploads (public QR upload flow)
+// ---------------------------------------------------------------------------
+
+model GuestUploadToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @unique @db.Uuid
+  rawToken  String    @unique
+  tokenHash String    @unique
+  isEnabled Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+}
+
+model GuestMediaUpload {
+  id         String    @id @default(uuid()) @db.Uuid
+  weddingId  String    @db.Uuid
+  guestName  String
+  message    String?   @db.Text
+  fileId     String
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  mediaType  MediaType
+  uploadedAt DateTime  @default(now())
+  deletedAt  DateTime?
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  @@index([weddingId, uploadedAt])
+  @@index([weddingId, deletedAt])
 }
 
 // ---------------------------------------------------------------------------

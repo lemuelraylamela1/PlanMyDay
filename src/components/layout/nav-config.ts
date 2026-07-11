@@ -10,6 +10,7 @@ import {
   MailOpen,
   Globe,
   Image,
+  Camera,
   Bell,
   ScrollText,
   Settings,
@@ -50,6 +51,7 @@ export const navGroups: NavGroup[] = [
       { label: "Invitations & RSVP", href: "/invitations", icon: MailOpen },
       { label: "Website", href: "/website", icon: Globe },
       { label: "Media Library", href: "/media", icon: Image },
+      { label: "Guest Uploads", href: "/guest-uploads", icon: Camera },
     ],
   },
   {

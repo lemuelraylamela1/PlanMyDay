@@ -17,7 +17,8 @@ export default auth((req) => {
     path.startsWith("/api/auth") ||
     path.startsWith("/api/logout") ||
     path.startsWith("/api/public") ||
-    path.startsWith("/invite")
+    path.startsWith("/invite") ||
+    path.startsWith("/upload")
   ) {
     return NextResponse.next();
   }

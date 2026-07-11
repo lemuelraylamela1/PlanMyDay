@@ -10,6 +10,10 @@ export const env = {
   smtpUser: process.env.SMTP_USER ?? "",
   smtpPass: process.env.SMTP_PASS ?? "",
   isProd: process.env.NODE_ENV === "production",
+  guestMediaStorageDriver: process.env.GUEST_MEDIA_STORAGE_DRIVER ?? "google-drive",
+  googleDriveServiceAccountEmail: process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_EMAIL ?? "",
+  googleDriveServiceAccountPrivateKey: process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_PRIVATE_KEY ?? "",
+  googleDriveRootFolderId: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID ?? "",
 } as const;
 
 export const isGoogleAuthEnabled = Boolean(env.googleId && env.googleSecret);
