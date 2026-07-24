@@ -50,7 +50,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Invitations & RSVP", href: "/invitations", icon: MailOpen },
       { label: "Website", href: "/website", icon: Globe },
-      { label: "Media Library", href: "/media", icon: Image },
+      // { label: "Media Library", href: "/media", icon: Image },
       { label: "Guest Uploads", href: "/guest-uploads", icon: Camera },
     ],
   },
