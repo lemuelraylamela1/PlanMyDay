@@ -2,10 +2,8 @@ import "server-only";
 
 import { Readable } from "stream";
 
-import { google } from "googleapis";
-
 import { env } from "@/lib/env";
-import { normalizePrivateKey } from "@/lib/google-credentials";
+import { getDriveClient } from "@/lib/google-drive-auth";
 
 import type {
   GuestMediaStorageProvider,
@@ -15,25 +13,6 @@ import type {
 } from "./types";
 
 const folderCache = new Map<string, WeddingFolders>();
-
-function getDriveClient() {
-  const email = env.googleDriveServiceAccountEmail;
-  const key = normalizePrivateKey(env.googleDriveServiceAccountPrivateKey);
-  if (!email || !key) {
-    throw new Error("Google Drive is not configured. Set service account credentials.");
-  }
-  if (!key.includes("-----BEGIN") || !key.includes("-----END")) {
-    throw new Error("Google Drive private key is malformed. Check GOOGLE_DRIVE_SERVICE_ACCOUNT_PRIVATE_KEY.");
-  }
-
-  const auth = new google.auth.JWT({
-    email,
-    key,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-
-  return google.drive({ version: "v3", auth });
-}
 
 function sanitizeFolderName(name: string) {
   return name.replace(/[^\w\s-]/g, "").trim().slice(0, 60) || "Wedding";

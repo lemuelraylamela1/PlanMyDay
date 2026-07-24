@@ -17,7 +17,8 @@
     "db:reset": "prisma db push --force-reset --accept-data-loss && npm run db:seed",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "drive:auth": "node scripts/google-drive-oauth.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

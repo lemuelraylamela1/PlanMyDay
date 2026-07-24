@@ -17,6 +17,7 @@ export default auth((req) => {
     path.startsWith("/api/auth") ||
     path.startsWith("/api/logout") ||
     path.startsWith("/api/public") ||
+    path.startsWith("/api/google-drive/oauth") ||
     path.startsWith("/invite") ||
     path.startsWith("/upload")
   ) {

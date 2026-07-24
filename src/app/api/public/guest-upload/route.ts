@@ -93,8 +93,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, id: upload.id });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Upload failed. Please try again.";
-    const friendly = message.includes("DECODER routines")
-      ? "Google Drive credentials are invalid. Check GOOGLE_DRIVE_SERVICE_ACCOUNT_PRIVATE_KEY in .env."
+    const friendly = message.includes("DECODER routines") || message.includes("OAuth")
+      ? "Google Drive credentials are invalid. Run npm run drive:auth and set GOOGLE_DRIVE_REFRESH_TOKEN."
       : message;
     return NextResponse.json({ error: friendly }, { status: 500 });
   }
