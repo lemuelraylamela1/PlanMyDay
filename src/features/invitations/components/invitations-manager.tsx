@@ -30,16 +30,14 @@ export interface InviteGuestRow {
   id: string;
   name: string;
   email: string | null;
-  invitationStatus: "NOT_SENT" | "SENT" | "OPENED" | "RESPONDED";
+  invitationStatus: "NOT_SENT" | "SENT";
   rsvpStatus: "PENDING" | "ACCEPTED" | "DECLINED" | "TENTATIVE";
   hasToken: boolean;
 }
 
-const inviteVariant: Record<InviteGuestRow["invitationStatus"], "secondary" | "info" | "warning" | "success"> = {
+const inviteVariant: Record<InviteGuestRow["invitationStatus"], "secondary" | "info"> = {
   NOT_SENT: "secondary",
   SENT: "info",
-  OPENED: "warning",
-  RESPONDED: "success",
 };
 
 export function InvitationsManager({ guests }: { guests: InviteGuestRow[] }) {

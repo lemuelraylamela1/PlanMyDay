@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { guestSchema, type GuestInput } from "@/features/guests/schemas";
+import { GUEST_TITLE_OPTIONS } from "@/features/guests/display-name";
 import { createGuestAction, updateGuestAction } from "@/features/guests/actions";
 
 export interface GuestFormValue extends GuestInput {
@@ -41,6 +42,7 @@ interface Props {
 }
 
 const emptyGuest: GuestInput = {
+  title: "",
   firstName: "",
   lastName: "",
   preferredName: "",
@@ -79,6 +81,7 @@ export function GuestFormDialog({ open, onOpenChange, groups, initial }: Props) 
   const side = watch("side");
   const rsvpStatus = watch("rsvpStatus");
   const groupId = watch("groupId");
+  const title = watch("title");
 
   async function onSubmit(values: GuestInput) {
     setPending(true);
@@ -105,6 +108,29 @@ export function GuestFormDialog({ open, onOpenChange, groups, initial }: Props) 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
+              <Label>Title</Label>
+              <Select
+                value={title || "none"}
+                onValueChange={(v) => setValue("title", v === "none" ? "" : (v as GuestInput["title"]))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Optional" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No title</SelectItem>
+                  {GUEST_TITLE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="preferredName">Preferred name</Label>
+              <Input id="preferredName" {...register("preferredName")} />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="firstName">First name</Label>
               <Input id="firstName" {...register("firstName")} />
               {errors.firstName && <p className="text-xs text-destructive">{errors.firstName.message}</p>}
@@ -113,10 +139,6 @@ export function GuestFormDialog({ open, onOpenChange, groups, initial }: Props) 
               <Label htmlFor="lastName">Last name</Label>
               <Input id="lastName" {...register("lastName")} />
               {errors.lastName && <p className="text-xs text-destructive">{errors.lastName.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="preferredName">Preferred name</Label>
-              <Input id="preferredName" {...register("preferredName")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="relationship">Relationship</Label>

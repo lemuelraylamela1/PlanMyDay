@@ -29,7 +29,12 @@ export default async function SeatingPage() {
       },
     }),
     db.guest.findMany({
-      where: { weddingId: wedding.id, deletedAt: null, seatAssignment: null },
+      where: {
+        weddingId: wedding.id,
+        deletedAt: null,
+        seatAssignment: null,
+        rsvpStatus: "ACCEPTED",
+      },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       select: { id: true, firstName: true, lastName: true, preferredName: true },
     }),
@@ -49,7 +54,7 @@ export default async function SeatingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Seating" description="Arrange your guests across tables" />
+      <PageHeader title="Seating" description="Arrange accepted guests across tables" />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Tables" value={tableData.length} icon={Armchair} />

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatDate } from "@/lib/utils";
 import { resolveInvitation, markInvitationOpened } from "@/features/invitations/service";
 import { RsvpForm } from "@/features/invitations/components/rsvp-form";
+import { formatGuestDisplayName } from "@/features/guests/display-name";
 
 export const metadata: Metadata = { title: "You're Invited" };
 
@@ -40,7 +41,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const { guest, wedding } = invitation;
   const coupleNames =
     [wedding.partner1Name, wedding.partner2Name].filter(Boolean).join(" & ") || wedding.title;
-  const guestName = guest.preferredName || guest.firstName;
+  const guestName = formatGuestDisplayName(guest);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-accent/40 via-background to-background p-4">

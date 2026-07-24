@@ -140,6 +140,9 @@ In Vercel: **Project → Settings → Environment Variables**, add:
 | `AUTH_SECRET` | **New** secret (do not reuse local) | Production |
 | `NEXTAUTH_URL` | `https://YOUR-PROJECT.vercel.app` | Production |
 | `NEXT_PUBLIC_APP_URL` | `https://YOUR-PROJECT.vercel.app` | Production |
+| `NEXT_PUBLIC_RSVP_APP_URL` | `https://YOUR-RSVP.vercel.app` | Production |
+| `RSVP_ALLOWED_ORIGIN` | `https://YOUR-RSVP.vercel.app` | Production |
+| `RSVP_NOTIFICATION_EMAIL` | `lemuelraylameladev@gmail.com` | Production |
 | `EMAIL_FROM` | optional | Production |
 | `SMTP_HOST` | `smtp.gmail.com` | Production |
 | `SMTP_PORT` | `587` | Production |
@@ -172,6 +175,21 @@ DIRECT_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabas
 In Supabase: **Project Settings → Database → Connection string → URI**, switch the **Pool mode** dropdown to **Transaction** when copying the `6543` URL.
 
 After the first deploy, if Vercel gives you a custom domain, update `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to that domain and redeploy.
+
+### Step 3b — Deploy the RSVP website (`my-wedding-rsvp`)
+
+1. Import the `My-Wedding-RSVP` GitHub repo as a second Vercel project.
+2. Add env vars from `my-wedding-rsvp/.env.vercel.example`:
+   - `NEXT_PUBLIC_PLANNER_API_URL` = your PlanMyDay production URL
+   - `NEXT_PUBLIC_PLANNER_APP_URL` = same PlanMyDay URL (for iframe preview)
+3. Deploy, then copy the RSVP production URL into PlanMyDay’s
+   `NEXT_PUBLIC_RSVP_APP_URL` and `RSVP_ALLOWED_ORIGIN`, and **redeploy PlanMyDay**.
+
+Guest invite links are generated as:
+
+```text
+https://YOUR-RSVP.vercel.app/?token=...
+```
 
 ### Step 4 — Apply the database schema (once)
 

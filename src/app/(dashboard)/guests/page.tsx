@@ -33,6 +33,7 @@ export default async function GuestsPage({
 
   const rows: GuestRow[] = items.map((g) => ({
     id: g.id,
+    title: g.title,
     firstName: g.firstName,
     lastName: g.lastName,
     preferredName: g.preferredName,
@@ -41,7 +42,7 @@ export default async function GuestsPage({
     side: g.side,
     relationship: g.relationship,
     rsvpStatus: g.rsvpStatus,
-    invitationStatus: g.invitationStatus,
+    invitationStatus: g.invitationStatus === "NOT_SENT" ? "NOT_SENT" : "SENT",
     mealPreference: g.mealPreference,
     dietaryRestrictions: g.dietaryRestrictions,
     plusOneAllowed: g.plusOneAllowed,

@@ -1,10 +1,14 @@
 import { z } from "zod";
 
+import { GUEST_TITLE_OPTIONS } from "@/features/guests/display-name";
+
 export const guestSideEnum = z.enum(["BRIDE", "GROOM", "BOTH"]);
 export const rsvpStatusEnum = z.enum(["PENDING", "ACCEPTED", "DECLINED", "TENTATIVE"]);
 export const invitationStatusEnum = z.enum(["NOT_SENT", "SENT", "OPENED", "RESPONDED"]);
+export const guestTitleEnum = z.enum(GUEST_TITLE_OPTIONS);
 
 export const guestSchema = z.object({
+  title: guestTitleEnum.optional().or(z.literal("")),
   firstName: z.string().min(1, "First name is required").max(80),
   lastName: z.string().min(1, "Last name is required").max(80),
   preferredName: z.string().max(80).optional().or(z.literal("")),

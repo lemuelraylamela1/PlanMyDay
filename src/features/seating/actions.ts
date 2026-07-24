@@ -56,6 +56,9 @@ export async function assignGuestAction(guestId: string, tableId: string): Promi
     db.seatingTable.findFirst({ where: { id: tableId, weddingId: wedding.id, deletedAt: null } }),
   ]);
   if (!guest || !table) return fail("Guest or table not found.");
+  if (guest.rsvpStatus !== "ACCEPTED") {
+    return fail("Only accepted guests can be assigned to a table.");
+  }
 
   const seated = await db.seatAssignment.count({
     where: { tableId, weddingId: wedding.id, NOT: { guestId } },

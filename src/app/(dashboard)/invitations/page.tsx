@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
 import { InvitationsManager, type InviteGuestRow } from "@/features/invitations/components/invitations-manager";
+import { formatGuestDisplayName } from "@/features/guests/display-name";
 
 export const metadata: Metadata = { title: "Invitations & RSVP" };
 
@@ -22,15 +23,15 @@ export default async function InvitationsPage() {
 
   const rows: InviteGuestRow[] = guests.map((g) => ({
     id: g.id,
-    name: g.preferredName || `${g.firstName} ${g.lastName}`,
+    name: formatGuestDisplayName(g),
     email: g.email,
-    invitationStatus: g.invitationStatus,
+    invitationStatus: g.invitationStatus === "NOT_SENT" ? "NOT_SENT" : "SENT",
     rsvpStatus: g.rsvpStatus,
     hasToken: Boolean(g.invitationToken),
   }));
 
-  const sent = rows.filter((r) => r.invitationStatus !== "NOT_SENT").length;
-  const responded = rows.filter((r) => r.invitationStatus === "RESPONDED").length;
+  const sent = rows.filter((r) => r.invitationStatus === "SENT").length;
+  const responded = rows.filter((r) => r.rsvpStatus !== "PENDING").length;
 
   return (
     <div className="space-y-6">

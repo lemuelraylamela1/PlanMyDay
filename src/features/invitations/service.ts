@@ -7,7 +7,12 @@ import { env } from "@/lib/env";
 import { generateToken, hashToken } from "@/lib/tokens";
 
 export function invitationUrl(token: string) {
-  return `${env.appUrl}/invite/${token}`;
+  const base = env.rsvpAppUrl || env.appUrl;
+  const encoded = encodeURIComponent(token);
+  if (!env.rsvpAppUrl && env.isProd) {
+    console.error("[PlanMyDay] NEXT_PUBLIC_RSVP_APP_URL is missing; invite links may be wrong.");
+  }
+  return `${base}/?token=${encoded}`;
 }
 
 /**

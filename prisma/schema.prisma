@@ -374,6 +374,7 @@ model Guest {
   id                  String           @id @default(uuid()) @db.Uuid
   weddingId           String           @db.Uuid
   groupId             String?          @db.Uuid
+  title               String?
   firstName           String
   lastName            String
   preferredName       String?

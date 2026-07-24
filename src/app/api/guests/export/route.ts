@@ -8,6 +8,7 @@ export async function GET() {
   const guests = await exportGuests(wedding.id);
 
   const rows = guests.map((g) => ({
+    title: g.title ?? "",
     firstName: g.firstName,
     lastName: g.lastName,
     preferredName: g.preferredName ?? "",

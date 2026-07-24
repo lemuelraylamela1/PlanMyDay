@@ -9,6 +9,7 @@ import { ActionResult, fail, ok } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { sendEmail, baseEmailTemplate } from "@/lib/email";
 import { issueInvitationToken } from "@/features/invitations/service";
+import { formatGuestDisplayName } from "@/features/guests/display-name";
 import { guestSchema } from "@/features/guests/schemas";
 
 function clean(value?: string | null) {
@@ -26,6 +27,7 @@ export async function createGuestAction(input: unknown): Promise<ActionResult> {
   await db.guest.create({
     data: {
       weddingId: wedding.id,
+      title: clean(d.title),
       firstName: d.firstName,
       lastName: d.lastName,
       preferredName: clean(d.preferredName),
@@ -66,6 +68,7 @@ export async function updateGuestAction(id: string, input: unknown): Promise<Act
   const result = await db.guest.updateMany({
     where: { id, weddingId: wedding.id, deletedAt: null },
     data: {
+      title: clean(d.title),
       firstName: d.firstName,
       lastName: d.lastName,
       preferredName: clean(d.preferredName),
@@ -138,7 +141,7 @@ export async function bulkInviteAction(ids: string[]): Promise<ActionResult> {
         subject: `You're invited — ${wedding.title}`,
         html: baseEmailTemplate(
           `You're invited!`,
-          `<p>Dear ${guest.preferredName || guest.firstName},</p>
+          `<p>Dear ${formatGuestDisplayName(guest)},</p>
            <p>${coupleNames} would love for you to join their celebration.</p>
            <p><a href="${url}" style="display:inline-block;background:#b03a5b;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">View invitation & RSVP</a></p>`,
         ),
@@ -263,5 +266,27 @@ export async function updateRsvpStatusAction(
     summary: `Set RSVP to ${status}`,
   });
   revalidatePath("/guests");
+  return ok();
+}
+
+export async function updateInvitationStatusAction(
+  id: string,
+  status: "NOT_SENT" | "SENT",
+): Promise<ActionResult> {
+  const { wedding, user } = await getCurrentWedding();
+  await db.guest.updateMany({
+    where: { id, weddingId: wedding.id, deletedAt: null },
+    data: { invitationStatus: status },
+  });
+  await logActivity({
+    weddingId: wedding.id,
+    userId: user.id,
+    action: "UPDATE",
+    entityType: "Guest",
+    entityId: id,
+    summary: `Set invitation status to ${status}`,
+  });
+  revalidatePath("/guests");
+  revalidatePath("/invitations");
   return ok();
 }

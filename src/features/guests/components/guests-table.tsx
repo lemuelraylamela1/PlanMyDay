@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -12,6 +13,12 @@ import {
   Mail,
   Pencil,
   MoreHorizontal,
+  Circle,
+  CheckCircle2,
+  QrCode,
+  Copy,
+  Check,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,14 +46,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Users } from "lucide-react";
 import { GuestFormDialog, type GuestFormValue } from "@/features/guests/components/guest-form-dialog";
 import { ImportDialog } from "@/features/guests/components/import-dialog";
-import { deleteGuestsAction, bulkInviteAction } from "@/features/guests/actions";
+import {
+  deleteGuestsAction,
+  bulkInviteAction,
+  updateInvitationStatusAction,
+} from "@/features/guests/actions";
+import { formatGuestDisplayName } from "@/features/guests/display-name";
+import { generateInviteAction } from "@/features/invitations/actions";
 
 export interface GuestRow {
   id: string;
+  title: string | null;
   firstName: string;
   lastName: string;
   preferredName: string | null;
@@ -55,7 +76,7 @@ export interface GuestRow {
   side: "BRIDE" | "GROOM" | "BOTH";
   relationship: string | null;
   rsvpStatus: "PENDING" | "ACCEPTED" | "DECLINED" | "TENTATIVE";
-  invitationStatus: "NOT_SENT" | "SENT" | "OPENED" | "RESPONDED";
+  invitationStatus: "NOT_SENT" | "SENT";
   mealPreference: string | null;
   dietaryRestrictions: string | null;
   plusOneAllowed: boolean;
@@ -92,6 +113,10 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
   const [editing, setEditing] = React.useState<GuestFormValue | undefined>();
   const [query, setQuery] = React.useState(filter.q ?? "");
   const [pending, setPending] = React.useState(false);
+  const [linkLoadingId, setLinkLoadingId] = React.useState<string | null>(null);
+  const [rsvpLink, setRsvpLink] = React.useState<{ name: string; url: string; qr: string } | null>(null);
+  const [linkDialogOpen, setLinkDialogOpen] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   function updateParams(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -128,6 +153,7 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
   function openEdit(g: GuestRow) {
     setEditing({
       id: g.id,
+      title: (g.title as GuestFormValue["title"]) ?? "",
       firstName: g.firstName,
       lastName: g.lastName,
       preferredName: g.preferredName ?? "",
@@ -167,6 +193,30 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
       setSelected(new Set());
       router.refresh();
     } else toast.error(res.error);
+  }
+
+  async function onGenerateRsvpLink(g: GuestRow) {
+    setLinkLoadingId(g.id);
+    const res = await generateInviteAction(g.id);
+    setLinkLoadingId(null);
+    if (res.success && res.data) {
+      setRsvpLink({
+        name: formatGuestDisplayName(g),
+        url: res.data.url,
+        qr: res.data.qr,
+      });
+      setCopied(false);
+      setLinkDialogOpen(true);
+    } else if (!res.success) {
+      toast.error(res.error);
+    }
+  }
+
+  async function copyRsvpLink() {
+    if (!rsvpLink) return;
+    await navigator.clipboard.writeText(rsvpLink.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   return (
@@ -254,12 +304,14 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                 <TableHead className="w-10">
                   <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
                 </TableHead>
+                <TableHead className="w-[90px]">Title</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden md:table-cell">Contact</TableHead>
                 <TableHead className="hidden lg:table-cell">Side</TableHead>
                 <TableHead className="hidden lg:table-cell">Group</TableHead>
                 <TableHead>RSVP</TableHead>
                 <TableHead className="hidden sm:table-cell">Invite</TableHead>
+                <TableHead className="hidden md:table-cell">RSVP Link</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -268,6 +320,9 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                 <TableRow key={g.id} data-state={selected.has(g.id) ? "selected" : undefined}>
                   <TableCell>
                     <Checkbox checked={selected.has(g.id)} onCheckedChange={() => toggleOne(g.id)} />
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">{g.title || "—"}</span>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">
@@ -291,6 +346,21 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary">{g.invitationStatus.replace("_", " ")}</Badge>
                   </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onGenerateRsvpLink(g)}
+                      disabled={linkLoadingId === g.id}
+                    >
+                      {linkLoadingId === g.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <QrCode className="h-4 w-4" />
+                      )}
+                      Generate RSVP link
+                    </Button>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -304,6 +374,28 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { setSelected(new Set([g.id])); onBulkInvite(); }}>
                           <Mail className="h-4 w-4" /> Send invite
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const res = await updateInvitationStatusAction(g.id, "NOT_SENT");
+                            if (res.success) {
+                              toast.success("Invitation marked as not sent.");
+                              router.refresh();
+                            } else toast.error(res.error);
+                          }}
+                        >
+                          <Circle className="h-4 w-4" /> Mark as not sent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const res = await updateInvitationStatusAction(g.id, "SENT");
+                            if (res.success) {
+                              toast.success("Invitation marked as sent.");
+                              router.refresh();
+                            } else toast.error(res.error);
+                          }}
+                        >
+                          <CheckCircle2 className="h-4 w-4" /> Mark as sent
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
@@ -353,6 +445,38 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
 
       <GuestFormDialog open={formOpen} onOpenChange={setFormOpen} groups={groups} initial={editing} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>RSVP link for {rsvpLink?.name}</DialogTitle>
+            <DialogDescription>
+              Share this secure link or QR code. It opens the RSVP website with{" "}
+              {rsvpLink?.name}&apos;s name pre-filled — no personal details are exposed in the URL.
+            </DialogDescription>
+          </DialogHeader>
+          {rsvpLink && (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <Image
+                  src={rsvpLink.qr}
+                  alt="RSVP QR code"
+                  width={220}
+                  height={220}
+                  className="rounded-lg border"
+                  unoptimized
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Input readOnly value={rsvpLink.url} />
+                <Button variant="outline" size="icon" onClick={copyRsvpLink}>
+                  {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
