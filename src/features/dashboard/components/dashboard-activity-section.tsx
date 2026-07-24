@@ -1,16 +1,26 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+
 import { getCurrentWedding } from "@/lib/wedding-context";
 import { formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getRecentActivity } from "@/features/dashboard/service";
 
 export async function DashboardActivitySection() {
   const { wedding } = await getCurrentWedding();
-  const activity = await getRecentActivity(wedding.id);
+  const activity = await getRecentActivity(wedding.id, 6);
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>Recent Activity</CardTitle>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/activity">
+            View all
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent>
         {activity.length === 0 ? (

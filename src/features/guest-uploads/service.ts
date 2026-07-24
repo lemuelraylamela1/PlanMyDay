@@ -1,10 +1,12 @@
 import "server-only";
 
 import QRCode from "qrcode";
+import type { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { generateToken, hashToken } from "@/lib/tokens";
+import type { GuestUploadListFilter } from "@/features/guest-uploads/schemas";
 
 export function uploadUrl(token: string) {
   return `${env.appUrl}/upload/${token}`;
@@ -93,4 +95,59 @@ export async function getUploadTokenStatus(weddingId: string) {
     where: { weddingId },
     select: { isEnabled: true, expiresAt: true, createdAt: true },
   });
+}
+
+export async function listGuestUploads(weddingId: string, filter: GuestUploadListFilter) {
+  const q = filter.q?.trim() ?? "";
+  const where: Prisma.GuestMediaUploadWhereInput = {
+    weddingId,
+    deletedAt: null,
+    ...(filter.mediaType && filter.mediaType !== "all" ? { mediaType: filter.mediaType } : {}),
+    ...(q
+      ? {
+          OR: [
+            { guestName: { contains: q, mode: "insensitive" } },
+            { message: { contains: q, mode: "insensitive" } },
+            { fileName: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+
+  const orderBy: Prisma.GuestMediaUploadOrderByWithRelationInput = {
+    [filter.sort]: filter.order,
+  };
+
+  const [items, total] = await Promise.all([
+    db.guestMediaUpload.findMany({
+      where,
+      orderBy,
+      skip: (filter.page - 1) * filter.pageSize,
+      take: filter.pageSize,
+      select: {
+        id: true,
+        guestName: true,
+        message: true,
+        fileName: true,
+        mediaType: true,
+        uploadedAt: true,
+      },
+    }),
+    db.guestMediaUpload.count({ where }),
+  ]);
+
+  return {
+    items: items.map((u) => ({
+      id: u.id,
+      guestName: u.guestName,
+      message: u.message,
+      fileName: u.fileName,
+      mediaType: (u.mediaType === "VIDEO" ? "VIDEO" : "IMAGE") as "IMAGE" | "VIDEO",
+      uploadedAt: u.uploadedAt.toISOString(),
+    })),
+    total,
+    page: filter.page,
+    pageSize: filter.pageSize,
+    totalPages: Math.max(1, Math.ceil(total / filter.pageSize)),
+  };
 }

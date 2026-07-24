@@ -14,6 +14,7 @@ import {
   regenerateUploadToken,
   setUploadEnabled,
 } from "@/features/guest-uploads/service";
+import { publishGuestUploadEvent } from "@/lib/guest-upload-events";
 
 async function assertOwner() {
   const { wedding, user } = await getCurrentWedding();
@@ -107,6 +108,8 @@ export async function deleteGuestUploadAction(id: string): Promise<ActionResult>
     entityId: id,
     summary: `Deleted guest upload from ${upload.guestName}`,
   });
+
+  publishGuestUploadEvent(wedding.id, "deleted");
 
   revalidatePath("/guest-uploads");
   return ok(undefined, "Upload deleted.");

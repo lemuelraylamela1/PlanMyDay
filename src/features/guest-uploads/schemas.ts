@@ -26,3 +26,17 @@ export const guestUploadApiSchema = z.object({
     .optional()
     .transform((v) => (v ? sanitizeTextInput(v, 500) : undefined)),
 });
+
+export const guestUploadSortFields = ["uploadedAt", "guestName", "mediaType", "fileName"] as const;
+export type GuestUploadSortField = (typeof guestUploadSortFields)[number];
+
+export const guestUploadListSchema = z.object({
+  q: z.string().trim().max(100).optional().default(""),
+  sort: z.enum(guestUploadSortFields).default("uploadedAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+  mediaType: z.enum(["IMAGE", "VIDEO", "all"]).optional().default("all"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(5).max(100).default(10),
+});
+
+export type GuestUploadListFilter = z.infer<typeof guestUploadListSchema>;

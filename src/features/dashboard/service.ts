@@ -85,11 +85,11 @@ export async function getDashboardStats(weddingId: string, weddingDate: Date | n
   };
 }
 
-export async function getRecentActivity(weddingId: string) {
+export async function getRecentActivity(weddingId: string, take = 6) {
   return db.activityLog.findMany({
     where: { weddingId },
     orderBy: { createdAt: "desc" },
-    take: 8,
+    take,
     include: { user: { select: { name: true, email: true } } },
   });
 }

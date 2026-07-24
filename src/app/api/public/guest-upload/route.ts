@@ -8,6 +8,7 @@ import { hashToken } from "@/lib/tokens";
 import { guestUploadApiSchema } from "@/features/guest-uploads/schemas";
 import { resolveUploadTokenForApi } from "@/features/guest-uploads/service";
 import { createNotification } from "@/features/notifications/service";
+import { publishGuestUploadEvent } from "@/lib/guest-upload-events";
 
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -89,6 +90,8 @@ export async function POST(request: Request) {
       body: `${parsed.data.guestName} shared a ${validation.mediaType === "IMAGE" ? "photo" : "video"}.`,
       link: "/guest-uploads",
     });
+
+    publishGuestUploadEvent(tokenRecord.wedding.id, "created");
 
     return NextResponse.json({ success: true, id: upload.id });
   } catch (err) {
