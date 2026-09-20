@@ -12,7 +12,9 @@ export default function LoginPage() {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Log in to continue planning your big day</CardDescription>
+        <CardDescription>
+          Log in to continue planning your big day — or use the interviewer demo below
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Suspense fallback={null}>

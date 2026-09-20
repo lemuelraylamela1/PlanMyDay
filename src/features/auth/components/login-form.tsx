@@ -17,6 +17,11 @@ import { loginSchema, type LoginInput } from "@/features/auth/schemas";
 import { AuthFormLoading } from "@/features/auth/components/auth-form-loading";
 import { checkEmailVerificationAction } from "@/features/auth/actions";
 
+export const DEMO_ACCOUNT = {
+  email: "demo@planmyday.app",
+  password: "password123",
+} as const;
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -27,6 +32,7 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
@@ -66,6 +72,16 @@ export function LoginForm() {
     } catch {
       setPending(false);
     }
+  }
+
+  function fillDemoAccount() {
+    setValue("email", DEMO_ACCOUNT.email, { shouldValidate: true, shouldDirty: true });
+    setValue("password", DEMO_ACCOUNT.password, { shouldValidate: true, shouldDirty: true });
+  }
+
+  async function signInWithDemo() {
+    fillDemoAccount();
+    await onSubmit({ ...DEMO_ACCOUNT });
   }
 
   return (
@@ -115,6 +131,30 @@ export function LoginForm() {
           )}
         </fieldset>
       </form>
+
+      <div className="mt-4 rounded-lg border border-dashed border-border bg-muted/40 p-3">
+        <p className="text-xs font-medium text-foreground">Interviewer demo</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Email <span className="font-mono text-foreground">{DEMO_ACCOUNT.email}</span>
+          <br />
+          Password <span className="font-mono text-foreground">{DEMO_ACCOUNT.password}</span>
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Button type="button" variant="outline" size="sm" className="flex-1" disabled={pending} onClick={fillDemoAccount}>
+            Fill form
+          </Button>
+          <Button type="button" size="sm" className="flex-1" disabled={pending} onClick={signInWithDemo}>
+            {pending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              "Enter demo"
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
