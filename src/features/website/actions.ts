@@ -96,3 +96,110 @@ export async function ensureDefaultSectionsAction(): Promise<ActionResult> {
   revalidatePath("/website");
   return ok(undefined, "Sections initialized.");
 }
+
+export async function addGalleryItemAction(mediaId: string): Promise<ActionResult> {
+  const { wedding, user } = await getCurrentWedding();
+  const media = await db.mediaAsset.findFirst({
+    where: { id: mediaId, weddingId: wedding.id, type: "IMAGE", deletedAt: null },
+    select: { id: true, fileName: true },
+  });
+  if (!media) return fail("Uploaded image not found.");
+
+  const existing = await db.galleryItem.findFirst({
+    where: { weddingId: wedding.id, mediaId },
+    select: { id: true, deletedAt: true },
+  });
+  const last = await db.galleryItem.aggregate({
+    where: { weddingId: wedding.id, deletedAt: null },
+    _max: { order: true },
+  });
+
+  if (existing) {
+    await db.galleryItem.update({
+      where: { id: existing.id },
+      data: { deletedAt: null, order: (last._max.order ?? -1) + 1 },
+    });
+  } else {
+    await db.galleryItem.create({
+      data: {
+        weddingId: wedding.id,
+        mediaId,
+        order: (last._max.order ?? -1) + 1,
+      },
+    });
+  }
+
+  await logActivity({
+    weddingId: wedding.id,
+    userId: user.id,
+    action: "CREATE",
+    entityType: "GalleryItem",
+    entityId: existing?.id,
+    summary: `Added ${media.fileName} to the wedding website gallery`,
+  });
+  revalidatePath("/website");
+  revalidatePath("/proposal/[token]", "page");
+  return ok(undefined, "Photo added to the website gallery.");
+}
+
+export async function updateGalleryCaptionAction(
+  id: string,
+  caption: string,
+): Promise<ActionResult> {
+  const { wedding } = await getCurrentWedding();
+  if (caption.length > 500) return fail("Caption must be 500 characters or fewer.");
+  const result = await db.galleryItem.updateMany({
+    where: { id, weddingId: wedding.id, deletedAt: null },
+    data: { caption: clean(caption) },
+  });
+  if (result.count === 0) return fail("Gallery photo not found.");
+  revalidatePath("/website");
+  revalidatePath("/proposal/[token]", "page");
+  return ok(undefined, "Caption saved.");
+}
+
+export async function moveGalleryItemAction(
+  id: string,
+  direction: "up" | "down",
+): Promise<ActionResult> {
+  const { wedding } = await getCurrentWedding();
+  const items = await db.galleryItem.findMany({
+    where: { weddingId: wedding.id, deletedAt: null },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: { id: true, order: true },
+  });
+  const index = items.findIndex((item) => item.id === id);
+  if (index < 0) return fail("Gallery photo not found.");
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (swapIndex < 0 || swapIndex >= items.length) return ok();
+
+  const current = items[index]!;
+  const other = items[swapIndex]!;
+  await db.$transaction([
+    db.galleryItem.update({ where: { id: current.id }, data: { order: other.order } }),
+    db.galleryItem.update({ where: { id: other.id }, data: { order: current.order } }),
+  ]);
+  revalidatePath("/website");
+  revalidatePath("/proposal/[token]", "page");
+  return ok();
+}
+
+export async function removeGalleryItemAction(id: string): Promise<ActionResult> {
+  const { wedding, user } = await getCurrentWedding();
+  const result = await db.galleryItem.updateMany({
+    where: { id, weddingId: wedding.id, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  if (result.count === 0) return fail("Gallery photo not found.");
+  await logActivity({
+    weddingId: wedding.id,
+    userId: user.id,
+    action: "DELETE",
+    entityType: "GalleryItem",
+    entityId: id,
+    summary: "Removed a photo from the wedding website gallery",
+  });
+  revalidatePath("/website");
+  revalidatePath("/proposal/[token]", "page");
+  return ok(undefined, "Photo removed from the gallery.");
+}

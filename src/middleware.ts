@@ -19,6 +19,7 @@ export default auth((req) => {
     path.startsWith("/api/public") ||
     path.startsWith("/api/google-drive/oauth") ||
     path.startsWith("/invite") ||
+    path.startsWith("/proposal") ||
     path.startsWith("/upload")
   ) {
     return NextResponse.next();

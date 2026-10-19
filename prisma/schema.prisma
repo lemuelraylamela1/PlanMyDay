@@ -54,6 +54,20 @@ enum RsvpStatus {
   TENTATIVE
 }
 
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum EntourageRole {
+  NINONG_AND_NINANG
+  MAID_OF_HONOR
+  BRIDESMAID
+  BEST_MAN
+  GROOMSMAN
+}
+
 enum SupplierStatus {
   PROSPECT
   CONTACTED
@@ -141,25 +155,25 @@ enum TokenPurpose {
 // ---------------------------------------------------------------------------
 
 model User {
-  id             String    @id @default(uuid()) @db.Uuid
-  name           String?
-  email          String    @unique
-  emailVerified  DateTime?
-  passwordHash   String?
-  image          String?
-  role           Role      @default(COUPLE)
-  locale         String    @default("en-PH")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  image         String?
+  role          Role      @default(COUPLE)
+  locale        String    @default("en-PH")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
-  accounts       Account[]
-  sessions       Session[]
-  ownedWeddings  Wedding[]        @relation("WeddingOwner")
-  memberships    WeddingMember[]
-  authTokens     AuthToken[]
-  notifications  Notification[]
-  activityLogs   ActivityLog[]
+  accounts      Account[]
+  sessions      Session[]
+  ownedWeddings Wedding[]       @relation("WeddingOwner")
+  memberships   WeddingMember[]
+  authTokens    AuthToken[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
 
   @@index([role])
   @@index([deletedAt])
@@ -246,35 +260,36 @@ model Wedding {
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
 
-  owner           User                    @relation("WeddingOwner", fields: [ownerId], references: [id])
-  members         WeddingMember[]
-  settings        WeddingSettings?
-  websiteSettings WeddingWebsiteSettings?
-  websiteSections WebsiteSection[]
-  guestGroups     GuestGroup[]
-  guests          Guest[]
-  tables          SeatingTable[]
-  seatAssignments SeatAssignment[]
+  owner              User                    @relation("WeddingOwner", fields: [ownerId], references: [id])
+  members            WeddingMember[]
+  settings           WeddingSettings?
+  websiteSettings    WeddingWebsiteSettings?
+  websiteSections    WebsiteSection[]
+  guestGroups        GuestGroup[]
+  guests             Guest[]
+  tables             SeatingTable[]
+  seatAssignments    SeatAssignment[]
   supplierCategories SupplierCategory[]
-  suppliers       Supplier[]
-  budgetCategories BudgetCategory[]
-  budgetItems     BudgetItem[]
-  tasks           Task[]
-  timelineEvents  TimelineEvent[]
-  mediaAssets     MediaAsset[]
-  musicTracks     MusicTrack[]
-  galleryItems    GalleryItem[]
-  faqs            Faq[]
-  registryItems   GiftRegistryItem[]
-  emailTemplates  EmailTemplate[]
-  emailSchedules  EmailSchedule[]
-  emailLogs       EmailDeliveryLog[]
-  invitationTokens InvitationToken[]
-  rsvpResponses   RsvpResponse[]
-  guestUploadToken GuestUploadToken?
-  guestMediaUploads GuestMediaUpload[]
-  notifications   Notification[]
-  activityLogs    ActivityLog[]
+  suppliers          Supplier[]
+  budgetCategories   BudgetCategory[]
+  budgetItems        BudgetItem[]
+  tasks              Task[]
+  timelineEvents     TimelineEvent[]
+  mediaAssets        MediaAsset[]
+  musicTracks        MusicTrack[]
+  galleryItems       GalleryItem[]
+  faqs               Faq[]
+  registryItems      GiftRegistryItem[]
+  emailTemplates     EmailTemplate[]
+  emailSchedules     EmailSchedule[]
+  emailLogs          EmailDeliveryLog[]
+  invitationTokens   InvitationToken[]
+  rsvpResponses      RsvpResponse[]
+  sponsorProposals   SponsorProposal[]
+  guestUploadToken   GuestUploadToken?
+  guestMediaUploads  GuestMediaUpload[]
+  notifications      Notification[]
+  activityLogs       ActivityLog[]
 
   @@index([ownerId])
   @@index([status])
@@ -317,19 +332,19 @@ model WeddingSettings {
 }
 
 model WeddingWebsiteSettings {
-  id              String   @id @default(uuid()) @db.Uuid
-  weddingId       String   @unique @db.Uuid
-  isPublished     Boolean  @default(false)
+  id              String    @id @default(uuid()) @db.Uuid
+  weddingId       String    @unique @db.Uuid
+  isPublished     Boolean   @default(false)
   publishedAt     DateTime?
-  customDomain    String?  @unique
+  customDomain    String?   @unique
   seoTitle        String?
   seoDescription  String?
-  socialImageId   String?  @db.Uuid
+  socialImageId   String?   @db.Uuid
   navigation      Json?
-  passwordProtect Boolean  @default(false)
+  passwordProtect Boolean   @default(false)
   accessPassword  String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
 }
@@ -355,12 +370,12 @@ model WebsiteSection {
 // ---------------------------------------------------------------------------
 
 model GuestGroup {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @db.Uuid
   name      String
   notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -411,15 +426,15 @@ model Guest {
 // ---------------------------------------------------------------------------
 
 model SeatingTable {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @db.Uuid
   name      String
-  capacity  Int      @default(8)
-  shape     String   @default("round")
+  capacity  Int       @default(8)
+  shape     String    @default("round")
   posX      Float?
   posY      Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   wedding     Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -429,13 +444,13 @@ model SeatingTable {
 }
 
 model SeatAssignment {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
-  tableId   String   @db.Uuid
-  guestId   String   @unique @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  weddingId  String   @db.Uuid
+  tableId    String   @db.Uuid
+  guestId    String   @unique @db.Uuid
   seatNumber Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   wedding Wedding      @relation(fields: [weddingId], references: [id], onDelete: Cascade)
   table   SeatingTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
@@ -451,11 +466,11 @@ model SeatAssignment {
 // ---------------------------------------------------------------------------
 
 model SupplierCategory {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @db.Uuid
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   wedding   Wedding    @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -510,12 +525,12 @@ model SupplierFile {
 // ---------------------------------------------------------------------------
 
 model BudgetCategory {
-  id            String   @id @default(uuid()) @db.Uuid
-  weddingId     String   @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  weddingId     String    @db.Uuid
   name          String
-  estimatedCost Decimal  @default(0) @db.Decimal(12, 2)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  estimatedCost Decimal   @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
   wedding Wedding      @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -526,21 +541,21 @@ model BudgetCategory {
 }
 
 model BudgetItem {
-  id            String   @id @default(uuid()) @db.Uuid
-  weddingId     String   @db.Uuid
-  categoryId    String?  @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  weddingId     String    @db.Uuid
+  categoryId    String?   @db.Uuid
   name          String
-  estimatedCost Decimal  @default(0) @db.Decimal(12, 2)
-  actualCost    Decimal  @default(0) @db.Decimal(12, 2)
-  paidAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  estimatedCost Decimal   @default(0) @db.Decimal(12, 2)
+  actualCost    Decimal   @default(0) @db.Decimal(12, 2)
+  paidAmount    Decimal   @default(0) @db.Decimal(12, 2)
   notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
-  wedding   Wedding           @relation(fields: [weddingId], references: [id], onDelete: Cascade)
-  category  BudgetCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  payments  PaymentSchedule[]
+  wedding  Wedding           @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  category BudgetCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  payments PaymentSchedule[]
 
   @@index([weddingId, categoryId])
   @@index([weddingId, deletedAt])
@@ -589,14 +604,14 @@ model Task {
 
 // Global (non-tenant) reusable checklist templates.
 model TaskTemplate {
-  id             String       @id @default(uuid()) @db.Uuid
-  title          String
-  description    String?
-  category       String?
-  priority       TaskPriority @default(MEDIUM)
-  monthsBefore   Int?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id           String       @id @default(uuid()) @db.Uuid
+  title        String
+  description  String?
+  category     String?
+  priority     TaskPriority @default(MEDIUM)
+  monthsBefore Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([category])
 }
@@ -606,16 +621,16 @@ model TaskTemplate {
 // ---------------------------------------------------------------------------
 
 model TimelineEvent {
-  id          String   @id @default(uuid()) @db.Uuid
-  weddingId   String   @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  weddingId   String    @db.Uuid
   title       String
   description String?
   location    String?
   startTime   DateTime
   endTime     DateTime?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -652,14 +667,14 @@ model MediaAsset {
 }
 
 model MusicTrack {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @db.Uuid
   title     String
   artist    String?
   url       String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -668,13 +683,13 @@ model MusicTrack {
 }
 
 model GalleryItem {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
-  mediaId   String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @db.Uuid
+  mediaId   String    @db.Uuid
   caption   String?
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   wedding Wedding    @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -688,13 +703,13 @@ model GalleryItem {
 // ---------------------------------------------------------------------------
 
 model Faq {
-  id        String   @id @default(uuid()) @db.Uuid
-  weddingId String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @db.Uuid
   question  String
-  answer    String   @db.Text
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  answer    String    @db.Text
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -703,16 +718,16 @@ model Faq {
 }
 
 model GiftRegistryItem {
-  id          String   @id @default(uuid()) @db.Uuid
-  weddingId   String   @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  weddingId   String    @db.Uuid
   title       String
   description String?
   url         String?
-  price       Decimal? @db.Decimal(12, 2)
-  isReserved  Boolean  @default(false)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price       Decimal?  @db.Decimal(12, 2)
+  isReserved  Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
@@ -759,6 +774,34 @@ model RsvpResponse {
 
   @@index([weddingId, status])
   @@index([guestId])
+}
+
+// ---------------------------------------------------------------------------
+// Entourage proposals
+// ---------------------------------------------------------------------------
+
+model SponsorProposal {
+  id              String         @id @default(uuid()) @db.Uuid
+  weddingId       String         @db.Uuid
+  role            EntourageRole  @default(NINONG_AND_NINANG)
+  name            String
+  email           String?
+  phone           String?
+  customMessage   String         @db.Text
+  status          ProposalStatus @default(PENDING)
+  tokenHash       String?        @unique
+  openedAt        DateTime?
+  respondedAt     DateTime?
+  responseMessage String?        @db.Text
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  @@index([weddingId, status])
+  @@index([weddingId, role])
+  @@index([weddingId, deletedAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -841,16 +884,16 @@ model EmailSchedule {
 }
 
 model EmailDeliveryLog {
-  id          String      @id @default(uuid()) @db.Uuid
-  weddingId   String      @db.Uuid
-  scheduleId  String?     @db.Uuid
-  guestId     String?     @db.Uuid
-  toEmail     String
-  subject     String
-  status      EmailStatus @default(SENT)
-  error       String?
-  sentAt      DateTime?
-  createdAt   DateTime    @default(now())
+  id         String      @id @default(uuid()) @db.Uuid
+  weddingId  String      @db.Uuid
+  scheduleId String?     @db.Uuid
+  guestId    String?     @db.Uuid
+  toEmail    String
+  subject    String
+  status     EmailStatus @default(SENT)
+  error      String?
+  sentAt     DateTime?
+  createdAt  DateTime    @default(now())
 
   wedding  Wedding        @relation(fields: [weddingId], references: [id], onDelete: Cascade)
   schedule EmailSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)

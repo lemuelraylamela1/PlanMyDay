@@ -156,6 +156,9 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
 
   const status = watch("status");
   const categoryId = watch("categoryId");
+  const totalCost = Number(watch("contractAmount")) || 0;
+  const paidAmount = Number(watch("downPayment")) || 0;
+  const remainingBalance = Math.max(0, totalCost - paidAmount);
 
   return (
     <div className="space-y-4">
@@ -216,11 +219,15 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
                   {s.website && <p className="flex items-center gap-1"><Globe className="h-3 w-3" /> {s.website}</p>}
                 </div>
                 <div className="flex justify-between border-t pt-3 text-sm">
-                  <span className="text-muted-foreground">Contract</span>
+                  <span className="text-muted-foreground">Total cost</span>
                   <span className="font-medium">{formatCurrency(s.contractAmount, currency)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Balance</span>
+                  <span className="text-muted-foreground">Paid amount</span>
+                  <span className="font-medium">{formatCurrency(s.downPayment, currency)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Remaining balance</span>
                   <span className="font-medium">
                     {formatCurrency(Math.max(0, s.contractAmount - s.downPayment), currency)}
                   </span>
@@ -288,12 +295,18 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
                 <Input id="website" {...register("website")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contractAmount">Contract amount</Label>
-                <Input id="contractAmount" type="number" step="0.01" {...register("contractAmount")} />
+                <Label htmlFor="contractAmount">Total cost</Label>
+                <Input id="contractAmount" type="number" min="0" step="0.01" {...register("contractAmount")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="downPayment">Down payment</Label>
-                <Input id="downPayment" type="number" step="0.01" {...register("downPayment")} />
+                <Label htmlFor="downPayment">Paid amount</Label>
+                <Input id="downPayment" type="number" min="0" step="0.01" {...register("downPayment")} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Remaining balance</Label>
+                <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium">
+                  {formatCurrency(remainingBalance, currency)}
+                </p>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="dueDate">Payment due date</Label>

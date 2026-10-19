@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { sectionTypeEnum } from "@/features/website/schemas";
 import { WebsiteConfig, type SectionRow } from "@/features/website/components/website-config";
+import { WebsiteGalleryManager } from "@/features/website/components/website-gallery-manager";
 
 export const metadata: Metadata = { title: "Website" };
 
@@ -36,6 +37,19 @@ export default async function WebsitePage() {
   const settings = await db.weddingWebsiteSettings.findUnique({
     where: { weddingId: wedding.id },
   });
+  const galleryItems = await db.galleryItem.findMany({
+    where: {
+      weddingId: wedding.id,
+      deletedAt: null,
+      media: { deletedAt: null, type: "IMAGE" },
+    },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      caption: true,
+      media: { select: { url: true, fileName: true } },
+    },
+  });
 
   const sectionRows: SectionRow[] = sections.map((s) => ({
     id: s.id,
@@ -62,6 +76,14 @@ export default async function WebsitePage() {
           accessPassword: settings?.accessPassword ?? "",
         }}
         sections={sectionRows}
+      />
+      <WebsiteGalleryManager
+        items={galleryItems.map((item) => ({
+          id: item.id,
+          url: item.media.url,
+          fileName: item.media.fileName,
+          caption: item.caption,
+        }))}
       />
       <Card>
         <CardHeader>

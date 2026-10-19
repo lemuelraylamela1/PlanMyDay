@@ -3,12 +3,17 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { getCurrentWedding } from "@/lib/wedding-context";
 import { PageHeader } from "@/components/shared/page-header";
+import { DEFAULT_SUPPLIER_CATEGORIES } from "@/features/suppliers/categories";
 import { SuppliersManager, type SupplierRow } from "@/features/suppliers/components/suppliers-manager";
 
 export const metadata: Metadata = { title: "Suppliers" };
 
 export default async function SuppliersPage() {
   const { wedding } = await getCurrentWedding();
+  await db.supplierCategory.createMany({
+    data: DEFAULT_SUPPLIER_CATEGORIES.map((name) => ({ weddingId: wedding.id, name })),
+    skipDuplicates: true,
+  });
   const [suppliers, categories] = await Promise.all([
     db.supplier.findMany({
       where: { weddingId: wedding.id, deletedAt: null },
