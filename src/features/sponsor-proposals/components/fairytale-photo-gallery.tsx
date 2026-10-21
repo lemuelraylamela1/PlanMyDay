@@ -3,7 +3,9 @@
 import * as React from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CalendarDays, ChevronDown, Clock3, MapPin } from "lucide-react";
+import { CalendarDays, ChevronDown, Clock3, MapPin, Volume2, VolumeX } from "lucide-react";
+
+const PROPOSAL_MUSIC_SRC = "/proposal-audio/marry-me.mp3";
 
 export interface ProposalImage {
   id: string;
@@ -51,16 +53,69 @@ export function ProposalExperience({
 }) {
   const reduceMotion = useReducedMotion();
   const [active, setActive] = React.useState(0);
+  const [opened, setOpened] = React.useState(false);
+  const [musicPlaying, setMusicPlaying] = React.useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const photos = [...proposalHeroImages, ...images];
 
   React.useEffect(() => {
-    if (reduceMotion || photos.length < 2) return;
+    if (!opened || reduceMotion || photos.length < 2) return;
     const timer = window.setInterval(
       () => setActive((current) => (current + 1) % photos.length),
       7000,
     );
     return () => window.clearInterval(timer);
-  }, [photos.length, reduceMotion]);
+  }, [opened, photos.length, reduceMotion]);
+
+  async function startMusic() {
+    const audio = audioRef.current;
+    if (!audio) return false;
+    audio.loop = true;
+    audio.volume = 0.7;
+    try {
+      await audio.play();
+      setMusicPlaying(true);
+      return true;
+    } catch {
+      setMusicPlaying(false);
+      return false;
+    }
+  }
+
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.loop = true;
+    audio.volume = 0.7;
+
+    void audio.play().then(() => {
+      setMusicPlaying(true);
+      setOpened(true);
+    }).catch(() => {
+      // Browsers often block sound until the guest taps Open.
+    });
+
+    return () => {
+      audio.pause();
+    };
+  }, []);
+
+  async function openInvitation() {
+    await startMusic();
+    setOpened(true);
+  }
+
+  async function toggleMusic() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      await startMusic();
+      return;
+    }
+    audio.pause();
+    setMusicPlaying(false);
+  }
 
   const hero = photos[active] ?? photos[0];
   const reveal = reduceMotion
@@ -69,6 +124,50 @@ export function ProposalExperience({
 
   return (
     <main className="bg-[#FFFDF8] text-[#5c3d43]">
+      <audio
+        ref={audioRef}
+        src={PROPOSAL_MUSIC_SRC}
+        preload="auto"
+        autoPlay
+        loop
+        playsInline
+      />
+      <AnimatePresence>
+        {!opened && (
+          <motion.button
+            type="button"
+            key="open-invitation"
+            onClick={openInvitation}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFFDF8] px-6 text-center"
+            initial={{ opacity: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.7, ease }}
+            aria-label="Open invitation and play music"
+          >
+            <p className="text-sm font-medium uppercase tracking-[0.32em] text-[#B76E79]">
+              A special invitation
+            </p>
+            <p className="mt-5 font-serif text-4xl text-[#6d4650] sm:text-5xl">{coupleNames}</p>
+            <p className="mt-4 max-w-md font-serif text-xl italic text-[#8d5d66]">
+              For {honoreeName}
+            </p>
+            <span className="mt-10 inline-flex items-center gap-2 rounded-full border border-[#E8B8C7] bg-white px-6 py-3 text-sm font-medium uppercase tracking-[0.22em] text-[#B76E79]">
+              <Volume2 className="h-4 w-4" />
+              Tap to open
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+      {opened && (
+        <button
+          type="button"
+          onClick={toggleMusic}
+          aria-label={musicPlaying ? "Mute music" : "Play music"}
+          className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[#E8B8C7] bg-[#FFFDF8]/95 text-[#B76E79] shadow-md backdrop-blur-sm"
+        >
+          {musicPlaying ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+        </button>
+      )}
       <section className="relative h-svh overflow-hidden bg-[#FFFDF8]">
         <AnimatePresence mode="wait">
           {hero && (
