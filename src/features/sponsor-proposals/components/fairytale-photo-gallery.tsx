@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CalendarDays, ChevronDown, Clock3, MapPin, Volume2, VolumeX } from "lucide-react";
 
 const PROPOSAL_MUSIC_SRC = "/proposal-audio/marry-me.mp3";
+const SAVE_THE_DATE_VIDEO_SRC = "/proposal-video/save-the-date.mp4";
 
 export interface ProposalImage {
   id: string;
@@ -56,7 +57,10 @@ export function ProposalExperience({
   const [opened, setOpened] = React.useState(false);
   const [musicPlaying, setMusicPlaying] = React.useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const musicPausedByVideoRef = React.useRef(false);
   const photos = [...proposalHeroImages, ...images];
+  const galleryPhotos = photos.slice(0, 9);
 
   React.useEffect(() => {
     if (!opened || reduceMotion || photos.length < 2) return;
@@ -101,6 +105,37 @@ export function ProposalExperience({
     };
   }, []);
 
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!opened || !video) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          const audio = audioRef.current;
+          musicPausedByVideoRef.current = Boolean(audio && !audio.paused);
+          if (audio && !audio.paused) {
+            audio.pause();
+            setMusicPlaying(false);
+          }
+          video.muted = true;
+          void video.play().catch(() => undefined);
+          return;
+        }
+
+        video.pause();
+        if (musicPausedByVideoRef.current) {
+          musicPausedByVideoRef.current = false;
+          void startMusic();
+        }
+      },
+      { threshold: 0.55 },
+    );
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [opened]);
+
   async function openInvitation() {
     await startMusic();
     setOpened(true);
@@ -110,9 +145,19 @@ export function ProposalExperience({
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
+      videoRef.current?.pause();
+      musicPausedByVideoRef.current = false;
       await startMusic();
       return;
     }
+    audio.pause();
+    setMusicPlaying(false);
+  }
+
+  function handleVideoPlay() {
+    const audio = audioRef.current;
+    if (!audio || audio.paused) return;
+    musicPausedByVideoRef.current = true;
     audio.pause();
     setMusicPlaying(false);
   }
@@ -259,18 +304,54 @@ export function ProposalExperience({
         </motion.div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-5 pb-8 sm:px-6">
-        <div className="mb-8 text-center">
-          <p className="text-xs uppercase tracking-[0.32em] text-[#B76E79]">Our photographs</p>
-          <h2 className="mt-3 font-serif text-3xl text-[#6d4650] sm:text-4xl">A glimpse of us</h2>
+      <section className="mx-auto max-w-5xl px-5 pb-12 sm:px-6 sm:pb-20">
+        <div className="mb-8 text-center sm:mb-10">
+          <p className="text-xs uppercase tracking-[0.32em] text-[#B76E79]">Save the date</p>
+          <h2 className="mt-3 font-serif text-3xl text-[#6d4650] sm:text-5xl">Our invitation film</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#8d5d66]">
+            A little glimpse of the day we cannot wait to celebrate with you.
+          </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {photos.map((photo, index) => (
+        <motion.div
+          className="overflow-hidden rounded-[2rem] border border-[#E8B8C7]/80 bg-[#FFFDF8] p-1.5 shadow-[0_24px_70px_rgba(183,110,121,0.16)] sm:p-2"
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7 }}
+        >
+          <video
+            ref={videoRef}
+            className="block h-auto w-full rounded-[1.6rem]"
+            width={1920}
+            height={1080}
+            controls
+            muted
+            playsInline
+            preload="metadata"
+            poster="/proposal-photos/hero-02.jpg"
+            onPlay={handleVideoPlay}
+          >
+            <source src={SAVE_THE_DATE_VIDEO_SRC} type="video/mp4" />
+            Your browser does not support this video.
+          </video>
+        </motion.div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-3 pb-10 sm:px-6 sm:pb-16">
+        <div className="mb-8 text-center sm:mb-10">
+          <p className="text-xs uppercase tracking-[0.32em] text-[#B76E79]">Our photographs</p>
+          <h2 className="mt-3 font-serif text-3xl text-[#6d4650] sm:text-5xl">Nine moments with us</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#8d5d66]">
+            Tap a photograph to bring it into the opening scene.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
+          {galleryPhotos.map((photo, index) => (
             <motion.button
               key={photo.id}
               type="button"
               onClick={() => setActive(index)}
-              className={`group overflow-hidden rounded-2xl text-left shadow-sm ring-1 ring-[#E8B8C7]/70 ${
+              className={`group relative overflow-hidden rounded-xl text-left shadow-sm ring-1 ring-[#E8B8C7]/70 sm:rounded-2xl ${
                 index === active ? "ring-2 ring-[#B76E79]" : ""
               }`}
               initial={reduceMotion ? false : { opacity: 0, y: 16 }}
@@ -280,7 +361,7 @@ export function ProposalExperience({
               aria-label={`Show ${photo.caption || photo.fileName} in the hero`}
               aria-current={index === active ? "true" : undefined}
             >
-              <div className="relative aspect-[4/5]">
+              <div className="relative aspect-[3/2]">
                 <Image
                   src={photo.url}
                   alt={photo.caption || photo.fileName}
@@ -288,9 +369,12 @@ export function ProposalExperience({
                   unoptimized
                   className="object-cover transition duration-700 group-hover:scale-[1.03]"
                 />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
               </div>
               {photo.caption && (
-                <p className="bg-[#FFFDF8] px-4 py-3 text-sm text-[#8d5d66]">{photo.caption}</p>
+                <p className="absolute inset-x-0 bottom-0 px-3 py-2 text-xs font-medium text-white sm:px-4 sm:py-3 sm:text-sm">
+                  {photo.caption}
+                </p>
               )}
             </motion.button>
           ))}
