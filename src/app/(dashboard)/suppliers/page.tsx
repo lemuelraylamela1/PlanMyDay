@@ -5,6 +5,7 @@ import { getCurrentWedding } from "@/lib/wedding-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { DEFAULT_SUPPLIER_CATEGORIES } from "@/features/suppliers/categories";
 import { SuppliersManager, type SupplierRow } from "@/features/suppliers/components/suppliers-manager";
+import { backfillSupplierOpeningPayments } from "@/features/suppliers/actions";
 
 export const metadata: Metadata = { title: "Suppliers" };
 
@@ -14,11 +15,15 @@ export default async function SuppliersPage() {
     data: DEFAULT_SUPPLIER_CATEGORIES.map((name) => ({ weddingId: wedding.id, name })),
     skipDuplicates: true,
   });
+  await backfillSupplierOpeningPayments();
   const [suppliers, categories] = await Promise.all([
     db.supplier.findMany({
       where: { weddingId: wedding.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      include: { category: { select: { name: true } } },
+      include: {
+        category: { select: { name: true } },
+        payments: { orderBy: [{ paymentDate: "desc" }, { createdAt: "desc" }] },
+      },
     }),
     db.supplierCategory.findMany({
       where: { weddingId: wedding.id, deletedAt: null },
@@ -42,6 +47,13 @@ export default async function SuppliersPage() {
     status: s.status,
     paymentStatus: s.paymentStatus,
     notes: s.notes,
+    payments: s.payments.map((payment) => ({
+      id: payment.id,
+      amount: Number(payment.amount),
+      paymentDate: payment.paymentDate.toISOString(),
+      notes: payment.notes,
+      openingPayment: payment.openingPayment,
+    })),
   }));
 
   return (

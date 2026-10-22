@@ -51,6 +51,8 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^11.15.0",
     "googleapis": "^173.0.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "lucide-react": "^0.469.0",
     "next": "^16.2.10",
     "next-auth": "^5.0.0-beta.31",

@@ -502,10 +502,26 @@ model Supplier {
   wedding  Wedding           @relation(fields: [weddingId], references: [id], onDelete: Cascade)
   category SupplierCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   files    SupplierFile[]
+  payments SupplierPayment[]
 
   @@index([weddingId, status])
   @@index([weddingId, deletedAt])
   @@index([categoryId])
+}
+
+model SupplierPayment {
+  id             String   @id @default(uuid()) @db.Uuid
+  supplierId     String   @db.Uuid
+  amount         Decimal  @db.Decimal(12, 2)
+  paymentDate    DateTime
+  notes          String?  @db.Text
+  openingPayment Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId, paymentDate])
 }
 
 model SupplierFile {

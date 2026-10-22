@@ -16,10 +16,18 @@ export const supplierSchema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   website: z.string().max(200).optional().or(z.literal("")),
   contractAmount: z.coerce.number().min(0).default(0),
-  downPayment: z.coerce.number().min(0).default(0),
   dueDate: z.string().optional().or(z.literal("")),
   status: supplierStatusEnum.default("PROSPECT"),
   notes: z.string().max(2000).optional().or(z.literal("")),
+});
+
+export const supplierPaymentSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be greater than zero"),
+  paymentDate: z
+    .string()
+    .min(1, "Payment date is required")
+    .refine((value) => !Number.isNaN(new Date(`${value}T00:00:00`).getTime()), "Invalid payment date"),
+  notes: z.string().max(500).optional().or(z.literal("")),
 });
 
 export const supplierCategorySchema = z.object({
@@ -27,4 +35,5 @@ export const supplierCategorySchema = z.object({
 });
 
 export type SupplierInput = z.infer<typeof supplierSchema>;
+export type SupplierPaymentInput = z.infer<typeof supplierPaymentSchema>;
 export type SupplierCategoryInput = z.infer<typeof supplierCategorySchema>;
