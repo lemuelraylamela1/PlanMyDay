@@ -27,6 +27,8 @@ const choices = [
   { value: false, title: "Regretfully decline", note: "With regret" },
 ] as const;
 
+const mealChoices = ["Beef", "Pork", "Fish", "All of the above"] as const;
+
 const statusHeadline: Record<Exclude<RsvpStatusValue, "PENDING">, string> = {
   ACCEPTED: "Joyfully accepted",
   DECLINED: "Regretfully declined",
@@ -52,7 +54,6 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
   const [justSubmitted, setJustSubmitted] = React.useState(false);
 
   const [attending, setAttending] = React.useState<boolean | null>(initialResponse?.attending ?? null);
-  const [partySize, setPartySize] = React.useState(String(initialResponse?.partySize ?? 1));
   const [mealPreference, setMealPreference] = React.useState(initialResponse?.mealPreference ?? "");
   const [dietaryRestrictions, setDietaryRestrictions] = React.useState(initialResponse?.dietaryRestrictions ?? "");
   const [plusOneName, setPlusOneName] = React.useState(initialResponse?.plusOneName ?? "");
@@ -63,7 +64,6 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
 
   function loadResponse(response: InvitationResponse | null) {
     setAttending(response?.attending ?? null);
-    setPartySize(String(response?.partySize ?? 1));
     setMealPreference(response?.mealPreference ?? "");
     setDietaryRestrictions(response?.dietaryRestrictions ?? "");
     setPlusOneName(response?.plusOneName ?? "");
@@ -89,16 +89,15 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
       setError("Please let us know if you can make it.");
       return;
     }
-    const size = Number(partySize);
-    if (attending && (!Number.isInteger(size) || size < 1)) {
-      setError("Please enter how many will be in your party.");
+    if (attending && !mealChoices.includes(mealPreference as (typeof mealChoices)[number])) {
+      setError("Please choose a meal preference.");
       return;
     }
 
     const reply: InvitationResponse = {
       attending,
-      partySize: attending ? size : 1,
-      mealPreference: attending ? mealPreference.trim() || null : null,
+      partySize: attending && plusOneAllowed && plusOneName.trim() ? 2 : 1,
+      mealPreference: attending ? mealPreference : null,
       dietaryRestrictions: attending ? dietaryRestrictions.trim() || null : null,
       plusOneName: attending && plusOneAllowed ? plusOneName.trim() || null : null,
       message: message.trim() || null,
@@ -144,7 +143,7 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
           <p className={cn(displayFont, "mt-5 text-4xl font-light text-[#4a3236]")}>{statusHeadline[status]}</p>
           {status === "ACCEPTED" && savedResponse && (
             <p className="mt-3 text-sm text-[#7a5d62]">
-              {savedResponse.partySize === 1 ? "A party of one" : `A party of ${savedResponse.partySize}`}
+              {savedResponse.mealPreference ? `Meal: ${savedResponse.mealPreference}` : "Meal to be confirmed"}
               {savedResponse.plusOneName ? `, with ${savedResponse.plusOneName}` : ""}
             </p>
           )}
@@ -209,15 +208,41 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
 
           <AnimatePresence initial={false}>
             {attending && (
-              <motion.div key="attending-details" {...fade} className="grid gap-8 sm:grid-cols-2">
-                <Field id="partySize" label="Number in your party">
+              <motion.div key="attending-details" {...fade} className="space-y-8">
+                <div>
+                  <p className={cn(smallCaps, "text-[#9b7b62]")}>Meal preference</p>
+                  <div role="radiogroup" aria-label="Meal preference" className="mt-4 grid grid-cols-2 gap-3">
+                    {mealChoices.map((choice) => {
+                      const selected = mealPreference === choice;
+                      return (
+                        <button
+                          key={choice}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => {
+                            setMealPreference(choice);
+                            setError(null);
+                          }}
+                          className={cn(
+                            displayFont,
+                            "border px-4 py-4 text-center text-lg transition-[color,background-color,border-color] duration-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
+                            selected
+                              ? "border-[#B76E79] bg-[#F7E3E8]/60 text-[#4a3236]"
+                              : "border-[#DDBF8D]/70 text-[#6d4a50] hover:border-[#DDBF8D] hover:bg-[#FFFDF8]",
+                          )}
+                        >
+                          {choice}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <Field id="dietary" label="Allergies">
                   <input
-                    id="partySize"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={partySize}
-                    onChange={(event) => setPartySize(event.target.value)}
+                    id="dietary"
+                    value={dietaryRestrictions}
+                    onChange={(event) => setDietaryRestrictions(event.target.value)}
                     className={inputClass}
                   />
                 </Field>
@@ -231,22 +256,6 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
                     />
                   </Field>
                 )}
-                <Field id="mealPreference" label="Meal preference">
-                  <input
-                    id="mealPreference"
-                    value={mealPreference}
-                    onChange={(event) => setMealPreference(event.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field id="dietary" label="Dietary restrictions">
-                  <input
-                    id="dietary"
-                    value={dietaryRestrictions}
-                    onChange={(event) => setDietaryRestrictions(event.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
               </motion.div>
             )}
           </AnimatePresence>
