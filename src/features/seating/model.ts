@@ -15,6 +15,7 @@ export interface SeatGuest {
   mealPreference: string | null;
   dietaryRestrictions: string | null;
   plusOneName: string | null;
+  seatNumber: number | null;
 }
 
 export interface SeatingTableData {
@@ -53,6 +54,8 @@ export interface GuestSection {
 
 export interface SeatSlot {
   key: string;
+  index: number;
+  guestId: string | null;
   initials: string;
   name: string;
   side: GuestSide | null;
@@ -60,6 +63,13 @@ export interface SeatSlot {
   plusOne: boolean;
   over: boolean;
 }
+
+type SeatPerson = {
+  id: string;
+  name: string;
+  plusOneName?: string | null;
+  seatNumber?: number | null;
+};
 
 const TITLE_WORDS = new Set(
   GUEST_TITLE_OPTIONS.map((title) => title.toLowerCase().replace(/\./g, "")),
@@ -80,6 +90,25 @@ export function tableDropId(tableId: string) {
 
 export function tableIdFromDropId(dropId: string) {
   return dropId.startsWith("table:") ? dropId.slice("table:".length) : null;
+}
+
+export function seatSlotDropId(tableId: string, index: number) {
+  return `slot:${tableId}:${index}`;
+}
+
+export function seatDragId(guestId: string, plusOne: boolean) {
+  return plusOne ? `seat-icon:${guestId}:plus` : `seat-icon:${guestId}`;
+}
+
+export function parseSeatSlotDropId(dropId: string) {
+  if (!dropId.startsWith("slot:")) return null;
+  const rest = dropId.slice("slot:".length);
+  const splitAt = rest.lastIndexOf(":");
+  if (splitAt <= 0) return null;
+  const tableId = rest.slice(0, splitAt);
+  const index = Number(rest.slice(splitAt + 1));
+  if (!tableId || !Number.isInteger(index) || index < 0) return null;
+  return { tableId, index };
 }
 
 export function asTableShape(value: string): TableShape {
@@ -131,8 +160,15 @@ export function occupancyLabel(open: number) {
   return `${open} open`;
 }
 
-export function compareGuests(a: SeatGuest, b: SeatGuest) {
+export function compareGuests(a: { name: string }, b: { name: string }) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
+export function compareSeatOrder(a: SeatGuest, b: SeatGuest) {
+  const aSeat = a.seatNumber ?? Number.POSITIVE_INFINITY;
+  const bSeat = b.seatNumber ?? Number.POSITIVE_INFINITY;
+  if (aSeat !== bSeat) return aSeat - bSeat;
+  return compareGuests(a, b);
 }
 
 function blankToNull(value: string | null | undefined) {
@@ -140,7 +176,7 @@ function blankToNull(value: string | null | undefined) {
   return trimmed ? trimmed : null;
 }
 
-export function toSeatGuest(guest: SeatGuestSource): SeatGuest {
+export function toSeatGuest(guest: SeatGuestSource, seatNumber?: number | null): SeatGuest {
   const group = guest.group && !guest.group.deletedAt ? guest.group : null;
   return {
     id: guest.id,
@@ -152,6 +188,7 @@ export function toSeatGuest(guest: SeatGuestSource): SeatGuest {
     mealPreference: blankToNull(guest.mealPreference),
     dietaryRestrictions: blankToNull(guest.dietaryRestrictions),
     plusOneName: blankToNull(guest.plusOneName),
+    seatNumber: seatNumber ?? null,
   };
 }
 
@@ -259,45 +296,153 @@ export function groupUnassigned(guests: SeatGuest[], grouped: boolean): GuestSec
   return sections;
 }
 
-export function buildSeatSlots(guests: SeatGuest[], capacity: number): SeatSlot[] {
-  const slots: SeatSlot[] = [];
-  for (const guest of [...guests].sort(compareGuests)) {
-    slots.push({
-      key: guest.id,
-      initials: guestInitials(guest.name),
-      name: guest.name,
-      side: guest.side,
-      filled: true,
-      plusOne: false,
-      over: false,
-    });
-    if (guest.plusOneName) {
-      slots.push({
-        key: `${guest.id}:plus`,
-        initials: guestInitials(guest.plusOneName),
-        name: guest.plusOneName,
-        side: guest.side,
-        filled: true,
-        plusOne: true,
-        over: false,
-      });
+function personOrder(a: SeatPerson, b: SeatPerson) {
+  const aSeat = a.seatNumber ?? Number.POSITIVE_INFINITY;
+  const bSeat = b.seatNumber ?? Number.POSITIVE_INFINITY;
+  if (aSeat !== bSeat) return aSeat - bSeat;
+  return compareGuests(a, b);
+}
+
+export function seatLayout(people: SeatPerson[], capacity: number) {
+  const span = Math.max(capacity, occupiedSeats(people), 1);
+  const seats: ({ id: string; plusOne: boolean } | null)[] = Array.from(
+    { length: span },
+    () => null,
+  );
+
+  function fits(start: number, size: number) {
+    if (start < 0 || start + size > seats.length) return false;
+    for (let offset = 0; offset < size; offset += 1) {
+      if (seats[start + offset]) return false;
     }
+    return true;
   }
 
-  const total = Math.max(capacity, slots.length);
-  for (let index = slots.length; index < total; index += 1) {
-    slots.push({
-      key: `empty-${index}`,
-      initials: "",
-      name: "Open seat",
-      side: null,
-      filled: false,
-      plusOne: false,
-      over: false,
-    });
+  function firstFit(size: number) {
+    for (let index = 0; index <= seats.length - size; index += 1) {
+      if (fits(index, size)) return index;
+    }
+    const start = seats.length;
+    while (seats.length < start + size) seats.push(null);
+    return start;
   }
 
-  return slots.map((slot, index) => ({ ...slot, over: slot.filled && index >= capacity }));
+  for (const person of [...people].sort(personOrder)) {
+    const size = partySize(person);
+    const preferred = person.seatNumber;
+    const start = preferred != null && fits(preferred, size) ? preferred : firstFit(size);
+    seats[start] = { id: person.id, plusOne: false };
+    if (size === 2) seats[start + 1] = { id: person.id, plusOne: true };
+  }
+
+  return seats;
+}
+
+export function allocateSeatNumbers(people: SeatPerson[], capacity: number) {
+  const assigned: { id: string; seatNumber: number }[] = [];
+  seatLayout(people, capacity).forEach((seat, index) => {
+    if (seat && !seat.plusOne) assigned.push({ id: seat.id, seatNumber: index });
+  });
+  return assigned;
+}
+
+export function applySeatNumbers<T extends SeatPerson>(people: T[], capacity: number): T[] {
+  const numbers = new Map(
+    allocateSeatNumbers(people, capacity).map((seat) => [seat.id, seat.seatNumber]),
+  );
+  return people
+    .map((person) => ({ ...person, seatNumber: numbers.get(person.id) ?? null }))
+    .sort(personOrder);
+}
+
+export function buildSeatSlots(guests: SeatGuest[], capacity: number): SeatSlot[] {
+  const byId = new Map(guests.map((guest) => [guest.id, guest]));
+  return seatLayout(guests, capacity).map((seat, index) => {
+    const guest = seat ? byId.get(seat.id) : undefined;
+    const name = seat?.plusOne ? (guest?.plusOneName ?? "Guest") : (guest?.name ?? "Open seat");
+    return {
+      key: seat ? (seat.plusOne ? `${seat.id}:plus` : seat.id) : `empty-${index}`,
+      index,
+      guestId: seat?.id ?? null,
+      initials: seat && guest ? guestInitials(name) : "",
+      name,
+      side: guest?.side ?? null,
+      filled: Boolean(seat && guest),
+      plusOne: Boolean(seat?.plusOne),
+      over: index >= capacity,
+    };
+  });
+}
+
+export function moveGuestToSeat(
+  guests: SeatGuest[],
+  guestId: string,
+  toIndex: number,
+  capacity: number,
+  draggingPlusOne = false,
+): { guests: SeatGuest[] } | "same" | "blocked" {
+  const guest = guests.find((item) => item.id === guestId);
+  if (!guest) return "blocked";
+
+  const layout = seatLayout(guests, capacity);
+  const resolved = new Map<string, number>();
+  layout.forEach((seat, index) => {
+    if (seat && !seat.plusOne) resolved.set(seat.id, index);
+  });
+
+  const fromIndex = resolved.get(guestId);
+  if (fromIndex == null) return "blocked";
+  const size = partySize(guest);
+  const target = layout[toIndex];
+  if (toIndex < 0 || toIndex >= layout.length) return "blocked";
+  if (target?.id === guestId) return "same";
+
+  const start = draggingPlusOne && size === 2 ? Math.max(0, toIndex - 1) : toIndex;
+  const occupied = new Set<number>();
+  for (const [id, seatNumber] of resolved) {
+    if (id === guestId) continue;
+    const other = guests.find((item) => item.id === id);
+    const length = other ? partySize(other) : 1;
+    if (target?.id === id) continue;
+    for (let offset = 0; offset < length; offset += 1) occupied.add(seatNumber + offset);
+  }
+
+  function rangeFits(rangeStart: number, length: number) {
+    if (rangeStart < 0 || rangeStart + length > capacity) return false;
+    for (let offset = 0; offset < length; offset += 1) {
+      if (occupied.has(rangeStart + offset)) return false;
+    }
+    return true;
+  }
+
+  if (!target) {
+    if (!rangeFits(start, size)) return "blocked";
+    resolved.set(guestId, start);
+  } else {
+    const other = guests.find((item) => item.id === target.id);
+    const otherStart = resolved.get(target.id);
+    if (!other || otherStart == null) return "blocked";
+    const otherSize = partySize(other);
+    if (!rangeFits(start, size)) return "blocked";
+    occupied.add(start);
+    for (let offset = 0; offset < size; offset += 1) occupied.add(start + offset);
+    const otherDestination = fromIndex;
+    let otherFits = true;
+    if (otherDestination < 0 || otherDestination + otherSize > capacity) otherFits = false;
+    for (let offset = 0; offset < otherSize && otherFits; offset += 1) {
+      if (occupied.has(otherDestination + offset)) otherFits = false;
+    }
+    if (!otherFits) return "blocked";
+    resolved.set(guestId, start);
+    resolved.set(other.id, otherDestination);
+  }
+
+  const next = guests
+    .map((item) => ({ ...item, seatNumber: resolved.get(item.id) ?? item.seatNumber }))
+    .sort(compareSeatOrder);
+  const moved = next.find((item) => item.id === guestId);
+  if (moved?.seatNumber === fromIndex && !draggingPlusOne) return "same";
+  return { guests: next };
 }
 
 function perimeterPoint(progress: number, inset: number) {
@@ -319,24 +464,24 @@ export function seatPositions(count: number, shape: TableShape) {
     return Array.from({ length: count }, (_, index) => {
       const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
       return {
-        left: 50 + 40 * Math.cos(angle),
-        top: 50 + 40 * Math.sin(angle),
+        left: 50 + 36 * Math.cos(angle),
+        top: 50 + 36 * Math.sin(angle),
       };
     });
   }
   if (shape === "square") {
-    return Array.from({ length: count }, (_, index) => perimeterPoint((index + 0.5) / count, 16));
+    return Array.from({ length: count }, (_, index) => perimeterPoint((index + 0.5) / count, 14));
   }
 
   const topCount = Math.ceil(count / 2);
   const bottomCount = count - topCount;
   const top = Array.from({ length: topCount }, (_, index) => ({
     left: ((index + 1) / (topCount + 1)) * 100,
-    top: 14,
+    top: 22,
   }));
   const bottom = Array.from({ length: bottomCount }, (_, index) => ({
     left: ((index + 1) / (bottomCount + 1)) * 100,
-    top: 86,
+    top: 78,
   }));
   return [...top, ...bottom];
 }
@@ -375,7 +520,7 @@ export function moveGuest(
   if (toTableId === null) {
     return {
       tables,
-      unassigned: [...unassigned, guest].sort(compareGuests),
+      unassigned: [...unassigned, { ...guest, seatNumber: null }].sort(compareGuests),
     };
   }
 
@@ -386,7 +531,13 @@ export function moveGuest(
   return {
     tables: tables.map((table) =>
       table.id === toTableId
-        ? { ...table, guests: [...table.guests, guest].sort(compareGuests) }
+        ? {
+            ...table,
+            guests: applySeatNumbers(
+              [...table.guests, { ...guest, seatNumber: null }],
+              table.capacity,
+            ),
+          }
         : table,
     ),
     unassigned,

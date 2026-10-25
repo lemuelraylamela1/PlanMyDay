@@ -9,8 +9,11 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -42,6 +45,7 @@ import {
   assignGuestAction,
   assignGuestsAction,
   deleteTableAction,
+  reorderSeatsAction,
   saveTableAction,
   unassignGuestAction,
 } from "@/features/seating/actions";
@@ -52,8 +56,10 @@ import {
   compareGuests,
   findGuest,
   moveGuest,
+  moveGuestToSeat,
   moveGuests,
   occupiedSeats,
+  parseSeatSlotDropId,
   partySize,
   sideDotClass,
   sideLabel,
@@ -77,6 +83,14 @@ function cloneState(state: BoardState): BoardState {
     unassigned: [...state.unassigned],
   };
 }
+
+const seatingCollision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  const slots = hits.filter((hit) => String(hit.id).startsWith("slot:"));
+  if (slots.length > 0) return slots;
+  if (hits.length > 0) return hits;
+  return rectIntersection(args);
+};
 
 function fullMessage(guest: SeatGuest | undefined) {
   if (guest && partySize(guest) > 1) {
@@ -203,12 +217,76 @@ export function SeatingBoard({ tables, unassigned, weddingTitle }: Props) {
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveGuest(null);
-    const guestId = String(event.active.id);
     const dropId = event.over ? String(event.over.id) : null;
     if (!dropId) return;
+    const data = event.active.data.current;
+
+    if (data?.kind === "seat") {
+      const guestId = String(data.guestId ?? "");
+      const fromTableId = String(data.tableId ?? "");
+      const slot = parseSeatSlotDropId(dropId);
+      if (slot && slot.tableId === fromTableId) {
+        void reorderSeat(fromTableId, guestId, slot.index, Boolean(data.plusOne));
+        return;
+      }
+      const toTableId =
+        dropId === UNASSIGNED_DROP_ID ? null : (slot?.tableId ?? tableIdFromDropId(dropId));
+      if (dropId === UNASSIGNED_DROP_ID || toTableId) {
+        void assignGuestToTable(guestId, toTableId);
+      }
+      return;
+    }
+
+    const guestId = String(event.active.id);
     const toTableId = dropId === UNASSIGNED_DROP_ID ? null : tableIdFromDropId(dropId);
     if (dropId !== UNASSIGNED_DROP_ID && !toTableId) return;
     void assignGuestToTable(guestId, toTableId);
+  }
+
+  function reorderSeat(
+    tableId: string,
+    guestId: string,
+    toIndex: number,
+    draggingPlusOne: boolean,
+  ) {
+    return enqueue(async () => {
+      const before = cloneState(stateRef.current);
+      const table = before.tables.find((item) => item.id === tableId);
+      if (!table) return;
+      const result = moveGuestToSeat(
+        table.guests,
+        guestId,
+        toIndex,
+        table.capacity,
+        draggingPlusOne,
+      );
+      if (result === "same") return;
+      if (result === "blocked") {
+        const guest = table.guests.find((item) => item.id === guestId);
+        toast.error(
+          guest && partySize(guest) > 1
+            ? "Leave two open seats together so this guest and their plus one can move."
+            : "There isn't room to move into that seat.",
+        );
+        return;
+      }
+
+      const next = {
+        ...before,
+        tables: before.tables.map((item) =>
+          item.id === tableId ? { ...item, guests: result.guests } : item,
+        ),
+      };
+      applyState(next);
+      const seats = result.guests.flatMap((guest) =>
+        guest.seatNumber == null ? [] : [{ guestId: guest.id, seatNumber: guest.seatNumber }],
+      );
+      const res = await reorderSeatsAction(tableId, seats);
+      if (!res.success) {
+        applyState(before);
+        toast.error(res.error);
+      }
+    });
   }
 
   function assignGuestToTable(
@@ -313,6 +391,7 @@ export function SeatingBoard({ tables, unassigned, weddingTitle }: Props) {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={seatingCollision}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}

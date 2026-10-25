@@ -7,11 +7,21 @@ import { db } from "@/lib/db";
 import { getCurrentWedding } from "@/lib/wedding-context";
 import { ActionResult, fail, ok } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
+import { formatGuestDisplayName } from "@/features/guests/display-name";
 import { tableSchema } from "@/features/seating/schemas";
-import { occupiedSeats, partySize } from "@/features/seating/model";
+import { allocateSeatNumbers, occupiedSeats, partySize } from "@/features/seating/model";
 
 const guestIdSchema = z.string().uuid();
 const guestIdListSchema = z.array(guestIdSchema).min(1).max(50);
+const seatListSchema = z
+  .array(
+    z.object({
+      guestId: guestIdSchema,
+      seatNumber: z.number().int().min(0).max(49),
+    }),
+  )
+  .min(1)
+  .max(50);
 
 export async function saveTableAction(
   id: string | null,
@@ -102,11 +112,12 @@ async function seatGuests(
     guests.map((guest) =>
       db.seatAssignment.upsert({
         where: { guestId: guest.id },
-        create: { weddingId, tableId, guestId: guest.id },
-        update: { tableId },
+        create: { weddingId, tableId, guestId: guest.id, seatNumber: null },
+        update: { tableId, seatNumber: null },
       }),
     ),
   );
+  await persistSeatNumbers(weddingId, tableId, table.capacity);
 
   await logActivity({
     weddingId,
@@ -146,6 +157,112 @@ export async function assignGuestsAction(
   }
   const { wedding, user } = await getCurrentWedding();
   return seatGuests(wedding.id, user.id, parsedIds.data, tableId);
+}
+
+async function writeSeatNumbers(
+  weddingId: string,
+  tableId: string,
+  seats: { guestId: string; seatNumber: number }[],
+) {
+  await db.$transaction(async (tx) => {
+    await tx.seatAssignment.updateMany({
+      where: { weddingId, tableId, guestId: { in: seats.map((seat) => seat.guestId) } },
+      data: { seatNumber: null },
+    });
+    for (const seat of seats) {
+      await tx.seatAssignment.updateMany({
+        where: { weddingId, tableId, guestId: seat.guestId },
+        data: { seatNumber: seat.seatNumber },
+      });
+    }
+  });
+}
+
+async function persistSeatNumbers(weddingId: string, tableId: string, capacity: number) {
+  const rows = await db.seatAssignment.findMany({
+    where: { tableId, weddingId, guest: { deletedAt: null } },
+    select: {
+      guestId: true,
+      seatNumber: true,
+      guest: {
+        select: {
+          plusOneName: true,
+          title: true,
+          firstName: true,
+          lastName: true,
+          preferredName: true,
+        },
+      },
+    },
+  });
+  if (rows.length === 0) return;
+  const seats = allocateSeatNumbers(
+    rows.map((row) => ({
+      id: row.guestId,
+      name: formatGuestDisplayName(row.guest),
+      plusOneName: row.guest.plusOneName,
+      seatNumber: row.seatNumber,
+    })),
+    capacity,
+  ).map((seat) => ({ guestId: seat.id, seatNumber: seat.seatNumber }));
+  try {
+    await writeSeatNumbers(weddingId, tableId, seats);
+  } catch (error) {
+    console.error("Failed to save seat numbers", error);
+  }
+}
+
+export async function reorderSeatsAction(
+  tableId: string,
+  seats: { guestId: string; seatNumber: number }[],
+): Promise<ActionResult> {
+  const parsed = seatListSchema.safeParse(seats);
+  if (!parsed.success || !guestIdSchema.safeParse(tableId).success) {
+    return fail("Those seats could not be saved.");
+  }
+  const { wedding, user } = await getCurrentWedding();
+  const table = await db.seatingTable.findFirst({
+    where: { id: tableId, weddingId: wedding.id, deletedAt: null },
+  });
+  if (!table) return fail("Table not found.");
+
+  const assignments = await db.seatAssignment.findMany({
+    where: { tableId, weddingId: wedding.id, guest: { deletedAt: null } },
+    select: { guestId: true, guest: { select: { plusOneName: true, firstName: true } } },
+  });
+  const byId = new Map(assignments.map((assignment) => [assignment.guestId, assignment]));
+  const uniqueIds = new Set(parsed.data.map((seat) => seat.guestId));
+  if (uniqueIds.size !== parsed.data.length || uniqueIds.size !== assignments.length) {
+    return fail("Refresh the page and try that seat again.");
+  }
+
+  const ranges: { start: number; end: number }[] = [];
+  for (const seat of parsed.data) {
+    const assignment = byId.get(seat.guestId);
+    if (!assignment) return fail("Guest or table not found.");
+    const size = partySize(assignment.guest);
+    const end = seat.seatNumber + size;
+    if (ranges.some((range) => seat.seatNumber < range.end && end > range.start)) {
+      return fail("Those seats overlap.");
+    }
+    ranges.push({ start: seat.seatNumber, end });
+  }
+
+  try {
+    await writeSeatNumbers(wedding.id, tableId, parsed.data);
+  } catch {
+    return fail("Those seats could not be saved.");
+  }
+  await logActivity({
+    weddingId: wedding.id,
+    userId: user.id,
+    action: "UPDATE",
+    entityType: "SeatAssignment",
+    entityId: tableId,
+    summary: `Rearranged seats at ${table.name}`,
+  });
+  revalidatePath("/seating");
+  return ok();
 }
 
 export async function unassignGuestAction(guestId: string): Promise<ActionResult> {

@@ -7,6 +7,7 @@ import { SeatingBoard } from "@/features/seating/components/seating-board";
 import {
   asTableShape,
   compareGuests,
+  compareSeatOrder,
   toSeatGuest,
   type SeatGuest,
   type SeatingTableData,
@@ -68,10 +69,9 @@ export default async function SeatingPage() {
     capacity: table.capacity,
     shape: asTableShape(table.shape),
     guests: table.assignments
-      .map((assignment) => assignment.guest)
-      .filter((guest) => guest.deletedAt == null)
-      .map((guest) => toSeatGuest(guest))
-      .sort(compareGuests),
+      .filter((assignment) => assignment.guest.deletedAt == null)
+      .map((assignment) => toSeatGuest(assignment.guest, assignment.seatNumber))
+      .sort(compareSeatOrder),
   }));
 
   const unassigned: SeatGuest[] = guests.map((guest) => toSeatGuest(guest)).sort(compareGuests);
@@ -81,7 +81,7 @@ export default async function SeatingPage() {
       <PageHeader
         className="mb-0"
         title="Seating"
-        description="Arrange accepted guests at each table. Named plus ones take a seat beside their host."
+        description="Arrange accepted guests at each table. Drag the initials around a table to change seats. Named plus ones stay beside their host."
       />
 
       {pendingCount > 0 && (

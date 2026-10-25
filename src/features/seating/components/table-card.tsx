@@ -111,7 +111,12 @@ export function TableCard({
         />
       </CardHeader>
       <CardContent className="space-y-3">
-        <TableShapePreview shape={table.shape} capacity={table.capacity} guests={table.guests} />
+        <TableShapePreview
+          tableId={table.id}
+          shape={table.shape}
+          capacity={table.capacity}
+          guests={table.guests}
+        />
         <div ref={setNodeRef} className="max-h-80 min-h-24 space-y-1 overflow-y-auto">
           {table.guests.length === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">Drop guests here</p>
