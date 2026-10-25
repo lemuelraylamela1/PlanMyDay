@@ -23,6 +23,8 @@ interface Props {
   coupleNames: string;
   monogram: string;
   dateLabel: string | null;
+  /** Fires on the open click (same gesture browsers need to start audio). */
+  onOpenStart?: () => void;
   onOpened: () => void;
 }
 
@@ -35,6 +37,7 @@ export function RoyalEnvelope({
   coupleNames,
   monogram,
   dateLabel,
+  onOpenStart,
   onOpened,
 }: Props) {
   const reduceMotion = useReducedMotion();
@@ -53,6 +56,7 @@ export function RoyalEnvelope({
 
   function openEnvelope() {
     if (opening) return;
+    onOpenStart?.();
     if (reduceMotion) {
       onOpened();
       return;
@@ -61,7 +65,7 @@ export function RoyalEnvelope({
   }
 
   return (
-    <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <section className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
       <ChamberBackdrop animate={!reduceMotion && !opening} opening={opening} />
 
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">

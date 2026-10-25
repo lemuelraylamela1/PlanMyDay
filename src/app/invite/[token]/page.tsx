@@ -74,6 +74,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
               day: "numeric",
             })
           : null,
+        countdownTargetIso: (wedding.ceremonyTime ?? wedding.date)?.toISOString() ?? null,
         ceremonyTimeLabel: wedding.ceremonyTime
           ? formatInZone(wedding.ceremonyTime, wedding.timezone, timeOptions)
           : null,

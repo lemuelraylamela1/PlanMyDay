@@ -21,6 +21,8 @@ export interface InvitationWedding {
   partner2Name: string | null;
   monogram: string;
   dateLabel: string | null;
+  /** ISO timestamp used for the live countdown (ceremony time, else wedding date). */
+  countdownTargetIso: string | null;
   ceremonyTimeLabel: string | null;
   receptionTimeLabel: string | null;
   venueName: string | null;

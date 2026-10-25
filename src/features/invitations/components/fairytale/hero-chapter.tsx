@@ -6,12 +6,17 @@ import {
   motion,
   useInView,
   useReducedMotion,
-  useScroll,
   useTransform,
 } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import {
+  cinematicPerspective,
+  useChapterScroll,
+  useDepthLayer,
+  useExitDissolve,
+} from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
@@ -22,8 +27,11 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
   const inView = useInView(ref, { amount: 0.2 });
   const reveal = useReveal();
   const [activeImage, setActiveImage] = React.useState(0);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const parallaxY = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
+  const progress = useChapterScroll(ref);
+  const imageLayer = useDepthLayer(progress, "far");
+  const copyLayer = useDepthLayer(progress, "foreground");
+  const dissolve = useExitDissolve(progress);
+  const vignetteOpacity = useTransform(progress, [0.2, 0.55, 0.9], [0.55, 0.85, 1]);
   const heroImages = fairytaleMedia.hero;
 
   React.useEffect(() => {
@@ -35,16 +43,35 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
   }, [heroImages.length, inView, reduceMotion]);
 
   return (
-    <section id="portrait" ref={ref} className="relative">
+    <section
+      id="portrait"
+      ref={ref}
+      className="relative"
+      style={{ perspective: cinematicPerspective }}
+    >
       <motion.div
         className="relative h-[100svh] min-h-[36rem] overflow-hidden bg-[#241c20]"
-        initial={reduceMotion ? false : { opacity: 0.55, scale: 1.04 }}
-        animate={{ opacity: 1, scale: 1 }}
+        style={{
+          opacity: reduceMotion ? undefined : dissolve,
+          transformStyle: "preserve-3d",
+        }}
+        initial={reduceMotion ? false : { scale: 1.04 }}
+        animate={{ scale: 1 }}
         transition={{ duration: 1.45, ease: fairytaleEase }}
       >
         <motion.div
-          className="absolute inset-x-0 bottom-[-5%] top-[-5%]"
-          style={{ y: reduceMotion ? 0 : parallaxY }}
+          className="absolute inset-x-0 bottom-[-12%] top-[-12%] will-change-transform"
+          style={
+            reduceMotion
+              ? undefined
+              : {
+                  y: imageLayer.y,
+                  rotateX: imageLayer.rotateX,
+                  scale: imageLayer.scale,
+                  z: imageLayer.z,
+                  transformStyle: "preserve-3d",
+                }
+          }
         >
           {heroImages.length > 0 ? (
             heroImages.map((image, index) => (
@@ -55,7 +82,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
                 initial={false}
                 animate={{
                   opacity: index === activeImage ? 1 : 0,
-                  scale: reduceMotion ? 1 : index === activeImage ? 1.025 : 1.065,
+                  scale: reduceMotion ? 1 : index === activeImage ? 1.03 : 1.08,
                 }}
                 transition={{
                   opacity: { duration: 1.65, ease: fairytaleEase },
@@ -85,12 +112,25 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
           )}
         </motion.div>
 
-        <div
+        <motion.div
           aria-hidden
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,14,17,0.08)_25%,rgba(18,14,17,0.28)_58%,rgba(18,14,17,0.9)_100%)] sm:bg-[linear-gradient(90deg,rgba(18,14,17,0.64)_0%,rgba(18,14,17,0.12)_52%,transparent_78%),linear-gradient(0deg,rgba(18,14,17,0.72),transparent_50%)]"
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,14,17,0.08)_25%,rgba(18,14,17,0.28)_58%,rgba(18,14,17,0.92)_100%)] sm:bg-[linear-gradient(90deg,rgba(18,14,17,0.64)_0%,rgba(18,14,17,0.12)_52%,transparent_78%),linear-gradient(0deg,rgba(18,14,17,0.72),transparent_50%)]"
+          style={{ opacity: reduceMotion ? 1 : vignetteOpacity }}
         />
 
-        <div className="absolute inset-x-0 bottom-0 max-w-xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
+        <motion.div
+          className="absolute inset-x-0 bottom-0 max-w-xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] will-change-transform sm:p-12"
+          style={
+            reduceMotion
+              ? undefined
+              : {
+                  y: copyLayer.y,
+                  rotateX: copyLayer.rotateX,
+                  z: copyLayer.z,
+                  transformStyle: "preserve-3d",
+                }
+          }
+        >
           {wedding.dateLabel && (
             <motion.p {...reveal(0.3)} className={cn(smallCaps, "text-[#DDBF8D]")}>
               {wedding.dateLabel}
@@ -128,7 +168,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
               />
             </span>
           </motion.a>
-        </div>
+        </motion.div>
 
         {heroImages.length > 1 && (
           <div
