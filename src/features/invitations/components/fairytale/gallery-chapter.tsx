@@ -58,13 +58,13 @@ export function GalleryChapter() {
 
         <motion.a
           {...reveal(0.15, 12)}
-          href="#rsvp"
+          href="#countdown"
           className={cn(
             smallCaps,
             "mx-auto mt-12 flex w-fit flex-col items-center gap-3 text-[#9b7b62] transition-colors hover:text-[#B76E79] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
           )}
         >
-          Continue to RSVP
+          Continue
           <span aria-hidden className="relative block h-10 w-px overflow-hidden bg-[#DDBF8D]/40">
             <motion.span
               className="absolute inset-x-0 top-0 block h-1/2 bg-[#B76E79]"

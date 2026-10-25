@@ -28,9 +28,12 @@ interface Props {
   onOpened: () => void;
 }
 
-const OPEN_SEQUENCE_MS = 3500;
+/** Card settles ~5.2s in; remaining time is a reading hold before the story begins. */
+const OPEN_SEQUENCE_MS = 13000;
 /** Moment the flap passes vertical; from here it must render behind the rising card. */
-const FLAP_EDGE_ON_MS = 750;
+const FLAP_EDGE_ON_MS = 1200;
+/** When the continue hint appears under the open card. */
+const CONTINUE_HINT_MS = 5800;
 
 export function RoyalEnvelope({
   guestName,
@@ -43,13 +46,16 @@ export function RoyalEnvelope({
   const reduceMotion = useReducedMotion();
   const [opening, setOpening] = React.useState(false);
   const [flapOpen, setFlapOpen] = React.useState(false);
+  const [showContinue, setShowContinue] = React.useState(false);
 
   React.useEffect(() => {
     if (!opening) return;
     const flapTimer = window.setTimeout(() => setFlapOpen(true), FLAP_EDGE_ON_MS);
+    const hintTimer = window.setTimeout(() => setShowContinue(true), CONTINUE_HINT_MS);
     const doneTimer = window.setTimeout(onOpened, OPEN_SEQUENCE_MS);
     return () => {
       window.clearTimeout(flapTimer);
+      window.clearTimeout(hintTimer);
       window.clearTimeout(doneTimer);
     };
   }, [opening, onOpened]);
@@ -85,7 +91,7 @@ export function RoyalEnvelope({
             className="absolute inset-0 block"
             initial={false}
             animate={{ y: opening ? "90%" : "0%" }}
-            transition={{ duration: 2.3, ease: fairytaleEase, delay: opening ? 0.55 : 0 }}
+            transition={{ duration: 3.8, ease: fairytaleEase, delay: opening ? 1.05 : 0 }}
           >
             <span
               aria-hidden
@@ -133,23 +139,47 @@ export function RoyalEnvelope({
         <motion.div
           className="mt-10 flex flex-col items-center gap-2 text-center sm:mt-12"
           initial={false}
-          animate={opening ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
+          animate={
+            opening && !showContinue
+              ? { opacity: 0, y: 8 }
+              : { opacity: 1, y: 0 }
+          }
+          transition={{ duration: 0.45, ease: fairytaleEase }}
         >
-          <p className={cn(smallCaps, "text-[8px] text-[#DDBF8D]/75 sm:text-[10px]")}>
-            A private invitation awaits
-          </p>
-          <button
-            type="button"
-            onClick={openEnvelope}
-            disabled={opening}
-            className={cn(
-              displayFont,
-              "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
-            )}
-          >
-            Open your invitation
-          </button>
+          {showContinue ? (
+            <>
+              <p className={cn(smallCaps, "text-[8px] text-[#DDBF8D]/75 sm:text-[10px]")}>
+                Take a moment to read your card
+              </p>
+              <button
+                type="button"
+                onClick={onOpened}
+                className={cn(
+                  displayFont,
+                  "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
+                )}
+              >
+                Continue when you are ready
+              </button>
+            </>
+          ) : (
+            <>
+              <p className={cn(smallCaps, "text-[8px] text-[#DDBF8D]/75 sm:text-[10px]")}>
+                A private invitation awaits
+              </p>
+              <button
+                type="button"
+                onClick={openEnvelope}
+                disabled={opening}
+                className={cn(
+                  displayFont,
+                  "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
+                )}
+              >
+                Open your invitation
+              </button>
+            </>
+          )}
         </motion.div>
       </div>
     </section>
@@ -177,10 +207,10 @@ function EnvelopeShell({
           : { y: 0, opacity: 1, scale: 1 }
       }
       transition={{
-        duration: 1.15,
+        duration: 1.85,
         ease: fairytaleEase,
-        delay: opening ? 2.05 : 0,
-        times: [0, 0.35, 1],
+        delay: opening ? 3.5 : 0,
+        times: [0, 0.4, 1],
       }}
     >
       {children}
@@ -216,11 +246,11 @@ function InvitationCard({
           : { opacity: 0, y: "0%", scale: 1 }
       }
       transition={{
-        duration: 2.7,
+        duration: 4.2,
         ease: fairytaleEase,
-        delay: opening ? 0.45 : 0,
-        times: [0, 0.12, 0.58, 1],
-        opacity: { duration: 0.01, delay: opening ? 0.3 : 0 },
+        delay: opening ? 0.9 : 0,
+        times: [0, 0.18, 0.72, 1],
+        opacity: { duration: 0.01, delay: opening ? 0.55 : 0 },
       }}
     >
       <span aria-hidden className="absolute inset-1.5 border border-[#C9A66B]/65 sm:inset-2.5" />
@@ -238,7 +268,7 @@ function InvitationCard({
         <motion.span
           initial={false}
           animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-          transition={{ duration: 0.65, ease: fairytaleEase, delay: opening ? 1.2 : 0 }}
+          transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 2.1 : 0 }}
           className={cn(displayFont, "text-lg font-light leading-none text-[#B76E79] sm:text-2xl")}
         >
           {monogram}
@@ -246,7 +276,7 @@ function InvitationCard({
         <motion.span
           initial={false}
           animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-          transition={{ duration: 0.65, ease: fairytaleEase, delay: opening ? 1.32 : 0 }}
+          transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 2.3 : 0 }}
           className="my-1.5 hidden sm:my-2 sm:block"
         >
           <Fleuron className="w-20" />
@@ -254,7 +284,7 @@ function InvitationCard({
         <motion.span
           initial={false}
           animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-          transition={{ duration: 0.7, ease: fairytaleEase, delay: opening ? 1.42 : 0 }}
+          transition={{ duration: 1.1, ease: fairytaleEase, delay: opening ? 2.5 : 0 }}
           className={cn(smallCaps, "mt-1.5 text-[6px] text-[#9b7b62] sm:mt-0 sm:text-[8px]")}
         >
           Together with their families
@@ -262,7 +292,7 @@ function InvitationCard({
         <motion.span
           initial={false}
           animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
-          transition={{ duration: 0.8, ease: fairytaleEase, delay: opening ? 1.55 : 0 }}
+          transition={{ duration: 1.2, ease: fairytaleEase, delay: opening ? 2.75 : 0 }}
           className={cn(
             displayFont,
             "mt-1.5 max-w-[16rem] text-balance text-[clamp(1.15rem,4.6vw,1.9rem)] font-light leading-[1] sm:mt-2",
@@ -273,7 +303,7 @@ function InvitationCard({
         <motion.span
           initial={false}
           animate={opening ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.65, delay: opening ? 1.75 : 0 }}
+          transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 3.05 : 0 }}
           className={cn(scriptFont, "mt-1 max-w-full truncate text-base text-[#B76E79] sm:mt-2 sm:text-lg")}
         >
           invite {guestName}
@@ -282,7 +312,7 @@ function InvitationCard({
           <motion.span
             initial={false}
             animate={opening ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.65, delay: opening ? 1.88 : 0 }}
+            transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 3.3 : 0 }}
             className={cn(smallCaps, "mt-1.5 text-[6px] text-[#9b7b62] sm:mt-3 sm:text-[8px]")}
           >
             {dateLabel}
@@ -311,7 +341,7 @@ function EnvelopeBack({ opening }: { opening: boolean }) {
         }}
         initial={false}
         animate={opening ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.25, delay: opening ? 0.28 : 0 }}
+        transition={{ duration: 0.45, delay: opening ? 0.45 : 0 }}
       >
         <span
           className="absolute inset-0 opacity-25"
@@ -343,7 +373,7 @@ function EnvelopeFlap({ opening }: { opening: boolean }) {
             }
           : { rotateX: 0, filter: "brightness(1)" }
       }
-      transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 0.28 : 0, times: [0, 0.22, 1] }}
+      transition={{ duration: 1.75, ease: fairytaleEase, delay: opening ? 0.45 : 0, times: [0, 0.28, 1] }}
     >
       <span className="absolute inset-4 border-t border-[#C9A66B]/45" />
     </motion.span>
@@ -403,7 +433,7 @@ function WaxSeal({ monogram, opening }: { monogram: string; opening: boolean }) 
             }
           : { opacity: 1, scale: 1, rotate: 0, y: 0 }
       }
-      transition={{ duration: 0.75, ease: fairytaleEase }}
+      transition={{ duration: 1.2, ease: fairytaleEase }}
     >
       <span className="relative flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16">
         <span className="absolute right-1/2 top-[62%] block h-7 w-2.5 origin-top-right rotate-[16deg] bg-[#8f4a57] [clip-path:polygon(0_0,100%_0,100%_100%,50%_82%,0_100%)]" />
@@ -433,7 +463,7 @@ function ChamberBackdrop({ animate, opening }: { animate: boolean; opening: bool
       aria-hidden
       className="pointer-events-none absolute inset-0"
       animate={opening ? { opacity: 0.38, scale: 1.025 } : { opacity: 1, scale: 1 }}
-      transition={{ duration: 1.4, ease: fairytaleEase, delay: opening ? 2 : 0 }}
+      transition={{ duration: 2.2, ease: fairytaleEase, delay: opening ? 3.4 : 0 }}
     >
       <div
         className="absolute inset-0"

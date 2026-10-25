@@ -9,7 +9,7 @@ import { fairytaleMedia } from "@/features/invitations/components/fairytale/fair
 interface InvitationAudioApi {
   /** Call from a user gesture (envelope click) so later play() is allowed. */
   unlock: () => Promise<void>;
-  /** Begin looping the ambient track (RSVP section in view). */
+  /** Begin looping the ambient track (hero / story appears). */
   start: () => Promise<void>;
   duck: () => void;
   unduck: () => void;
@@ -105,12 +105,15 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
           aria-label={playing ? "Mute music" : "Play music"}
           aria-pressed={playing}
           className={cn(
-            "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 flex items-center gap-2 border border-[#DDBF8D]/45 bg-[#1d1820]/78 px-3 py-2 text-[#F3E7D3] shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-md transition-colors hover:border-[#DDBF8D]/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
+            // difference blend flips light↔dark against whatever section sits behind it
+            "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 mix-blend-difference focus-visible:outline-none",
           )}
         >
-          <MusicGlyph playing={playing} />
-          <span className={cn(smallCaps, "text-[8px] tracking-[0.18em]")}>
-            {playing ? "Sound on" : "Sound off"}
+          <span className="flex items-center gap-2 border border-white px-3 py-2 text-white transition-opacity hover:opacity-80">
+            <MusicGlyph playing={playing} />
+            <span className={cn(smallCaps, "text-[8px] tracking-[0.18em] text-white")}>
+              {playing ? "Sound on" : "Sound off"}
+            </span>
           </span>
         </button>
       )}

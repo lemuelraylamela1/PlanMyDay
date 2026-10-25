@@ -66,9 +66,9 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
             <HeroChapter wedding={wedding} />
             <InvitationChapter wedding={wedding} />
             <VideoChapter />
+            <GalleryChapter />
             <CountdownChapter wedding={wedding} />
             <InterludeChapter />
-            <GalleryChapter />
             <RsvpChapter token={token} guest={guest} response={response} wedding={wedding} />
           </motion.div>
         )}

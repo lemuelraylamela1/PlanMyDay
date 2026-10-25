@@ -104,13 +104,13 @@ export function InterludeChapter() {
         </motion.div>
         <motion.a
           {...reveal(0.85, 12)}
-          href="#prenup"
+          href="#rsvp"
           className={cn(
             smallCaps,
             "mt-16 inline-flex flex-col items-center gap-3 text-[#DDBF8D]/75 transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
           )}
         >
-          View our prenup
+          Continue to RSVP
           <span aria-hidden className="relative block h-12 w-px overflow-hidden bg-[#DDBF8D]/35">
             <motion.span
               className="absolute inset-x-0 top-0 block h-1/2 bg-[#E8B8C7]"

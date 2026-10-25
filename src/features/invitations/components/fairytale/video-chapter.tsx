@@ -133,7 +133,7 @@ export function VideoChapter() {
 
         <motion.a
           {...reveal(0.35, 12)}
-          href="#countdown"
+          href="#prenup"
           className={cn(
             smallCaps,
             "mx-auto mt-14 flex w-fit flex-col items-center gap-3 text-[#9b7b62] transition-colors hover:text-[#B76E79] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
