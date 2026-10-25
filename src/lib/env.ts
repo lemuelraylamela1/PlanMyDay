@@ -16,9 +16,9 @@ function parseOrigins(value: string): string[] {
 const isProd = process.env.NODE_ENV === "production";
 
 const appUrl = readEnv("NEXT_PUBLIC_APP_URL") || (isProd ? "" : "http://localhost:3000");
-const rsvpAppUrl = readEnv("NEXT_PUBLIC_RSVP_APP_URL") || (isProd ? "" : "http://localhost:3001");
+const rsvpAppUrl = readEnv("NEXT_PUBLIC_RSVP_APP_URL") || appUrl;
 const rsvpAllowedOriginRaw =
-  readEnv("RSVP_ALLOWED_ORIGIN") || readEnv("NEXT_PUBLIC_RSVP_APP_URL") || (isProd ? "" : "http://localhost:3001");
+  readEnv("RSVP_ALLOWED_ORIGIN") || readEnv("NEXT_PUBLIC_RSVP_APP_URL") || appUrl;
 
 /** Centralized, typed access to runtime environment values. */
 export const env = {

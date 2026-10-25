@@ -9,6 +9,7 @@ import { logActivity } from "@/lib/activity";
 import {
   issueInvitationToken,
   getInvitationQrDataUrl,
+  resolveInvitation,
 } from "@/features/invitations/service";
 import { submitRsvpForGuest } from "@/features/invitations/rsvp-service";
 
@@ -69,5 +70,35 @@ export async function submitRsvpAction(input: {
   if (!result.ok) return fail(result.error);
   revalidatePath("/guests");
   revalidatePath("/dashboard");
+  return ok(undefined, result.message);
+}
+
+/** Public RSVP submission that identifies the guest from the invitation token only. */
+export async function submitInvitationRsvpAction(
+  token: string,
+  input: {
+    attending: boolean;
+    partySize: number;
+    mealPreference?: string;
+    dietaryRestrictions?: string;
+    plusOneName?: string;
+    message?: string;
+  },
+): Promise<ActionResult> {
+  const invitation = await resolveInvitation(token);
+  if (!invitation) return fail("This invitation link is invalid or has expired.");
+
+  const result = await submitRsvpForGuest({
+    weddingId: invitation.wedding.id,
+    guestId: invitation.guest.id,
+    attending: Boolean(input.attending),
+    partySize: Number.isFinite(input.partySize) ? input.partySize : 1,
+    mealPreference: input.mealPreference,
+    dietaryRestrictions: input.dietaryRestrictions,
+    plusOneName: invitation.guest.plusOneAllowed ? input.plusOneName : undefined,
+    message: input.message,
+  });
+  if (!result.ok) return fail(result.error);
+  revalidatePath(`/invite/${token}`);
   return ok(undefined, result.message);
 }

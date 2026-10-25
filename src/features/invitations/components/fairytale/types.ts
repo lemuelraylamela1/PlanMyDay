@@ -1,0 +1,28 @@
+export type RsvpStatusValue = "PENDING" | "ACCEPTED" | "DECLINED" | "TENTATIVE";
+
+export interface InvitationGuest {
+  name: string;
+  plusOneAllowed: boolean;
+  rsvpStatus: RsvpStatusValue;
+}
+
+export interface InvitationResponse {
+  attending: boolean;
+  partySize: number;
+  mealPreference: string | null;
+  dietaryRestrictions: string | null;
+  plusOneName: string | null;
+  message: string | null;
+}
+
+export interface InvitationWedding {
+  coupleNames: string;
+  partner1Name: string | null;
+  partner2Name: string | null;
+  monogram: string;
+  dateLabel: string | null;
+  ceremonyTimeLabel: string | null;
+  receptionTimeLabel: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+}

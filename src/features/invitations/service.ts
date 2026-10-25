@@ -12,7 +12,7 @@ export function invitationUrl(token: string) {
   if (!env.rsvpAppUrl && env.isProd) {
     console.error("[PlanMyDay] NEXT_PUBLIC_RSVP_APP_URL is missing; invite links may be wrong.");
   }
-  return `${base}/?token=${encoded}`;
+  return `${base}/invite/${encoded}`;
 }
 
 /**
