@@ -83,7 +83,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
           className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,14,17,0.08)_25%,rgba(18,14,17,0.28)_58%,rgba(18,14,17,0.92)_100%)] sm:bg-[linear-gradient(90deg,rgba(18,14,17,0.64)_0%,rgba(18,14,17,0.12)_52%,transparent_78%),linear-gradient(0deg,rgba(18,14,17,0.72),transparent_50%)]"
         />
 
-        <div className="absolute inset-x-0 bottom-0 max-w-xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
+        <div className="absolute inset-x-0 bottom-0 z-10 max-w-xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
           {wedding.dateLabel && (
             <motion.p {...reveal(0.3)} className={cn(smallCaps, "text-[#DDBF8D]")}>
               {wedding.dateLabel}

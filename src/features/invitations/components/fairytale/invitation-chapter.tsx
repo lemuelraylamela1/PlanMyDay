@@ -11,6 +11,7 @@ import {
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
+import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 interface Detail {
@@ -37,6 +38,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
       className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-16 pt-24 text-center"
       style={{ backgroundImage: pageParchment }}
     >
+      <LanternField />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"

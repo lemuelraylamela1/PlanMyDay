@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
+import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { fairytaleMedia, type FairytaleGalleryImage } from "@/features/invitations/components/fairytale/fairytale-media";
 
 /** Stable grid cells. CSS columns were dropping absolutely positioned photos. */
@@ -35,7 +36,8 @@ export function GalleryChapter() {
       className="relative overflow-x-clip px-4 py-20 sm:px-8 sm:py-28"
       style={{ backgroundImage: pageParchment }}
     >
-      <div className="mx-auto max-w-5xl">
+      <LanternField />
+      <div className="relative mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
           <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#B76E79]")}>
             Our prenup

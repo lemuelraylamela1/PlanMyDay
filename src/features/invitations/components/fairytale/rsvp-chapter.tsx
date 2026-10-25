@@ -17,6 +17,7 @@ import {
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
+import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { RsvpForm } from "@/features/invitations/components/rsvp-form";
 import type {
   InvitationGuest,
@@ -46,6 +47,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
       className="relative overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pb-28 sm:pt-32"
       style={{ backgroundImage: pageParchment }}
     >
+      <LanternField />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-[-8%] h-[70%]"

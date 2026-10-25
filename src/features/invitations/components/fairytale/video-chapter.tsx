@@ -9,6 +9,7 @@ import { displayFont, smallCaps } from "@/features/invitations/components/fairyt
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import { useInvitationAudio } from "@/features/invitations/components/fairytale/invitation-audio";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
+import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 
 export function VideoChapter() {
   const ref = React.useRef<HTMLElement>(null);
@@ -63,6 +64,7 @@ export function VideoChapter() {
       className="relative overflow-hidden px-5 py-24 sm:px-10 sm:py-32"
       style={{ backgroundImage: pageParchment }}
     >
+      <LanternField />
       <div className="relative mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
           <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#B76E79]")}>

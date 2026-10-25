@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
+import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 interface Remaining {
@@ -68,6 +69,7 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
           "radial-gradient(ellipse 55% 40% at 50% 35%, rgba(221,191,141,0.16), transparent 72%), linear-gradient(180deg,#1d1820 0%,#241d22 48%,#16121a 100%)",
       }}
     >
+      <LanternField tone="dusk" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.08]"

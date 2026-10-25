@@ -7,12 +7,7 @@ import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
-
-const lights = [
-  { className: "-left-24 top-[18%] h-80 w-80", duration: 12, delay: 0 },
-  { className: "-right-24 top-[44%] h-96 w-96", duration: 15, delay: 1.2 },
-  { className: "left-[34%] top-[70%] h-72 w-72", duration: 13, delay: 0.6 },
-];
+import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 
 const dusk =
   "linear-gradient(180deg,#FBF6EE 0%,#eadfce 7%,#9b8d7c 15%,#4a5048 24%,#24312a 34%,#15221c 48%,#111c17 66%,#1b2922 82%,#596057 91%,#d8cdbd 97%,#FBF6EE 100%)";
@@ -75,32 +70,12 @@ export function InterludeChapter({ story }: { story: string | null }) {
       className="relative overflow-hidden px-5 py-32 text-center text-[#F3E7D3] sm:px-8 sm:py-44"
       style={{ backgroundImage: dusk }}
     >
+      <LanternField tone="dusk" />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-[22%] h-[58%] bg-[radial-gradient(ellipse_at_center,rgba(221,191,141,0.12),transparent_66%)]"
         style={reduceMotion ? undefined : { y: glowY }}
       />
-      {lights.map((light) => (
-        <motion.div
-          key={light.className}
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute rounded-full bg-[radial-gradient(circle,rgba(240,196,128,0.22),transparent_68%)]",
-            light.className,
-          )}
-          animate={
-            reduceMotion
-              ? undefined
-              : { opacity: [0.35, 0.85, 0.45], y: [0, -18, 0] }
-          }
-          transition={{
-            duration: light.duration,
-            delay: light.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-x-[18%] top-[18%] h-40 bg-[radial-gradient(ellipse_at_center,rgba(221,191,141,0.16),transparent_70%)]"
