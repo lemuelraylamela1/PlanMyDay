@@ -6,6 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   CalendarDays,
   CircleDollarSign,
   Download,
@@ -53,8 +56,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
   supplierPaymentSchema,
   supplierSchema,
@@ -107,6 +118,77 @@ const statusVariant: Record<SupplierRow["status"], "success" | "info" | "warning
   CANCELLED: "destructive",
 };
 
+type SupplierSortField = "company" | "contact" | "status" | "contract" | "paid" | "balance" | "progress" | "due";
+type SortOrder = "asc" | "desc";
+
+const STATUS_RANK: Record<SupplierRow["status"], number> = {
+  PROSPECT: 0,
+  CONTACTED: 1,
+  BOOKED: 2,
+  COMPLETED: 3,
+  CANCELLED: 4,
+};
+
+const PAYMENT_RANK: Record<SupplierRow["paymentStatus"], number> = {
+  UNPAID: 0,
+  PARTIAL: 1,
+  PAID: 2,
+};
+
+const NUMERIC_SORT_FIELDS = new Set<SupplierSortField>(["contract", "paid", "balance", "progress"]);
+
+function supplierBalance(supplier: SupplierRow) {
+  return Math.max(0, supplier.contractAmount - supplier.downPayment);
+}
+
+function supplierProgress(supplier: SupplierRow) {
+  return supplier.contractAmount > 0 ? supplier.downPayment / supplier.contractAmount : 0;
+}
+
+function contactSortKey(supplier: SupplierRow) {
+  return (supplier.phone || supplier.email || supplier.website || "").trim();
+}
+
+function compareSuppliers(a: SupplierRow, b: SupplierRow, field: SupplierSortField, order: SortOrder) {
+  const direction = order === "asc" ? 1 : -1;
+  switch (field) {
+    case "company":
+      return a.company.localeCompare(b.company, undefined, { sensitivity: "base" }) * direction;
+    case "contact": {
+      const left = contactSortKey(a);
+      const right = contactSortKey(b);
+      if (!left && !right) return 0;
+      if (!left) return 1;
+      if (!right) return -1;
+      return left.localeCompare(right, undefined, { sensitivity: "base" }) * direction;
+    }
+    case "status":
+      return (
+        (STATUS_RANK[a.status] - STATUS_RANK[b.status] ||
+          PAYMENT_RANK[a.paymentStatus] - PAYMENT_RANK[b.paymentStatus]) * direction
+      );
+    case "contract":
+      return (a.contractAmount - b.contractAmount) * direction;
+    case "paid":
+      return (a.downPayment - b.downPayment) * direction;
+    case "balance":
+      return (supplierBalance(a) - supplierBalance(b)) * direction;
+    case "progress":
+      return (supplierProgress(a) - supplierProgress(b)) * direction;
+    case "due": {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return (new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()) * direction;
+    }
+  }
+}
+
+function SortIcon({ active, order }: { active: boolean; order: SortOrder }) {
+  if (!active) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />;
+  return order === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
+}
+
 interface Props {
   suppliers: SupplierRow[];
   categories: { id: string; name: string }[];
@@ -126,6 +208,8 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
   const [editingPayment, setEditingPayment] = React.useState<SupplierPaymentRow | null>(null);
   const [paymentPending, setPaymentPending] = React.useState(false);
   const [exportPending, setExportPending] = React.useState<"PDF" | "EXCEL" | null>(null);
+  const [sortField, setSortField] = React.useState<SupplierSortField | null>(null);
+  const [sortOrder, setSortOrder] = React.useState<SortOrder>("asc");
 
   const {
     register,
@@ -276,6 +360,19 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
       (categoryFilter === "ALL" || supplier.categoryId === categoryFilter)
     );
   });
+  const visibleSuppliers = sortField
+    ? [...filteredSuppliers].sort((a, b) => compareSuppliers(a, b, sortField, sortOrder))
+    : filteredSuppliers;
+
+  function toggleSort(field: SupplierSortField) {
+    if (sortField === field) {
+      setSortOrder((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortOrder(NUMERIC_SORT_FIELDS.has(field) ? "desc" : "asc");
+  }
+
   const historySupplier = suppliers.find((supplier) => supplier.id === historySupplierId) ?? null;
   const historyRemaining = historySupplier
     ? Math.max(0, historySupplier.contractAmount - historySupplier.downPayment)
@@ -284,7 +381,7 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
   async function onExportPdf() {
     setExportPending("PDF");
     try {
-      await exportSuppliersToPdf(filteredSuppliers, currency);
+      await exportSuppliersToPdf(visibleSuppliers, currency);
       toast.success("PDF report downloaded.");
     } catch {
       toast.error("Unable to create the PDF report.");
@@ -296,7 +393,7 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
   function onExportExcel() {
     setExportPending("EXCEL");
     try {
-      exportSuppliersToExcel(filteredSuppliers, currency);
+      exportSuppliersToExcel(visibleSuppliers, currency);
       toast.success("Excel report downloaded.");
     } catch {
       toast.error("Unable to create the Excel report.");
@@ -410,95 +507,162 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
           description="Track your vendors, contracts and payments in one place."
           action={<Button onClick={openCreate}><Plus className="h-4 w-4" /> Add supplier</Button>}
         />
-      ) : filteredSuppliers.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-12 text-center">
-          <p className="font-medium">No suppliers match your filters</p>
-          <p className="mt-1 text-sm text-muted-foreground">Try a different search or filter.</p>
-        </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredSuppliers.map((s) => {
-            const balance = Math.max(0, s.contractAmount - s.downPayment);
-            const paidPercent = s.contractAmount > 0
-              ? Math.min(100, Math.round((s.downPayment / s.contractAmount) * 100))
-              : 0;
-            const isOverdue =
-              Boolean(s.dueDate) && balance > 0 && new Date(s.dueDate!).getTime() < new Date().setHours(0, 0, 0, 0);
-            return (
-              <Card key={s.id} className="overflow-hidden">
-                <CardContent className="space-y-4 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate font-semibold">{s.company}</h3>
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {(
+                  [
+                    ["company", "Supplier", "left"],
+                    ["contact", "Contact", "left"],
+                    ["status", "Status", "left"],
+                    ["contract", "Contract", "right"],
+                    ["paid", "Paid", "right"],
+                    ["balance", "Balance", "right"],
+                    ["progress", "Progress", "left"],
+                    ["due", "Due", "left"],
+                  ] as const
+                ).map(([field, label, align]) => (
+                  <TableHead
+                    key={field}
+                    aria-sort={sortField === field ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
+                    className={cn(
+                      align === "right" && "text-right",
+                      field === "contact" && "hidden md:table-cell",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      className={cn(
+                        "inline-flex cursor-pointer items-center gap-1 whitespace-nowrap font-medium hover:text-foreground",
+                        sortField === field ? "text-foreground" : "text-muted-foreground",
+                        align === "right" && "w-full justify-end",
+                      )}
+                      onClick={() => toggleSort(field)}
+                    >
+                      {label}
+                      <SortIcon active={sortField === field} order={sortOrder} />
+                    </button>
+                  </TableHead>
+                ))}
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredSuppliers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="py-10 text-center">
+                    <p className="font-medium">No suppliers match your filters</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Try a different search or filter.</p>
+                  </TableCell>
+                </TableRow>
+              ) : visibleSuppliers.map((s) => {
+                const balance = supplierBalance(s);
+                const paidPercent = s.contractAmount > 0
+                  ? Math.min(100, Math.round((s.downPayment / s.contractAmount) * 100))
+                  : 0;
+                const isOverdue =
+                  Boolean(s.dueDate) && balance > 0 && new Date(s.dueDate!).getTime() < new Date().setHours(0, 0, 0, 0);
+                const hasContact = Boolean(s.phone || s.email || s.website);
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell className="min-w-40">
+                      <p className="font-medium">{s.company}</p>
                       <p className="text-xs text-muted-foreground">{s.categoryName ?? "Uncategorized"}</p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label={`Actions for ${s.company}`}>
-                          <MoreHorizontal className="h-4 w-4" />
+                      {s.contactPerson && (
+                        <p className="text-xs text-muted-foreground">{s.contactPerson}</p>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden max-w-52 md:table-cell">
+                      {hasContact ? (
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          {s.phone && (
+                            <p className="flex items-center gap-1.5">
+                              <Phone className="h-3 w-3 shrink-0" /> {s.phone}
+                            </p>
+                          )}
+                          {s.email && (
+                            <p className="flex items-center gap-1.5 truncate">
+                              <Mail className="h-3 w-3 shrink-0" /> {s.email}
+                            </p>
+                          )}
+                          {s.website && (
+                            <p className="flex items-center gap-1.5 truncate">
+                              <Globe className="h-3 w-3 shrink-0" /> {s.website}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant={statusVariant[s.status]}>{s.status}</Badge>
+                        <Badge variant={s.paymentStatus === "PAID" ? "success" : s.paymentStatus === "PARTIAL" ? "warning" : "secondary"}>
+                          {s.paymentStatus === "PARTIAL" ? "PARTIALLY PAID" : s.paymentStatus}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right">
+                      {formatCurrency(s.contractAmount, currency)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right">
+                      {formatCurrency(s.downPayment, currency)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold">
+                      {formatCurrency(balance, currency)}
+                    </TableCell>
+                    <TableCell className="min-w-28">
+                      <div className="space-y-1">
+                        <p className="text-right text-xs font-medium">{paidPercent}%</p>
+                        <Progress value={paidPercent} />
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {s.dueDate ? (
+                        <p className={`flex items-center gap-1.5 text-xs ${isOverdue ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {isOverdue ? "Overdue" : "Due"} {formatDate(s.dueDate)}
+                        </p>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="outline" size="sm" onClick={() => openPaymentHistory(s.id)}>
+                          <History className="h-4 w-4" />
+                          {s.payments.length > 0
+                            ? `View ${s.payments.length} payment${s.payments.length === 1 ? "" : "s"}`
+                            : "Record payment"}
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openPaymentHistory(s.id)}>
-                          <History className="h-4 w-4" /> Payment history
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEdit(s)}>
-                          <Pencil className="h-4 w-4" /> Edit supplier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => onDelete(s.id)}>
-                          <Trash2 className="h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant={statusVariant[s.status]}>{s.status}</Badge>
-                    <Badge variant={s.paymentStatus === "PAID" ? "success" : s.paymentStatus === "PARTIAL" ? "warning" : "secondary"}>
-                      {s.paymentStatus === "PARTIAL" ? "PARTIALLY PAID" : s.paymentStatus}
-                    </Badge>
-                  </div>
-                  {(s.contactPerson || s.phone || s.email || s.website) && (
-                    <div className="space-y-1.5 text-xs text-muted-foreground">
-                      {s.contactPerson && <p className="font-medium text-foreground">{s.contactPerson}</p>}
-                      {s.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {s.phone}</p>}
-                      {s.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {s.email}</p>}
-                      {s.website && <p className="flex items-center gap-1.5 truncate"><Globe className="h-3 w-3 shrink-0" /> {s.website}</p>}
-                    </div>
-                  )}
-                  <div className="space-y-2 border-t pt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Payment progress</span>
-                      <span className="font-medium">{paidPercent}%</span>
-                    </div>
-                    <Progress value={paidPercent} />
-                    <div className="grid grid-cols-2 gap-3 pt-1 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Paid</p>
-                        <p className="font-medium">{formatCurrency(s.downPayment, currency)}</p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label={`Actions for ${s.company}`}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openPaymentHistory(s.id)}>
+                              <History className="h-4 w-4" /> Payment history
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEdit(s)}>
+                              <Pencil className="h-4 w-4" /> Edit supplier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => onDelete(s.id)}>
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Balance</p>
-                        <p className="font-semibold">{formatCurrency(balance, currency)}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Contract total: {formatCurrency(s.contractAmount, currency)}
-                    </p>
-                  </div>
-                  {s.dueDate && (
-                    <p className={`flex items-center gap-1.5 text-xs ${isOverdue ? "font-medium text-destructive" : "text-muted-foreground"}`}>
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {isOverdue ? "Overdue" : "Due"} {formatDate(s.dueDate)}
-                    </p>
-                  )}
-                  <Button className="w-full" variant="outline" onClick={() => openPaymentHistory(s.id)}>
-                    <History className="h-4 w-4" />
-                    {s.payments.length > 0 ? `View ${s.payments.length} payment${s.payments.length === 1 ? "" : "s"}` : "Record payment"}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 
