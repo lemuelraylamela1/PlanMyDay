@@ -1,16 +1,9 @@
 "use client";
 
-import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
-import {
-  cinematicPerspective,
-  useChapterScroll,
-  useDepthLayer,
-  useExitDissolve,
-} from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import {
   GoldDivider,
   displayFont,
@@ -27,13 +20,7 @@ interface Detail {
 }
 
 export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
-  const ref = React.useRef<HTMLElement>(null);
-  const reduceMotion = useReducedMotion();
   const reveal = useReveal();
-  const progress = useChapterScroll(ref);
-  const glowLayer = useDepthLayer(progress, "far");
-  const contentLayer = useDepthLayer(progress, "near");
-  const dissolve = useExitDissolve(progress);
   const partner1 = wedding.partner1Name?.trim();
   const partner2 = wedding.partner2Name?.trim();
 
@@ -47,44 +34,19 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section
       id="invitation"
-      ref={ref}
       className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-16 pt-24 text-center"
-      style={{ backgroundImage: pageParchment, perspective: cinematicPerspective }}
+      style={{ backgroundImage: pageParchment }}
     >
-      <motion.div
+      <div
         aria-hidden
-        className="pointer-events-none absolute inset-[-8%] will-change-transform"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
             "radial-gradient(ellipse 70% 42% at 50% 0%, rgba(221,191,141,0.32), transparent 72%)",
-          ...(reduceMotion
-            ? {}
-            : {
-                y: glowLayer.y,
-                rotateX: glowLayer.rotateX,
-                scale: glowLayer.scale,
-                z: glowLayer.z,
-              }),
         }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.2, ease: fairytaleEase }}
       />
 
-      <motion.div
-        className="relative flex w-full max-w-4xl flex-col items-center will-change-transform"
-        style={
-          reduceMotion
-            ? undefined
-            : {
-                y: contentLayer.y,
-                rotateX: contentLayer.rotateX,
-                z: contentLayer.z,
-                opacity: dissolve,
-                transformStyle: "preserve-3d",
-              }
-        }
-      >
+      <div className="relative flex w-full max-w-4xl flex-col items-center">
         <motion.p {...reveal(0.2)} className={cn(smallCaps, "text-[#B76E79]")}>
           Together with their families
         </motion.p>
@@ -169,7 +131,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
             />
           </span>
         </motion.a>
-      </motion.div>
+      </div>
     </section>
   );
 }

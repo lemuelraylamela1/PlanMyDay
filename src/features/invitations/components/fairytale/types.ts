@@ -27,4 +27,6 @@ export interface InvitationWedding {
   receptionTimeLabel: string | null;
   venueName: string | null;
   venueAddress: string | null;
+  /** Love story from wedding settings. Blank lines become separate paragraphs. */
+  story: string | null;
 }

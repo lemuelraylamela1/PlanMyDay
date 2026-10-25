@@ -59,16 +59,16 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
           <motion.div
             key="story"
             className="bg-[#FFFDF8]"
-            initial={{ opacity: 0, scale: 1.008, filter: "blur(8px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            transition={{ duration: 1.25, ease: fairytaleEase, delay: 0.12 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.35, ease: fairytaleEase }}
           >
             <HeroChapter wedding={wedding} />
             <InvitationChapter wedding={wedding} />
             <VideoChapter />
             <GalleryChapter />
             <CountdownChapter wedding={wedding} />
-            <InterludeChapter />
+            <InterludeChapter story={wedding.story} />
             <RsvpChapter token={token} guest={guest} response={response} wedding={wedding} />
           </motion.div>
         )}
@@ -78,8 +78,8 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
             <motion.div
               key="envelope"
               className="fixed inset-0 z-30 overflow-hidden bg-[#16121a]"
-              exit={{ opacity: 0, scale: 1.025, filter: "blur(9px)" }}
-              transition={{ duration: 1.15, ease: fairytaleEase }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: fairytaleEase }}
             >
               <RoyalEnvelope
                 guestName={guest.name}

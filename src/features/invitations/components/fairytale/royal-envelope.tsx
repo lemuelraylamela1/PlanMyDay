@@ -80,7 +80,10 @@ export function RoyalEnvelope({
           onClick={openEnvelope}
           aria-disabled={opening}
           aria-label={`Open your invitation, ${guestName}`}
-          className="group relative mx-auto block aspect-[16/10] w-[min(92vw,26rem)] select-none focus-visible:outline-none"
+          className={cn(
+            "group relative mx-auto block aspect-[16/10] w-[min(92vw,26rem)] select-none focus-visible:outline-none",
+            opening && "pointer-events-none",
+          )}
           style={{ perspective: "1400px" }}
           initial={reduceMotion ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -137,7 +140,7 @@ export function RoyalEnvelope({
         </motion.button>
 
         <motion.div
-          className="mt-10 flex flex-col items-center gap-2 text-center sm:mt-12"
+          className="relative z-30 mt-10 flex flex-col items-center gap-2 text-center sm:mt-12"
           initial={false}
           animate={
             opening && !showContinue
@@ -153,10 +156,14 @@ export function RoyalEnvelope({
               </p>
               <button
                 type="button"
-                onClick={onOpened}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onOpened();
+                }}
                 className={cn(
                   displayFont,
-                  "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
+                  "pointer-events-auto text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
                 )}
               >
                 Continue when you are ready

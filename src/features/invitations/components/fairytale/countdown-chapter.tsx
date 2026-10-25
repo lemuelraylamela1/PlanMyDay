@@ -1,16 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
-import {
-  cinematicPerspective,
-  useChapterScroll,
-  useDepthLayer,
-  useExitDissolve,
-} from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
@@ -40,12 +34,7 @@ function pad(value: number) {
 }
 
 export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
-  const ref = React.useRef<HTMLElement>(null);
-  const reduceMotion = useReducedMotion();
   const reveal = useReveal();
-  const progress = useChapterScroll(ref);
-  const contentLayer = useDepthLayer(progress, "near");
-  const dissolve = useExitDissolve(progress);
   const targetMs = wedding.countdownTargetIso
     ? Date.parse(wedding.countdownTargetIso)
     : Number.NaN;
@@ -73,34 +62,19 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section
       id="countdown"
-      ref={ref}
       className="relative overflow-hidden px-6 py-28 text-center text-[#F3E7D3] sm:py-36"
       style={{
-        perspective: cinematicPerspective,
         backgroundImage:
           "radial-gradient(ellipse 55% 40% at 50% 35%, rgba(221,191,141,0.16), transparent 72%), linear-gradient(180deg,#1d1820 0%,#241d22 48%,#16121a 100%)",
       }}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.08] mix-blend-overlay"
+        className="pointer-events-none absolute inset-0 opacity-[0.08]"
         style={{ backgroundImage: grainOverlay }}
       />
 
-      <motion.div
-        className="relative mx-auto flex max-w-3xl flex-col items-center will-change-transform"
-        style={
-          reduceMotion
-            ? undefined
-            : {
-                y: contentLayer.y,
-                rotateX: contentLayer.rotateX,
-                z: contentLayer.z,
-                opacity: dissolve,
-                transformStyle: "preserve-3d",
-              }
-        }
-      >
+      <div className="relative mx-auto flex max-w-3xl flex-col items-center">
         <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#DDBF8D]")}>
           Counting the days
         </motion.p>
@@ -171,7 +145,7 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
             />
           </span>
         </motion.a>
-      </motion.div>
+      </div>
     </section>
   );
 }

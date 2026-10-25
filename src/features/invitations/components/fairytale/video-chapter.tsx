@@ -1,15 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
-import {
-  cinematicPerspective,
-  useChapterScroll,
-  useDepthLayer,
-} from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import { useInvitationAudio } from "@/features/invitations/components/fairytale/invitation-audio";
@@ -18,12 +13,9 @@ import { pageParchment } from "@/features/invitations/components/fairytale/textu
 export function VideoChapter() {
   const ref = React.useRef<HTMLElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
-  const reduceMotion = useReducedMotion();
   const reveal = useReveal();
   const audio = useInvitationAudio();
   const inView = useInView(ref, { amount: 0.45 });
-  const progress = useChapterScroll(ref);
-  const frameLayer = useDepthLayer(progress, "mid");
   const [playing, setPlaying] = React.useState(false);
   const film = fairytaleMedia.saveTheDate;
 
@@ -69,7 +61,7 @@ export function VideoChapter() {
       id="film"
       ref={ref}
       className="relative overflow-hidden px-5 py-24 sm:px-10 sm:py-32"
-      style={{ backgroundImage: pageParchment, perspective: cinematicPerspective }}
+      style={{ backgroundImage: pageParchment }}
     >
       <div className="relative mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
@@ -84,19 +76,7 @@ export function VideoChapter() {
           </motion.h2>
         </div>
 
-        <motion.div
-          className="relative mt-12 will-change-transform sm:mt-16"
-          style={
-            reduceMotion
-              ? undefined
-              : {
-                  y: frameLayer.y,
-                  rotateX: frameLayer.rotateX,
-                  z: frameLayer.z,
-                  transformStyle: "preserve-3d",
-                }
-          }
-        >
+        <motion.div {...reveal(0.28)} className="relative mt-12 sm:mt-16">
           <div className="relative overflow-hidden bg-[#1c1619] shadow-[0_28px_60px_-28px_rgba(74,50,54,0.55)]">
             <div className="relative aspect-[16/10] w-full sm:aspect-video">
               <video
