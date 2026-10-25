@@ -3,16 +3,18 @@
 import * as React from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Clock3, MapPin, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
   Fleuron,
+  GoldCorner,
+  GoldDivider,
   displayFont,
   scriptFont,
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
-import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
+import { grainOverlay, pageParchment } from "@/features/invitations/components/fairytale/textures";
 
 const PROPOSAL_MUSIC_SRC = "/proposal-audio/marry-me.mp3";
 const SAVE_THE_DATE_VIDEO_SRC = "/proposal-video/save-the-date.mp4";
@@ -40,6 +42,18 @@ const useIsoLayoutEffect =
   typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
 const ease = [0.22, 1, 0.36, 1] as const;
+
+const gallerySpans = [
+  "col-span-2 row-span-2 md:col-span-2",
+  "col-span-1 md:col-span-2",
+  "col-span-1 md:col-span-2",
+  "col-span-1",
+  "col-span-1",
+  "col-span-2 md:col-span-2",
+  "col-span-1",
+  "col-span-1",
+  "col-span-2 md:col-span-2",
+];
 
 const lightMotes = [
   { left: "8%", size: 3, duration: 16, delay: 0, drift: 14 },
@@ -202,9 +216,15 @@ export function ProposalExperience({
     setMusicPlaying(false);
   }
 
-  const reveal = calm
-    ? {}
-    : { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 } };
+  function arrive(delay = 0) {
+    if (calm) return {};
+    return {
+      initial: { opacity: 0, y: 18 },
+      whileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, margin: "0px 0px -8% 0px" },
+      transition: { duration: 0.95, delay, ease },
+    };
+  }
 
   function rise(delay: number) {
     if (calm) return {};
@@ -422,82 +442,89 @@ export function ProposalExperience({
         </div>
       </section>
 
-      <section className="bg-[#FFFDF8]">
+      <div className="relative" style={{ backgroundImage: pageParchment }}>
         <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(ellipse_70%_80%_at_50%_0%,rgba(221,191,141,0.28),transparent_72%)]"
+        />
+
+        <section
           id="proposal-greeting"
-          className="mx-auto max-w-3xl scroll-mt-8 px-6 pb-8 pt-8 text-center sm:pb-10 sm:pt-10"
+          className="relative mx-auto max-w-3xl scroll-mt-8 px-6 pb-2 pt-20 text-center sm:pt-28"
         >
-          <motion.p
-            {...reveal}
-            transition={{ duration: 0.8, ease }}
-            className="text-sm font-medium uppercase tracking-[0.32em] text-[#B76E79]"
-          >
+          <motion.div {...arrive(0)}>
+            <Fleuron className="mx-auto" />
+          </motion.div>
+          <motion.p {...arrive(0.08)} className={cn(smallCaps, "mt-6 text-[#B76E79]")}>
             Dear
           </motion.p>
           <motion.h1
-            {...reveal}
-            transition={{ duration: 0.9, delay: calm ? 0 : 0.1, ease }}
-            className="mt-4 font-serif text-4xl font-medium leading-tight text-[#6d4650] sm:text-6xl"
+            {...arrive(0.16)}
+            className={cn(
+              displayFont,
+              "mt-5 text-balance text-[clamp(3.2rem,8vw,5.5rem)] font-light leading-[0.95] text-[#4a3236]",
+            )}
           >
             {honoreeName}
           </motion.h1>
-          <motion.p
-            {...reveal}
-            transition={{ duration: 0.9, delay: calm ? 0 : 0.2, ease }}
-            className="mt-6 font-serif text-3xl text-[#B76E79] sm:text-4xl"
-          >
+          <motion.p {...arrive(0.28)} className={cn(scriptFont, "mt-5 text-4xl text-[#B76E79] sm:text-5xl")}>
             {coupleNames}
           </motion.p>
           <motion.p
-            {...reveal}
-            transition={{ duration: 0.9, delay: calm ? 0 : 0.28, ease }}
-            className="mt-3 font-serif text-xl italic text-[#8d5d66] sm:text-2xl"
+            {...arrive(0.38)}
+            className={cn(
+              displayFont,
+              "mx-auto mt-4 max-w-md text-balance text-2xl font-light italic leading-snug text-[#6d4a50] sm:text-3xl",
+            )}
           >
             Will you be {rolePhrase}?
           </motion.p>
-        </div>
-      </section>
+          <motion.div {...arrive(0.48)} className="mt-12">
+            <GoldDivider />
+          </motion.div>
+        </section>
 
-      <section id="wedding-details" className="mx-auto max-w-5xl px-5 py-16 sm:px-6 sm:py-24">
-        <motion.div
-          className="grid gap-4 sm:grid-cols-3"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: calm ? 0 : 0.12 } },
-          }}
-        >
-          <DetailCard icon={CalendarDays} label="Date" value={dateLabel ?? "To be announced"} />
-          <DetailCard icon={Clock3} label="Ceremony" value={timeLabel ?? "To be announced"} />
-          <DetailCard
-            icon={MapPin}
-            label="Venue"
-            value={venueName ?? "To be announced"}
-            detail={venueAddress}
+        <section id="wedding-details" className="relative mx-auto max-w-4xl px-6 pb-20 pt-10 sm:pb-28 sm:pt-12">
+          <dl className="grid gap-8 divide-y divide-[#DDBF8D]/55 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-y-0">
+            <Detail
+              label="The date"
+              value={dateLabel ?? "To be announced"}
+              calm={calm}
+              delay={0}
+            />
+            <Detail
+              label="Ceremony"
+              value={timeLabel ?? "To be announced"}
+              calm={calm}
+              delay={0.1}
+            />
+            <Detail
+              label="The venue"
+              value={venueName ?? "To be announced"}
+              note={venueAddress}
+              calm={calm}
+              delay={0.2}
+            />
+          </dl>
+        </section>
+
+        <section className="relative mx-auto max-w-5xl px-5 pb-16 sm:px-6 sm:pb-24">
+          <ChapterIntro
+            calm={calm}
+            kicker="Save the date"
+            title="Our invitation film"
+            note="A little glimpse of the day we cannot wait to celebrate with you."
           />
-        </motion.div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-5 pb-12 sm:px-6 sm:pb-20">
-        <div className="mb-8 text-center sm:mb-10">
-          <p className="text-xs uppercase tracking-[0.32em] text-[#B76E79]">Save the date</p>
-          <h2 className="mt-3 font-serif text-3xl text-[#6d4650] sm:text-5xl">Our invitation film</h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#8d5d66]">
-            A little glimpse of the day we cannot wait to celebrate with you.
-          </p>
-        </div>
-        <motion.div
-          className="overflow-hidden rounded-[2rem] border border-[#E8B8C7]/80 bg-[#FFFDF8] p-1.5 shadow-[0_24px_70px_rgba(183,110,121,0.16)] sm:p-2"
-          initial={calm ? false : { opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.7 }}
-        >
-          <video
+          <motion.div
+            className="overflow-hidden border border-[#DDBF8D]/70 bg-[#fffaf3] p-1.5 shadow-[0_30px_80px_-48px_rgba(74,50,54,0.55)] sm:p-2"
+            initial={calm ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, ease }}
+          >
+            <video
             ref={videoRef}
-            className="block h-auto w-full rounded-[1.6rem]"
+            className="block h-auto w-full"
             width={1920}
             height={1080}
             controls
@@ -513,65 +540,84 @@ export function ProposalExperience({
         </motion.div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-3 pb-10 sm:px-6 sm:pb-16">
-        <div className="mb-8 text-center sm:mb-10">
-          <p className="text-xs uppercase tracking-[0.32em] text-[#B76E79]">Our photographs</p>
-          <h2 className="mt-3 font-serif text-3xl text-[#6d4650] sm:text-5xl">Nine moments with us</h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#8d5d66]">
-            Tap a photograph to bring it into the opening scene.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
-          {galleryPhotos.map((photo, index) => (
-            <motion.button
-              key={photo.id}
-              type="button"
-              onClick={() => showPhoto(index)}
-              className={`group relative overflow-hidden rounded-xl text-left shadow-sm ring-1 ring-[#E8B8C7]/70 sm:rounded-2xl ${
-                index === active ? "ring-2 ring-[#B76E79]" : ""
-              }`}
-              initial={calm ? false : { opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: calm ? 0 : index * 0.08 }}
-              aria-label={`Show ${photo.caption || photo.fileName} in the hero`}
-              aria-current={index === active ? "true" : undefined}
-            >
-              <div className="relative aspect-[3/2]">
-                <Image
-                  src={photo.url}
-                  alt={photo.caption || photo.fileName}
-                  fill
-                  unoptimized
-                  className="object-cover transition duration-700 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
-              </div>
-              {photo.caption && (
-                <p className="absolute inset-x-0 bottom-0 px-3 py-2 text-xs font-medium text-white sm:px-4 sm:py-3 sm:text-sm">
-                  {photo.caption}
-                </p>
-              )}
+        <section className="relative mx-auto max-w-5xl px-4 pb-16 sm:px-6 sm:pb-24">
+          <ChapterIntro
+            calm={calm}
+            kicker="Our photographs"
+            title="Nine moments with us"
+            note="Tap a photograph to bring it into the opening scene."
+          />
+          <div className="grid grid-flow-dense grid-cols-2 auto-rows-[8.75rem] gap-2 sm:auto-rows-[11rem] sm:gap-3 md:grid-cols-4 md:auto-rows-[12.5rem]">
+            {galleryPhotos.map((photo, index) => (
+              <motion.button
+                key={photo.id}
+                type="button"
+                onClick={() => showPhoto(index)}
+                className={cn(
+                  "group relative min-h-0 overflow-hidden bg-[#1c1619] text-left shadow-[0_16px_36px_-24px_rgba(74,50,54,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A66B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF6EE]",
+                  gallerySpans[index] ?? "col-span-1",
+                  index === active && "ring-2 ring-[#C9A66B] ring-offset-2 ring-offset-[#FBF6EE]",
+                )}
+                initial={calm ? false : { opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.7, delay: calm ? 0 : (index % 4) * 0.06, ease }}
+                aria-label={`Show ${photo.caption || photo.fileName} in the hero`}
+                aria-current={index === active ? "true" : undefined}
+              >
+                <div className="absolute inset-0">
+                  <Image
+                    src={photo.url}
+                    alt={photo.caption || photo.fileName}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 768px) 40vw, 50vw"
+                    className="object-cover transition duration-700 group-hover:scale-[1.04]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1c1619]/70 via-transparent to-transparent" />
+                </div>
+                {photo.caption && (
+                  <p className={cn(displayFont, "absolute inset-x-0 bottom-0 px-3 py-3 text-sm italic text-[#FFFDF8] sm:px-4 sm:text-base")}>
+                    {photo.caption}
+                  </p>
+                )}
             </motion.button>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:px-6 sm:py-24">
-        <motion.div
-          initial={calm ? false : { opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
-          transition={{ duration: 0.7 }}
-        >
-          <div className="mx-auto mb-8 h-px w-16 bg-[#DDBF8D]" />
-          <p className="whitespace-pre-line font-serif text-2xl leading-relaxed text-[#6d4650] sm:text-3xl sm:leading-relaxed">
-            {message}
-          </p>
-        </motion.div>
-      </section>
+        <section className="relative mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-12">
+          <motion.div
+            className="relative border border-[#DDBF8D]/50 bg-[#FFFDF8]/60 px-8 py-14 text-center sm:px-16 sm:py-16"
+            initial={calm ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.85, ease }}
+          >
+            <GoldCorner className="left-2 top-2" />
+            <GoldCorner className="right-2 top-2 rotate-90" />
+            <GoldCorner className="bottom-2 left-2 -rotate-90" />
+            <GoldCorner className="bottom-2 right-2 rotate-180" />
+            <Fleuron className="mx-auto" />
+            <p
+              className={cn(
+                displayFont,
+                "mt-8 whitespace-pre-line text-2xl font-light italic leading-relaxed text-[#4a3236] sm:text-[2rem] sm:leading-relaxed",
+              )}
+            >
+              {message}
+            </p>
+          </motion.div>
+        </section>
 
-      <section className="mx-auto max-w-3xl px-5 pb-20 sm:px-6">{children}</section>
+        <section className="relative mx-auto max-w-xl px-5 pb-6 pt-4 sm:px-6">{children}</section>
+
+        <footer className="relative mx-auto flex max-w-xl flex-col items-center px-6 pb-16 pt-8 text-center">
+          <span aria-hidden className="mb-5 h-12 w-px bg-gradient-to-b from-transparent to-[#DDBF8D]" />
+          <p className={cn(scriptFont, "text-4xl text-[#C9A66B]")}>{coupleNames}</p>
+          {dateLabel && <p className={cn(smallCaps, "mt-4 text-[#9b7b62]")}>{dateLabel}</p>}
+        </footer>
+      </div>
     </main>
   );
 }
@@ -684,29 +730,75 @@ function CinematicFrame({
   );
 }
 
-function DetailCard({
-  icon: Icon,
+function ChapterIntro({
+  kicker,
+  title,
+  note,
+  calm,
+}: {
+  kicker: string;
+  title: string;
+  note?: string;
+  calm: boolean;
+}) {
+  const rise = calm
+    ? {}
+    : {
+        initial: { opacity: 0, y: 16 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, amount: 0.6 },
+        transition: { duration: 0.85, ease },
+      };
+
+  return (
+    <div className="mx-auto mb-8 max-w-xl text-center sm:mb-12">
+      <motion.div {...rise}>
+        <Fleuron className="mx-auto" />
+      </motion.div>
+      <motion.p {...rise} className={cn(smallCaps, "mt-5 text-[#B76E79]")}>
+        {kicker}
+      </motion.p>
+      <motion.h2
+        {...rise}
+        className={cn(displayFont, "mt-3 text-balance text-4xl font-light leading-tight text-[#4a3236] sm:text-5xl")}
+      >
+        {title}
+      </motion.h2>
+      {note && (
+        <motion.p {...rise} className={cn(displayFont, "mt-3 text-lg italic leading-relaxed text-[#6d4a50]")}>
+          {note}
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
+function Detail({
   label,
   value,
-  detail,
+  note,
+  calm,
+  delay,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  detail?: string | null;
+  note?: string | null;
+  calm: boolean;
+  delay: number;
 }) {
   return (
-    <motion.article
-      variants={{
-        hidden: { opacity: 0, y: 16 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease } },
-      }}
-      className="rounded-2xl border border-[#E8B8C7] bg-white/70 px-6 py-7 text-center shadow-sm"
+    <motion.div
+      className="px-4 py-2 text-center sm:px-8 sm:py-1"
+      initial={calm ? false : { opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.6 }}
+      transition={{ duration: 0.75, delay: calm ? 0 : delay, ease }}
     >
-      <Icon className="mx-auto h-5 w-5 text-[#DDBF8D]" />
-      <p className="mt-4 text-xs uppercase tracking-[0.24em] text-[#B76E79]">{label}</p>
-      <p className="mt-2 font-serif text-2xl text-[#6d4650]">{value}</p>
-      {detail && <p className="mt-2 text-sm leading-6 text-[#8d5d66]">{detail}</p>}
-    </motion.article>
+      <dt className={cn(smallCaps, "text-[#9b7b62]")}>{label}</dt>
+      <dd className={cn(displayFont, "mt-3 text-balance text-2xl font-light leading-snug text-[#4a3236] sm:text-3xl")}>
+        {value}
+      </dd>
+      {note && <dd className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-[#7a5d62]">{note}</dd>}
+    </motion.div>
   );
 }
