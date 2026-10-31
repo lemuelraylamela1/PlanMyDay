@@ -70,12 +70,12 @@ export function ChapterContinue({
           animate={
             reduceMotion || !inView
               ? { y: "40%" }
-              : { y: ["-100%", "200%"] }
+              : { y: ["-100%", "160%"] }
           }
           transition={
             reduceMotion || !inView
               ? { duration: 0.2 }
-              : { duration: 3.2, repeat: Infinity, ease: fairytaleEase }
+              : { duration: 4.6, repeat: Infinity, ease: fairytaleEase, repeatDelay: 1.4 }
           }
         />
       </span>

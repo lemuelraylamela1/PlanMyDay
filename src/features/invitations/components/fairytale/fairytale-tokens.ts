@@ -31,7 +31,7 @@ export const fairytaleAtmosphere = {
   midnightPlane: `linear-gradient(180deg, ${fairytale.midnight} 0%, #2a2c45 48%, #1a1c2e 100%)`,
   duskShell: `radial-gradient(ellipse 55% 40% at 50% 35%, rgba(201,184,232,0.12), transparent 72%), radial-gradient(ellipse 50% 36% at 50% 40%, rgba(232,212,168,0.14), transparent 70%), linear-gradient(180deg, #2a2c45 0%, ${fairytale.midnight} 52%, #1a1c2e 100%)`,
   heroVignette:
-    "linear-gradient(180deg, rgba(34,36,58,0.12) 22%, rgba(34,36,58,0.34) 58%, rgba(34,36,58,0.92) 100%)",
+    "linear-gradient(180deg, rgba(34,36,58,0.28) 12%, rgba(34,36,58,0.48) 46%, rgba(34,36,58,0.94) 100%), linear-gradient(90deg, rgba(34,36,58,0.42) 0%, transparent 55%)",
   heroVignetteDesktop:
     "linear-gradient(90deg, rgba(34,36,58,0.68) 0%, rgba(34,36,58,0.14) 52%, transparent 78%), linear-gradient(0deg, rgba(34,36,58,0.78), transparent 50%)",
 } as const;

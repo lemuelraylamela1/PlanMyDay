@@ -38,13 +38,12 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
   const reveal = useReveal();
   const progress = useChapterScroll(ref);
   const { y: glowY } = useDepthLayer(progress, "far");
-  const { y: cardY } = useDepthLayer(progress, "near");
 
   return (
     <section
       id="rsvp"
       ref={ref}
-      className="relative overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pb-28 sm:pt-32"
+      className="relative scroll-mt-6 overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pb-28 sm:pt-32"
       style={{ backgroundImage: pageParchment }}
     >
       <LanternField />
@@ -75,10 +74,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
           Please let us know if you can join us.
         </motion.p>
 
-        <motion.div
-          className="relative mt-14 text-left"
-          style={reduceMotion ? undefined : { y: cardY }}
-        >
+        <motion.div className="relative mt-14 text-left">
           <motion.div
             {...reveal(0.42, 24)}
             className="relative border-y border-[#DDBF8D]/45 bg-[#FFFDF8]/40 px-5 py-10 sm:px-8 sm:py-12"

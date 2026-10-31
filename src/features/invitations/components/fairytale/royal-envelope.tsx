@@ -1,22 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
 import { cn } from "@/lib/utils";
-import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
 import {
   Fleuron,
   displayFont,
   scriptFont,
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
+import { fairytale } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import {
+  finialBackground,
   grainOverlay,
-  pageParchment,
-  stoneBackground,
+  parchmentBackground,
+  rodBackground,
   waxSealBackground,
 } from "@/features/invitations/components/fairytale/textures";
 
@@ -32,12 +33,8 @@ interface Props {
   onOpened: () => void;
 }
 
-/** Card settles ~5.2s in; remaining time is a reading hold before the story begins. */
-const OPEN_SEQUENCE_MS = 13000;
-/** Moment the flap passes vertical; from here it must render behind the rising card. */
-const FLAP_EDGE_ON_MS = 1200;
-/** When the continue hint appears under the open card. */
-const CONTINUE_HINT_MS = 5800;
+const PARTICLE_COUNT_DESKTOP = 28;
+const PARTICLE_COUNT_MOBILE = 14;
 
 export function RoyalEnvelope({
   guestName,
@@ -48,547 +45,540 @@ export function RoyalEnvelope({
   onOpened,
 }: Props) {
   const reduceMotion = useReducedMotion();
-  const [opening, setOpening] = React.useState(false);
-  const [flapOpen, setFlapOpen] = React.useState(false);
-  const [showContinue, setShowContinue] = React.useState(false);
+  const [ready, setReady] = React.useState(Boolean(reduceMotion));
+  const [particleCount, setParticleCount] = React.useState(PARTICLE_COUNT_MOBILE);
   const rootRef = React.useRef<HTMLElement>(null);
+  const sceneRef = React.useRef<HTMLDivElement>(null);
+  const fogRefs = React.useRef<HTMLSpanElement[]>([]);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const unrollRef = React.useRef<HTMLDivElement>(null);
+  const parchmentRef = React.useRef<HTMLDivElement>(null);
+  const sealRef = React.useRef<HTMLDivElement>(null);
   const sealGlowRef = React.useRef<HTMLSpanElement>(null);
-  const chamberRef = React.useRef<HTMLDivElement>(null);
+  const guestRef = React.useRef<HTMLParagraphElement>(null);
+  const linesRef = React.useRef<HTMLDivElement>(null);
+  const ctaRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (!opening) return;
-    const flapTimer = window.setTimeout(() => setFlapOpen(true), FLAP_EDGE_ON_MS);
-    const hintTimer = window.setTimeout(() => setShowContinue(true), CONTINUE_HINT_MS);
-    const doneTimer = window.setTimeout(onOpened, OPEN_SEQUENCE_MS);
-    return () => {
-      window.clearTimeout(flapTimer);
-      window.clearTimeout(hintTimer);
-      window.clearTimeout(doneTimer);
-    };
-  }, [opening, onOpened]);
+    const mq = window.matchMedia("(min-width: 640px)");
+    const sync = () => setParticleCount(mq.matches ? PARTICLE_COUNT_DESKTOP : PARTICLE_COUNT_MOBILE);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useGSAP(
     () => {
-      if (reduceMotion || opening || !sealGlowRef.current) return;
-      const pulse = gsap.to(sealGlowRef.current, {
-        opacity: 0.85,
-        scale: 1.08,
-        duration: 2.4,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-      });
-      return () => {
-        pulse.kill();
+      if (!sceneRef.current || !scrollRef.current || !unrollRef.current || !parchmentRef.current) {
+        return;
+      }
+
+      const setFinalState = () => {
+        gsap.set(sceneRef.current, { opacity: 1 });
+        gsap.set(scrollRef.current, { opacity: 1, y: 0, rotate: 0, scale: 1 });
+        gsap.set(unrollRef.current, { height: "auto" });
+        gsap.set(parchmentRef.current, { opacity: 1, rotateX: 0 });
+        if (sealRef.current) gsap.set(sealRef.current, { opacity: 1, scale: 1, y: 0 });
+        if (sealGlowRef.current) gsap.set(sealGlowRef.current, { opacity: 0.75, scale: 1.12 });
+        if (guestRef.current) gsap.set(guestRef.current, { opacity: 1, y: 0 });
+        if (linesRef.current) {
+          gsap.set(linesRef.current.children, { opacity: 1, y: 0 });
+        }
+        if (ctaRef.current) gsap.set(ctaRef.current, { opacity: 1, y: 0 });
+        setReady(true);
       };
-    },
-    { scope: rootRef, dependencies: [reduceMotion, opening] },
-  );
 
-  useGSAP(
-    () => {
-      if (!opening || reduceMotion || !chamberRef.current) return;
-      const tl = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+      if (reduceMotion) {
+        setFinalState();
+        return;
+      }
+
+      gsap.set(sceneRef.current, { opacity: 0 });
+      gsap.set(scrollRef.current, { opacity: 0, y: 72, rotate: -2.5, scale: 0.94 });
+      // Collapsed height keeps the bottom rod tucked under the top rod; layout
+      // expansion then carries the bottom bracket down with the parchment.
+      gsap.set(unrollRef.current, { height: 0 });
+      gsap.set(parchmentRef.current, {
+        opacity: 0.92,
+        rotateX: 28,
+        transformOrigin: "50% 0%",
+      });
+      if (sealRef.current) gsap.set(sealRef.current, { opacity: 1, scale: 1, y: 0 });
+      if (sealGlowRef.current) gsap.set(sealGlowRef.current, { opacity: 0.35, scale: 1 });
+      if (guestRef.current) gsap.set(guestRef.current, { opacity: 0, y: 14 });
+      if (linesRef.current) {
+        gsap.set(linesRef.current.children, { opacity: 0, y: 16 });
+      }
+      if (ctaRef.current) gsap.set(ctaRef.current, { opacity: 0, y: 18 });
+
+      const fog = fogRefs.current.filter(Boolean);
+      fog.forEach((el, i) => {
+        gsap.set(el, { opacity: 0, x: i % 2 === 0 ? -40 : 40 });
+      });
+
+      const particles = sceneRef.current.querySelectorAll<HTMLElement>("[data-particle]");
+      gsap.set(particles, { opacity: 0, y: 20 });
+
+      const tl = gsap.timeline({
+        defaults: { ease: "power2.inOut" },
+        onComplete: () => setReady(true),
+      });
+
+      tl.to(sceneRef.current, { opacity: 1, duration: 1.35, ease: "power1.out" }, 0);
+
+      fog.forEach((el, i) => {
+        tl.to(
+          el,
+          {
+            opacity: i === 1 ? 0.45 : 0.28,
+            x: 0,
+            duration: 1.8,
+            ease: "sine.out",
+          },
+          0.2 + i * 0.15,
+        );
+      });
+
       tl.to(
-        chamberRef.current,
+        particles,
         {
-          opacity: 0.42,
-          scale: 1.03,
-          duration: 2.4,
-          delay: 3.2,
+          opacity: 0.85,
+          y: 0,
+          duration: 1.4,
+          stagger: { each: 0.04, from: "random" },
+          ease: "power1.out",
         },
-        0,
+        0.35,
       );
+
+      tl.to(
+        scrollRef.current,
+        {
+          opacity: 1,
+          y: 0,
+          rotate: 0,
+          scale: 1,
+          duration: 1.55,
+          ease: "power3.out",
+        },
+        0.55,
+      );
+
+      tl.to(
+        unrollRef.current,
+        {
+          height: "auto",
+          duration: 2.2,
+          ease: "power2.inOut",
+        },
+        1.35,
+      );
+
+      tl.to(
+        parchmentRef.current,
+        {
+          rotateX: 0,
+          opacity: 1,
+          duration: 2.2,
+          ease: "power2.out",
+        },
+        1.35,
+      );
+
       if (sealGlowRef.current) {
         tl.to(
           sealGlowRef.current,
-          { opacity: 0, scale: 1.4, duration: 0.55 },
-          0,
+          {
+            opacity: 0.9,
+            scale: 1.22,
+            duration: 0.9,
+            ease: "sine.inOut",
+          },
+          2.9,
+        );
+        tl.to(
+          sealGlowRef.current,
+          {
+            opacity: 0.55,
+            scale: 1.08,
+            duration: 1.1,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: 1,
+          },
+          3.7,
         );
       }
+
+      if (guestRef.current) {
+        tl.to(
+          guestRef.current,
+          { opacity: 1, y: 0, duration: 0.95, ease: "power2.out" },
+          3.55,
+        );
+      }
+
+      if (linesRef.current) {
+        tl.to(
+          linesRef.current.children,
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.85,
+            stagger: 0.14,
+            ease: "power2.out",
+          },
+          4.05,
+        );
+      }
+
+      if (ctaRef.current) {
+        tl.to(
+          ctaRef.current,
+          { opacity: 1, y: 0, duration: 0.85, ease: "power2.out" },
+          5.0,
+        );
+      }
+
+      // Idle atmosphere after intro
+      fog.forEach((el, i) => {
+        gsap.to(el, {
+          x: i % 2 === 0 ? 28 : -24,
+          duration: 10 + i * 2.5,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay: 5.2,
+        });
+      });
+
+      particles.forEach((el, i) => {
+        gsap.to(el, {
+          y: `-=${12 + (i % 5) * 6}`,
+          x: `+=${(i % 2 === 0 ? 1 : -1) * (4 + (i % 4) * 3)}`,
+          opacity: 0.25 + (i % 5) * 0.12,
+          duration: 3.2 + (i % 6) * 0.55,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay: 5.2 + (i % 8) * 0.12,
+        });
+      });
+
       return () => {
         tl.kill();
       };
     },
-    { scope: rootRef, dependencies: [opening, reduceMotion] },
+    { scope: rootRef, dependencies: [reduceMotion, particleCount] },
   );
 
-  function openEnvelope() {
-    if (opening) return;
+  function openInvitation() {
+    if (!ready) return;
     onOpenStart?.();
-    if (reduceMotion) {
-      onOpened();
-      return;
-    }
-    setOpening(true);
+    onOpened();
   }
+
+  const particles = React.useMemo(
+    () =>
+      Array.from({ length: particleCount }, (_, i) => ({
+        id: i,
+        left: `${6 + ((i * 37) % 88)}%`,
+        top: `${8 + ((i * 53) % 78)}%`,
+        size: 1.5 + (i % 4) * 0.9,
+        delay: (i % 7) * 0.1,
+      })),
+    [particleCount],
+  );
 
   return (
     <section
       ref={rootRef}
       className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
     >
-      <ChamberBackdrop ref={chamberRef} animate={!reduceMotion && !opening} />
+      <div ref={sceneRef} aria-hidden className="pointer-events-none absolute inset-0">
+        <AtmosphericBackdrop />
+        <CastleSilhouette />
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            ref={(el) => {
+              if (el) fogRefs.current[i] = el;
+            }}
+            className="absolute inset-x-[-20%] h-[38%] blur-2xl"
+            style={{
+              top: `${18 + i * 22}%`,
+              backgroundImage:
+                i === 1
+                  ? "linear-gradient(90deg, transparent, rgba(232,212,168,0.22), transparent)"
+                  : "linear-gradient(90deg, transparent, rgba(243,231,211,0.14), transparent)",
+            }}
+          />
+        ))}
+        {!reduceMotion &&
+          particles.map((p) => (
+            <span
+              key={p.id}
+              data-particle
+              className="absolute rounded-full"
+              style={{
+                left: p.left,
+                top: p.top,
+                width: p.size,
+                height: p.size,
+                backgroundColor: fairytale.gold,
+                boxShadow: `0 0 ${4 + (p.id % 3) * 2}px rgba(221,191,141,0.55)`,
+              }}
+            />
+          ))}
+        <div
+          className="absolute inset-0 opacity-[0.07] mix-blend-overlay"
+          style={{ backgroundImage: grainOverlay }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 50%,rgba(0,0,0,0.58) 100%)",
+          }}
+        />
+      </div>
 
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
-        <motion.button
-          type="button"
-          onClick={openEnvelope}
-          aria-disabled={opening}
-          aria-label={`Open your invitation, ${guestName}`}
-          className={cn(
-            "group relative mx-auto block aspect-[16/10] w-[min(92vw,26rem)] select-none focus-visible:outline-none",
-            opening && "pointer-events-none",
-          )}
+        <div
+          ref={scrollRef}
+          className="relative w-[min(92vw,22rem)] origin-center scale-[0.92] sm:w-[min(92vw,24rem)] sm:scale-100"
           style={{ perspective: "1400px" }}
-          initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: fairytaleEase, delay: 0.15 }}
-          whileTap={opening || reduceMotion ? undefined : { scale: 0.992 }}
         >
-          <motion.span
-            className="absolute inset-0 block"
-            initial={false}
-            animate={{ y: opening ? "90%" : "0%" }}
-            transition={{ duration: 3.8, ease: fairytaleEase, delay: opening ? 1.05 : 0 }}
-          >
-            <span
-              aria-hidden
-              className="absolute -bottom-8 left-[4%] z-0 block h-14 w-[92%] rounded-[50%] bg-black/60 blur-3xl"
-            />
-
-            <EnvelopeShell opening={opening} className="z-0">
-              <EnvelopeBack opening={opening} />
-            </EnvelopeShell>
-
-            <InvitationCard
-              opening={opening}
-              guestName={guestName}
-              coupleNames={coupleNames}
-              monogram={monogram}
-              dateLabel={dateLabel}
-            />
-
-            <EnvelopeShell opening={opening} className="z-20">
-              <EnvelopeFront guestName={guestName} opening={opening} />
-            </EnvelopeShell>
-
-            <EnvelopeShell
-              opening={opening}
-              className={flapOpen ? "z-[5]" : "z-30"}
-              style={{ perspective: "1400px" }}
-            >
-              <EnvelopeFlap opening={opening} />
-            </EnvelopeShell>
-
-            <span className="absolute left-1/2 top-[52%] z-40 block -translate-x-1/2 -translate-y-1/2">
-              <span
-                ref={sealGlowRef}
-                aria-hidden
-                className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(232,184,199,0.45),transparent_68%)] opacity-55"
-              />
-              <WaxSeal monogram={monogram} opening={opening} />
-            </span>
-          </motion.span>
-
           <span
             aria-hidden
-            className={cn(
-              "absolute -inset-3 z-50 border border-[#DDBF8D]/80 opacity-0 transition-opacity",
-              !opening && "group-focus-visible:opacity-100",
-            )}
+            className="absolute -bottom-6 left-[8%] z-0 block h-16 w-[84%] rounded-[50%] bg-black/55 blur-3xl"
           />
-        </motion.button>
 
-        <motion.div
-          className="relative z-30 mt-10 flex flex-col items-center gap-2 text-center sm:mt-12"
-          initial={false}
-          animate={
-            opening && !showContinue
-              ? { opacity: 0, y: 8 }
-              : { opacity: 1, y: 0 }
-          }
-          transition={{ duration: 0.45, ease: fairytaleEase }}
-        >
-          {showContinue ? (
-            <>
-              <p className={cn(smallCaps, "text-[8px] text-[#DDBF8D]/75 sm:text-[10px]")}>
-                Take a moment to read your card
-              </p>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onOpened();
+          <ScrollRod position="top" />
+
+          {/* Height-driven reveal: bottom rod is a sibling so it rides the leading edge. */}
+          <div ref={unrollRef} className="relative overflow-hidden will-change-[height]">
+            <div
+              ref={parchmentRef}
+              className="relative mx-[6%] overflow-hidden"
+              style={{
+                backgroundImage: parchmentBackground,
+                boxShadow:
+                  "0 22px 48px rgba(0,0,0,0.45), inset 0 0 40px rgba(139,98,48,0.12), inset 0 1px 0 rgba(255,255,255,0.35)",
+                transformStyle: "preserve-3d",
+                perspective: "900px",
+              }}
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(180deg, rgba(255,255,255,0.18), transparent 18%, transparent 82%, rgba(120,80,40,0.12)), repeating-linear-gradient(90deg, transparent 0 18px, rgba(139,98,48,0.035) 18px 19px)",
                 }}
-                className={cn(
-                  displayFont,
-                  "pointer-events-auto text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
-                )}
-              >
-                Continue when you are ready
-              </button>
-            </>
-          ) : (
-            <>
-              <p className={cn(smallCaps, "text-[8px] text-[#E8D4A8]/80 sm:text-[10px]")}>
-                A private invitation awaits
-              </p>
-              <button
-                type="button"
-                onClick={openEnvelope}
-                disabled={opening}
-                className={cn(
-                  displayFont,
-                  "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
-                )}
-              >
-                Open your invitation
-              </button>
-            </>
-          )}
-        </motion.div>
+              />
+              <span
+                aria-hidden
+                className="absolute inset-2 border border-[#C9A66B]/45 sm:inset-2.5"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-3 border border-[#C9A66B]/20 sm:inset-3.5"
+              />
+
+              <div className="relative flex flex-col items-center px-5 py-5 text-center sm:px-8 sm:py-10">
+                <div
+                  ref={sealRef}
+                  className="relative mb-3 flex items-center justify-center sm:mb-6"
+                >
+                  <span
+                    ref={sealGlowRef}
+                    aria-hidden
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(221,191,141,0.55),transparent_68%)]"
+                  />
+                  <WaxSeal monogram={monogram} />
+                </div>
+
+                <p ref={guestRef} className="max-w-full">
+                  <span className={cn(smallCaps, "block text-[10px] text-[#9b7b62] sm:text-[11px]")}>
+                    Hand delivered for
+                  </span>
+                  <span
+                    className={cn(
+                      displayFont,
+                      "mt-2 block truncate text-xl italic text-[#4a3236] sm:text-2xl",
+                    )}
+                  >
+                    {guestName}
+                  </span>
+                </p>
+
+                <div ref={linesRef} className="mt-3 flex w-full flex-col items-center sm:mt-6">
+                  <span className="hidden sm:block">
+                    <Fleuron className="w-20 text-[#C9A66B]" />
+                  </span>
+                  <span
+                    className={cn(
+                      displayFont,
+                      "mt-2 text-base font-light leading-none text-[#B76E79] sm:mt-4 sm:text-2xl",
+                    )}
+                  >
+                    {monogram}
+                  </span>
+                  <span
+                    className={cn(
+                      displayFont,
+                      "mt-2 max-w-[16rem] text-balance text-[clamp(1.05rem,4.4vw,1.85rem)] font-light leading-[1.05] text-[#4a3236] sm:mt-3",
+                    )}
+                  >
+                    {coupleNames}
+                  </span>
+                  <span
+                    className={cn(
+                      scriptFont,
+                      "mt-1.5 max-w-full truncate text-sm text-[#B76E79] sm:mt-3 sm:text-lg",
+                    )}
+                  >
+                    invite {guestName}
+                  </span>
+                  {dateLabel && (
+                    <span className={cn(smallCaps, "mt-2 text-[10px] text-[#9b7b62] sm:mt-4 sm:text-[11px]")}>
+                      {dateLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ScrollRod position="bottom" />
+        </div>
+
+        <div
+          ref={ctaRef}
+          className="relative z-30 mt-6 flex flex-col items-center gap-2.5 text-center sm:mt-12 sm:gap-3"
+        >
+          <p className={cn(smallCaps, "text-[10px] text-[#E8D4A8]/85 sm:text-[11px]")}>
+            A private invitation awaits
+          </p>
+          <button
+            type="button"
+            onClick={openInvitation}
+            disabled={!ready}
+            aria-label={`Open Invitation, ${guestName}`}
+            className={cn(
+              displayFont,
+              "min-h-11 rounded-sm border border-[#DDBF8D]/55 bg-[#DDBF8D]/12 px-7 py-2.5 text-lg italic text-[#F3E7D3] transition-colors",
+              "hover:border-[#DDBF8D] hover:bg-[#DDBF8D]/22 hover:text-[#DDBF8D]",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
+              "disabled:cursor-wait disabled:opacity-50",
+            )}
+          >
+            Open Invitation
+          </button>
+        </div>
       </div>
     </section>
   );
 }
 
-function EnvelopeShell({
-  opening,
-  className,
-  style,
-  children,
-}: {
-  opening: boolean;
-  className?: string;
-  style?: React.CSSProperties;
-  children: React.ReactNode;
-}) {
+function AtmosphericBackdrop() {
   return (
-    <motion.span
-      className={cn("absolute inset-0 block", className)}
-      style={style}
-      animate={
-        opening
-          ? { y: [0, 4, 22], opacity: [1, 1, 0], scale: [1, 1, 0.94] }
-          : { y: 0, opacity: 1, scale: 1 }
-      }
-      transition={{
-        duration: 1.85,
-        ease: fairytaleEase,
-        delay: opening ? 3.5 : 0,
-        times: [0, 0.4, 1],
-      }}
-    >
-      {children}
-    </motion.span>
-  );
-}
-
-function InvitationCard({
-  opening,
-  guestName,
-  coupleNames,
-  monogram,
-  dateLabel,
-}: {
-  opening: boolean;
-  guestName: string;
-  coupleNames: string;
-  monogram: string;
-  dateLabel: string | null;
-}) {
-  return (
-    <motion.span
-      className="absolute left-[7%] top-[7%] z-10 block h-[86%] w-[86%] overflow-hidden text-[#4a3236] shadow-[0_18px_36px_rgba(0,0,0,0.35)]"
-      style={{ backgroundImage: pageParchment }}
-      initial={false}
-      animate={
-        opening
-          ? {
-              opacity: 1,
-              y: ["0%", "0%", "-110%", "-110%"],
-              scale: [1, 1, 1, 1.14],
-            }
-          : { opacity: 0, y: "0%", scale: 1 }
-      }
-      transition={{
-        duration: 4.2,
-        ease: fairytaleEase,
-        delay: opening ? 0.9 : 0,
-        times: [0, 0.18, 0.72, 1],
-        opacity: { duration: 0.01, delay: opening ? 0.55 : 0 },
-      }}
-    >
-      <span aria-hidden className="absolute inset-1.5 border border-[#C9A66B]/65 sm:inset-2.5" />
-      <span aria-hidden className="absolute inset-2.5 border border-[#C9A66B]/25 sm:inset-3.5" />
-      <span
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 65% 58% at 50% 44%,rgba(255,239,199,0.45),transparent 78%)",
-        }}
-      />
-
-      <span className="absolute inset-0 flex flex-col items-center justify-center px-4 py-3 text-center sm:px-6 sm:py-5">
-        <motion.span
-          initial={false}
-          animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-          transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 2.1 : 0 }}
-          className={cn(displayFont, "text-lg font-light leading-none text-[#B76E79] sm:text-2xl")}
-        >
-          {monogram}
-        </motion.span>
-        <motion.span
-          initial={false}
-          animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-          transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 2.3 : 0 }}
-          className="my-1.5 hidden sm:my-2 sm:block"
-        >
-          <Fleuron className="w-20" />
-        </motion.span>
-        <motion.span
-          initial={false}
-          animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-          transition={{ duration: 1.1, ease: fairytaleEase, delay: opening ? 2.5 : 0 }}
-          className={cn(smallCaps, "mt-1.5 text-[6px] text-[#9b7b62] sm:mt-0 sm:text-[8px]")}
-        >
-          Together with their families
-        </motion.span>
-        <motion.span
-          initial={false}
-          animate={opening ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
-          transition={{ duration: 1.2, ease: fairytaleEase, delay: opening ? 2.75 : 0 }}
-          className={cn(
-            displayFont,
-            "mt-1.5 max-w-[16rem] text-balance text-[clamp(1.15rem,4.6vw,1.9rem)] font-light leading-[1] sm:mt-2",
-          )}
-        >
-          {coupleNames}
-        </motion.span>
-        <motion.span
-          initial={false}
-          animate={opening ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 3.05 : 0 }}
-          className={cn(scriptFont, "mt-1 max-w-full truncate text-base text-[#B76E79] sm:mt-2 sm:text-lg")}
-        >
-          invite {guestName}
-        </motion.span>
-        {dateLabel && (
-          <motion.span
-            initial={false}
-            animate={opening ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1.05, ease: fairytaleEase, delay: opening ? 3.3 : 0 }}
-            className={cn(smallCaps, "mt-1.5 text-[6px] text-[#9b7b62] sm:mt-3 sm:text-[8px]")}
-          >
-            {dateLabel}
-          </motion.span>
-        )}
-      </span>
-    </motion.span>
-  );
-}
-
-function EnvelopeBack({ opening }: { opening: boolean }) {
-  return (
-    <>
-      <span
-        className="absolute inset-0 z-0 block rounded-sm shadow-[0_26px_55px_rgba(0,0,0,0.5)]"
-        style={{
-          backgroundImage: "linear-gradient(145deg,#f6ead3 0%,#fffaf0 48%,#e2cba5 100%)",
-        }}
-      />
-      <motion.span
-        aria-hidden
-        className="absolute inset-x-[2%] top-[2%] z-[5] block h-[48%] origin-top"
-        style={{
-          clipPath: "polygon(0 0,100% 0,50% 100%)",
-          backgroundImage: "linear-gradient(150deg,#c78999 0%,#E8B8C7 46%,#b97889 100%)",
-        }}
-        initial={false}
-        animate={opening ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.45, delay: opening ? 0.45 : 0 }}
-      >
-        <span
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg,transparent 0 10px,rgba(255,255,255,0.22) 10px 11px)",
-          }}
-        />
-      </motion.span>
-    </>
-  );
-}
-
-function EnvelopeFlap({ opening }: { opening: boolean }) {
-  return (
-    <motion.span
-      aria-hidden
-      className="absolute inset-x-0 top-0 block h-[52%] origin-top"
-      style={{
-        clipPath: "polygon(0 0,100% 0,50% 100%)",
-        backgroundImage: "linear-gradient(165deg,#fff9ed 0%,#ead8b9 62%,#c9aa78 100%)",
-      }}
-      initial={false}
-      animate={
-        opening
-          ? {
-              rotateX: [0, -18, -178],
-              filter: ["brightness(1)", "brightness(1.08)", "brightness(0.82)"],
-            }
-          : { rotateX: 0, filter: "brightness(1)" }
-      }
-      transition={{ duration: 1.75, ease: fairytaleEase, delay: opening ? 0.45 : 0, times: [0, 0.28, 1] }}
-    >
-      <span className="absolute inset-4 border-t border-[#C9A66B]/45" />
-    </motion.span>
-  );
-}
-
-function EnvelopeFront({ guestName, opening }: { guestName: string; opening: boolean }) {
-  return (
-    <span className="absolute inset-0 z-20 block overflow-hidden rounded-sm">
-      {/* Pocket face: V-cut so the card can slide out from the open top */}
-      <span
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          clipPath: "polygon(0 0,50% 46%,100% 0,100% 100%,0 100%)",
-          backgroundImage: "linear-gradient(160deg,#f5e8cf 0%,#fffaf0 48%,#dfc69e 100%)",
-        }}
-      />
-      <span
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(28deg,transparent 49.7%,rgba(155,123,98,0.28) 50%,transparent 50.4%),linear-gradient(-28deg,transparent 49.7%,rgba(155,123,98,0.28) 50%,transparent 50.4%)",
-          clipPath: "polygon(0 0,50% 46%,100% 0,100% 100%,0 100%)",
-        }}
-      />
-      <motion.span
-        className="absolute inset-x-[14%] bottom-[10%] text-center text-[#6d4a50]"
-        initial={false}
-        animate={opening ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        <span className={cn(smallCaps, "block text-[7px] text-[#9b7b62] sm:text-[9px]")}>
-          Hand delivered for
-        </span>
-        <span className={cn(displayFont, "mt-1.5 block truncate text-lg italic sm:text-xl")}>
-          {guestName}
-        </span>
-      </motion.span>
-    </span>
-  );
-}
-
-function WaxSeal({ monogram, opening }: { monogram: string; opening: boolean }) {
-  return (
-    <motion.span
-      className="flex items-center justify-center"
-      initial={false}
-      animate={
-        opening
-          ? {
-              opacity: [1, 1, 0],
-              scale: [1, 1.08, 0.72],
-              rotate: [0, -6, 18],
-              y: [0, -4, 70],
-            }
-          : { opacity: 1, scale: 1, rotate: 0, y: 0 }
-      }
-      transition={{ duration: 1.2, ease: fairytaleEase }}
-    >
-      <span className="relative flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16">
-        <span className="absolute right-1/2 top-[62%] block h-7 w-2.5 origin-top-right rotate-[16deg] bg-[#8f4a57] [clip-path:polygon(0_0,100%_0,100%_100%,50%_82%,0_100%)]" />
-        <span className="absolute left-1/2 top-[62%] block h-7 w-2.5 origin-top-left -rotate-[16deg] bg-[#743844] [clip-path:polygon(0_0,100%_0,100%_100%,50%_82%,0_100%)]" />
-        <span
-          className="relative flex h-full w-full items-center justify-center rounded-[47%_53%_50%_50%/52%_48%_52%_48%] shadow-[0_7px_16px_rgba(0,0,0,0.42),inset_0_-3px_6px_rgba(0,0,0,0.25)]"
-          style={{ backgroundImage: waxSealBackground }}
-        >
-          <span className="absolute inset-[6px] rounded-full border border-[#f3c5cc]/40" />
-          <span
-            className={cn(
-              displayFont,
-              "relative max-w-[3rem] truncate text-[11px] font-semibold tracking-wide text-[#fbe3e6] sm:text-xs",
-            )}
-          >
-            {monogram}
-          </span>
-        </span>
-      </span>
-    </motion.span>
-  );
-}
-
-const ChamberBackdrop = React.forwardRef<HTMLDivElement, { animate: boolean }>(
-  function ChamberBackdrop({ animate }, ref) {
-  return (
-    <div ref={ref} aria-hidden className="pointer-events-none absolute inset-0">
+    <div className="absolute inset-0">
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage:
-            "radial-gradient(ellipse 52% 45% at 50% 43%,rgba(232,212,168,0.18),transparent 72%),radial-gradient(ellipse 40% 35% at 70% 60%,rgba(201,184,232,0.1),transparent 70%),linear-gradient(180deg,#2a2c45 0%,#22243A 54%,#1a1c2e 100%)",
+          backgroundImage: [
+            "radial-gradient(ellipse 55% 42% at 50% 38%, rgba(232,212,168,0.22), transparent 70%)",
+            "radial-gradient(ellipse 40% 30% at 72% 62%, rgba(201,184,232,0.1), transparent 68%)",
+            "linear-gradient(180deg, #1a1c2e 0%, #22243A 48%, #12131f 100%)",
+          ].join(", "),
         }}
       />
       <div
-        className="absolute bottom-0 left-1/2 h-[94svh] w-[min(100vw,52rem)] -translate-x-1/2 rounded-t-full"
-        style={{
-          backgroundImage: stoneBackground,
-          boxShadow: "inset 0 0 100px rgba(0,0,0,0.62)",
-        }}
-      >
-        <div
-          className="absolute inset-x-[7%] bottom-0 top-[5%] rounded-t-full"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 70% 50% at 50% 48%,rgba(255,222,172,0.18),transparent 72%),linear-gradient(180deg,#343652 0%,#2a2c45 60%,#1a1c2e 100%)",
-            boxShadow:
-              "inset 0 40px 75px rgba(0,0,0,0.52),inset 0 0 0 1px rgba(221,191,141,0.12)",
-          }}
-        />
-      </div>
-      <motion.div
-        className="absolute -top-[8%] left-[15%] h-[115%] w-[45%] origin-top -rotate-[16deg] blur-2xl"
+        className="absolute inset-x-0 bottom-0 h-[42%]"
         style={{
           backgroundImage:
-            "linear-gradient(180deg,rgba(255,232,190,0.3),rgba(255,232,190,0.06) 62%,transparent)",
-          clipPath: "polygon(40% 0,60% 0,100% 100%,0 100%)",
+            "linear-gradient(180deg, transparent, rgba(34,36,58,0.55) 35%, rgba(10,10,18,0.92))",
         }}
-        animate={animate ? { opacity: [0.58, 0.95, 0.58] } : undefined}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-      />
-      {["left-[9%]", "right-[9%]"].map((position, index) => (
-        <div
-          key={position}
-          className={cn("absolute bottom-[13%] hidden flex-col items-center sm:flex", position)}
-        >
-          <motion.div
-            className="absolute -top-24 h-52 w-52 rounded-full bg-[radial-gradient(circle,rgba(255,196,120,0.3),transparent_65%)]"
-            animate={animate ? { opacity: [0.7, 1, 0.78, 1, 0.7] } : undefined}
-            transition={{ duration: 5 + index, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <span className="relative block h-3.5 w-2 rounded-[50%_50%_50%_50%/62%_62%_38%_38%] bg-[#ffd890] shadow-[0_0_14px_4px_rgba(255,200,120,0.55)]" />
-          <span className="relative mt-0.5 block h-20 w-3 rounded-sm bg-gradient-to-b from-[#f4ead6] to-[#c9b89a]" />
-          <span className="relative block h-1.5 w-8 rounded-full bg-[#8a6f45]" />
-        </div>
-      ))}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 53%,rgba(0,0,0,0.62) 100%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-[0.07] mix-blend-overlay"
-        style={{ backgroundImage: grainOverlay }}
       />
     </div>
   );
-});
+}
+
+function CastleSilhouette() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 800 280"
+      className="absolute inset-x-0 bottom-[8%] mx-auto h-[min(42vw,16rem)] w-[min(100vw,46rem)] text-black/55"
+      preserveAspectRatio="xMidYMax meet"
+    >
+      <defs>
+        <linearGradient id="castleFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.35" />
+        </linearGradient>
+      </defs>
+      <path
+        fill="url(#castleFade)"
+        d="M40 280V168l28-10 18 22 22-36 20 18 16-28h24l12-42 14 42h36l8-22 10 22h28V88l22-18 22 18v42h20l14-48 16 48h34V72l26-28 26 28v98h18l12-30 14 30h40V140l30-14 24 28 20-20 18 24v122H40Z"
+      />
+      <g fill="#DDBF8D" opacity="0.35">
+        <rect x="168" y="188" width="5" height="8" rx="1" />
+        <rect x="292" y="176" width="5" height="8" rx="1" />
+        <rect x="410" y="164" width="5" height="8" rx="1" />
+        <rect x="538" y="182" width="5" height="8" rx="1" />
+        <rect x="646" y="170" width="5" height="8" rx="1" />
+      </g>
+    </svg>
+  );
+}
+
+function ScrollRod({ position }: { position: "top" | "bottom" }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "relative z-20 mx-auto flex h-4 w-[min(100%,26rem)] items-center justify-between sm:h-5",
+        position === "top" ? "mb-[-1px]" : "mt-[-1px]",
+      )}
+    >
+      <span
+        className="relative z-10 h-5 w-5 shrink-0 rounded-full shadow-[0_2px_6px_rgba(0,0,0,0.45)] sm:h-6 sm:w-6"
+        style={{ backgroundImage: finialBackground }}
+      />
+      <span
+        className="absolute inset-x-3 top-1/2 h-[10px] -translate-y-1/2 rounded-sm shadow-[0_3px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.35)] sm:h-3"
+        style={{ backgroundImage: rodBackground }}
+      />
+      <span
+        className="relative z-10 h-5 w-5 shrink-0 rounded-full shadow-[0_2px_6px_rgba(0,0,0,0.45)] sm:h-6 sm:w-6"
+        style={{ backgroundImage: finialBackground }}
+      />
+    </div>
+  );
+}
+
+function WaxSeal({ monogram }: { monogram: string }) {
+  return (
+    <span className="relative flex h-12 w-12 items-center justify-center sm:h-16 sm:w-16">
+      <span className="absolute right-1/2 top-[62%] block h-7 w-2.5 origin-top-right rotate-[16deg] bg-[#8f4a57] [clip-path:polygon(0_0,100%_0,100%_100%,50%_82%,0_100%)]" />
+      <span className="absolute left-1/2 top-[62%] block h-7 w-2.5 origin-top-left -rotate-[16deg] bg-[#743844] [clip-path:polygon(0_0,100%_0,100%_100%,50%_82%,0_100%)]" />
+      <span
+        className="relative flex h-full w-full items-center justify-center rounded-[47%_53%_50%_50%/52%_48%_52%_48%] shadow-[0_7px_16px_rgba(0,0,0,0.42),inset_0_-3px_6px_rgba(0,0,0,0.25)]"
+        style={{ backgroundImage: waxSealBackground }}
+      >
+        <span className="absolute inset-[6px] rounded-full border border-[#f3c5cc]/40" />
+        <span
+          className={cn(
+            displayFont,
+            "relative max-w-[3rem] truncate text-[11px] font-semibold tracking-wide text-[#fbe3e6] sm:text-xs",
+          )}
+        >
+          {monogram}
+        </span>
+      </span>
+    </span>
+  );
+}

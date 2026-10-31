@@ -9,18 +9,39 @@ import {
   useInvitationAudio,
 } from "@/features/invitations/components/fairytale/invitation-audio";
 import { RoyalEnvelope } from "@/features/invitations/components/fairytale/royal-envelope";
-import { InvitationChapter } from "@/features/invitations/components/fairytale/invitation-chapter";
 import { HeroChapter } from "@/features/invitations/components/fairytale/hero-chapter";
-import { VideoChapter } from "@/features/invitations/components/fairytale/video-chapter";
-import { CountdownChapter } from "@/features/invitations/components/fairytale/countdown-chapter";
-import { InterludeChapter } from "@/features/invitations/components/fairytale/interlude-chapter";
-import { GalleryChapter } from "@/features/invitations/components/fairytale/gallery-chapter";
-import { RsvpChapter } from "@/features/invitations/components/fairytale/rsvp-chapter";
+import { InvitationChapter } from "@/features/invitations/components/fairytale/invitation-chapter";
 import type {
   InvitationGuest,
   InvitationResponse,
   InvitationWedding,
 } from "@/features/invitations/components/fairytale/types";
+
+const VideoChapter = React.lazy(() =>
+  import("@/features/invitations/components/fairytale/video-chapter").then((m) => ({
+    default: m.VideoChapter,
+  })),
+);
+const GalleryChapter = React.lazy(() =>
+  import("@/features/invitations/components/fairytale/gallery-chapter").then((m) => ({
+    default: m.GalleryChapter,
+  })),
+);
+const CountdownChapter = React.lazy(() =>
+  import("@/features/invitations/components/fairytale/countdown-chapter").then((m) => ({
+    default: m.CountdownChapter,
+  })),
+);
+const InterludeChapter = React.lazy(() =>
+  import("@/features/invitations/components/fairytale/interlude-chapter").then((m) => ({
+    default: m.InterludeChapter,
+  })),
+);
+const RsvpChapter = React.lazy(() =>
+  import("@/features/invitations/components/fairytale/rsvp-chapter").then((m) => ({
+    default: m.RsvpChapter,
+  })),
+);
 
 interface Props {
   token: string;
@@ -39,6 +60,7 @@ export function InvitationExperience(props: Props) {
 
 function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
   const [opened, setOpened] = React.useState(false);
+  const [loadRest, setLoadRest] = React.useState(false);
   const audio = useInvitationAudio();
 
   const handleOpenStart = React.useCallback(() => {
@@ -52,6 +74,28 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
     void audio?.start();
   }, [audio]);
 
+  React.useEffect(() => {
+    if (!opened) return;
+    let cancelled = false;
+    const revealRest = () => {
+      if (!cancelled) setLoadRest(true);
+    };
+
+    let idleId: number | null = null;
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(revealRest, { timeout: 900 });
+    }
+    const fallback = window.setTimeout(revealRest, 400);
+
+    return () => {
+      cancelled = true;
+      if (idleId != null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      window.clearTimeout(fallback);
+    };
+  }, [opened]);
+
   return (
     <MotionConfig reducedMotion="user">
       <main className="relative min-h-[100svh] overflow-x-clip bg-[#22243A] text-[#4a3236]">
@@ -61,15 +105,19 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
             className="bg-[#FFFDF8]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.5, ease: fairytaleEase }}
+            transition={{ duration: 0.85, ease: fairytaleEase }}
           >
             <HeroChapter wedding={wedding} />
             <InvitationChapter wedding={wedding} />
-            <VideoChapter />
-            <GalleryChapter />
-            <CountdownChapter wedding={wedding} />
-            <InterludeChapter story={wedding.story} />
-            <RsvpChapter token={token} guest={guest} response={response} wedding={wedding} />
+            {loadRest && (
+              <React.Suspense fallback={null}>
+                <VideoChapter />
+                <GalleryChapter />
+                <CountdownChapter wedding={wedding} />
+                <InterludeChapter story={wedding.story} />
+                <RsvpChapter token={token} guest={guest} response={response} wedding={wedding} />
+              </React.Suspense>
+            )}
           </motion.div>
         )}
 
@@ -79,7 +127,7 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
               key="envelope"
               className="fixed inset-0 z-30 overflow-hidden bg-[#22243A]"
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.35, ease: fairytaleEase }}
+              transition={{ duration: 0.9, ease: fairytaleEase }}
             >
               <RoyalEnvelope
                 guestName={guest.name}

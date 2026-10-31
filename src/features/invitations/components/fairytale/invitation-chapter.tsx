@@ -8,7 +8,6 @@ import {
   Fleuron,
   GoldDivider,
   displayFont,
-  scriptFont,
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
@@ -25,8 +24,6 @@ interface Detail {
 
 export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
   const reveal = useReveal();
-  const partner1 = wedding.partner1Name?.trim();
-  const partner2 = wedding.partner2Name?.trim();
 
   const details = [
     wedding.dateLabel && { label: "The date", value: wedding.dateLabel },
@@ -38,7 +35,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section
       id="invitation"
-      className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-28 text-center sm:pt-32"
+      className="relative flex min-h-[100svh] scroll-mt-6 flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-28 text-center sm:pt-32"
       style={{ backgroundImage: pageParchment }}
     >
       <LanternField />
@@ -61,49 +58,31 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
           <Fleuron className="w-24 text-[#C9A66B]" />
         </motion.div>
 
-        <motion.p {...reveal(0.2)} className={cn(smallCaps, "text-[#B76E79]")}>
-          Together with their families
+        <motion.p {...reveal(0.18)} className={cn(smallCaps, "text-[#B76E79]")}>
+          The celebration
         </motion.p>
 
-        <h1
+        <motion.h2
+          {...reveal(0.28, 24)}
           className={cn(
             displayFont,
-            "mt-8 text-[clamp(2.85rem,10vw,6rem)] font-light leading-[0.94] tracking-[-0.02em] text-[#4a3236]",
+            "mt-6 max-w-2xl text-balance text-[clamp(2.1rem,6vw,3.4rem)] font-light leading-[1.05] tracking-[-0.02em] text-[#4a3236]",
           )}
         >
-          {partner1 && partner2 ? (
-            <>
-              <motion.span {...reveal(0.4, 32)} className="block">
-                {partner1}
-              </motion.span>
-              <motion.span
-                {...reveal(0.65, 16)}
-                className={cn(scriptFont, "my-2 block text-[0.48em] leading-none text-[#B76E79]")}
-              >
-                and
-              </motion.span>
-              <motion.span {...reveal(0.85, 32)} className="block">
-                {partner2}
-              </motion.span>
-            </>
-          ) : (
-            <motion.span {...reveal(0.4, 32)} className="block text-balance">
-              {wedding.coupleNames}
-            </motion.span>
-          )}
-        </h1>
+          Join us for a day of love, laughter, and forever after.
+        </motion.h2>
 
         <motion.p
-          {...reveal(1.1)}
+          {...reveal(0.42)}
           className={cn(
             displayFont,
-            "mt-10 max-w-lg text-balance text-xl italic leading-relaxed text-[#6d4a50] sm:text-2xl",
+            "mt-6 max-w-md text-balance text-lg italic leading-relaxed text-[#6d4a50] sm:text-xl",
           )}
         >
-          Request the honor of your presence as they begin their happily ever after.
+          Your presence is the greatest gift as we begin this new chapter together.
         </motion.p>
 
-        <motion.div {...reveal(1.3)} className="mt-12">
+        <motion.div {...reveal(0.55)} className="mt-12">
           <GoldDivider />
         </motion.div>
 
@@ -117,7 +96,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
             )}
           >
             {details.map((detail, index) => (
-              <motion.div key={detail.label} {...reveal(1.4 + index * 0.12)} className="px-5 sm:py-2">
+              <motion.div key={detail.label} {...reveal(0.65 + index * 0.1)} className="px-5 sm:py-2">
                 <dt className={cn(smallCaps, "text-[#9b7b62]")}>{detail.label}</dt>
                 <dd className={cn(displayFont, "mt-3 text-2xl leading-snug text-[#4a3236]")}>{detail.value}</dd>
                 {detail.note && (
@@ -130,7 +109,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
           </dl>
         )}
 
-        <ChapterContinue href="#film" className="mt-20" revealProps={reveal(1.9, 12)}>
+        <ChapterContinue href="#film" className="mt-20" revealProps={reveal(1.1, 12)}>
           Continue to the film
         </ChapterContinue>
       </div>

@@ -12,14 +12,14 @@ import {
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
-import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
+import { fairytale, fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
   const ref = React.useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
-  const inView = useInView(ref, { amount: 0.2 });
+  const inView = useInView(ref, { amount: 0.45 });
   const reveal = useReveal();
   const [activeImage, setActiveImage] = React.useState(0);
   const progress = useChapterScroll(ref);
@@ -37,10 +37,11 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section id="portrait" ref={ref} className="relative">
       <motion.div
-        className="relative h-[100svh] min-h-[36rem] overflow-hidden bg-[#22243A]"
-        initial={reduceMotion ? false : { opacity: 0.7 }}
+        className="relative h-[100svh] min-h-[36rem] overflow-hidden"
+        style={{ backgroundColor: fairytale.midnight }}
+        initial={false}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1.2, ease: fairytaleEase }}
+        transition={{ duration: 0.7, ease: fairytaleEase }}
       >
         <motion.div
           className="absolute inset-x-0 bottom-[-8%] top-[-8%]"
@@ -101,34 +102,37 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
 
         <div className="absolute inset-x-0 bottom-0 z-10 max-w-2xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
           {wedding.dateLabel && (
-            <motion.p {...reveal(0.3)} className={cn(smallCaps, "text-[#E8D4A8]")}>
+            <motion.p {...reveal(0.15)} className={cn(smallCaps, "text-[#E8D4A8]")}>
               {wedding.dateLabel}
             </motion.p>
           )}
           <motion.h1
-            {...reveal(0.5)}
+            {...reveal(0.28)}
             className={cn(
               displayFont,
-              "mt-4 max-w-[20rem] text-balance text-[clamp(2.75rem,9vw,4.75rem)] font-light leading-[0.96] tracking-[-0.02em] sm:max-w-none",
+              "mt-4 max-w-[22rem] text-balance text-[clamp(2.75rem,9vw,4.75rem)] font-light leading-[0.96] tracking-[-0.02em] sm:max-w-none",
             )}
           >
             {wedding.coupleNames}
           </motion.h1>
-          <motion.p
-            {...reveal(0.65)}
-            className={cn(
-              displayFont,
-              "mt-5 max-w-sm text-base italic leading-relaxed text-[#FFFDF8]/72 sm:text-lg",
-            )}
-          >
-            A chapter written in wonder, and a promise made for always.
-          </motion.p>
+          {wedding.venueName && (
+            <motion.p
+              {...reveal(0.4)}
+              className={cn(
+                displayFont,
+                "mt-5 max-w-sm text-base italic leading-relaxed text-[#FFFDF8]/78 sm:text-lg",
+              )}
+            >
+              {wedding.venueName}
+              {wedding.venueAddress ? ` · ${wedding.venueAddress}` : ""}
+            </motion.p>
+          )}
           <ChapterContinue
             href="#invitation"
             tone="hero"
             align="start"
             className="mt-8"
-            revealProps={reveal(0.8)}
+            revealProps={reveal(0.55)}
           >
             Continue to the invitation
           </ChapterContinue>
@@ -136,7 +140,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
 
         {heroImages.length > 1 && (
           <div
-            className="absolute right-5 top-[max(1.5rem,env(safe-area-inset-top))] flex gap-2 sm:right-9 sm:top-9"
+            className="absolute right-4 top-[max(1.25rem,env(safe-area-inset-top))] flex gap-1 sm:right-8 sm:top-8"
             role="tablist"
             aria-label="Wedding portraits"
           >
@@ -148,7 +152,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
                 aria-selected={activeImage === index}
                 aria-label={`Show portrait ${index + 1}`}
                 onClick={() => setActiveImage(index)}
-                className="relative h-8 w-8 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFDF8]"
+                className="relative flex h-11 w-11 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFDF8]"
               >
                 <span className="absolute left-1/2 top-1/2 h-px w-5 -translate-x-1/2 -translate-y-1/2 bg-white/35" />
                 <motion.span

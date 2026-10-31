@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 export const displayFont = "font-[family-name:var(--font-display)]";
 export const scriptFont = "font-[family-name:var(--font-script)]";
-export const smallCaps = "text-[10px] font-medium uppercase tracking-[0.42em]";
+export const smallCaps = "text-[10px] font-medium uppercase tracking-[0.34em] sm:text-[11px] sm:tracking-[0.38em]";
 
 export function GoldCorner({ className }: { className?: string }) {
   return (
