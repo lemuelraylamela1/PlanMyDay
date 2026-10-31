@@ -89,7 +89,12 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
     unlocked.current = true;
   }, []);
 
+  const fadeTimers = React.useRef(new WeakMap<HTMLAudioElement, number>());
+
   const fadeVolume = React.useCallback((audio: HTMLAudioElement, to: number, ms: number) => {
+    const existing = fadeTimers.current.get(audio);
+    if (existing) window.clearInterval(existing);
+
     const from = audio.volume;
     const steps = Math.max(1, Math.round(ms / 40));
     let step = 0;
@@ -98,13 +103,19 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
       audio.volume = from + (to - from) * (step / steps);
       if (step >= steps) {
         window.clearInterval(id);
+        fadeTimers.current.delete(audio);
         audio.volume = to;
         if (to === 0) {
           audio.pause();
-          audio.currentTime = 0;
+          try {
+            audio.currentTime = 0;
+          } catch {
+            /* ignore */
+          }
         }
       }
     }, 40);
+    fadeTimers.current.set(audio, id);
   }, []);
 
   const startTransition = React.useCallback(async () => {
@@ -135,24 +146,30 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
     const ambient = ambientRef.current;
     const transition = transitionRef.current;
     if (!ambient) return;
+    // Already on ambient — never restart from 0 mid-playback.
     if (phase.current === "ambient" && wantedOn.current) {
-      await syncPlayback();
+      if (!ducked.current && ambient.paused) await syncPlayback();
       return;
     }
 
-    if (transition && phase.current === "transition" && !transition.paused) {
-      fadeVolume(transition, 0, 900);
+    if (transition && phase.current === "transition") {
+      fadeVolume(transition, 0, 1200);
     }
 
     phase.current = "ambient";
     ambient.volume = 0;
-    ambient.currentTime = 0;
+    // Only seek to start when first entering the ambient phase.
+    try {
+      ambient.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
     wantedOn.current = true;
     setStarted(true);
     try {
       await ambient.play();
       setPlaying(true);
-      fadeVolume(ambient, 0.55, 1100);
+      fadeVolume(ambient, 0.55, 1400);
     } catch {
       setPlaying(false);
     }
@@ -164,9 +181,32 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
   }, [syncPlayback]);
 
   const unduck = React.useCallback(() => {
+    const wasDucked = ducked.current;
     ducked.current = false;
-    void syncPlayback();
-  }, [syncPlayback]);
+    const ambient = ambientRef.current;
+    if (!ambient || !wantedOn.current || phase.current !== "ambient") {
+      void syncPlayback();
+      return;
+    }
+
+    // Already audible — don't slam volume to 0 (that caused music to "stop" near the film/gallery).
+    if (!wasDucked && !ambient.paused && ambient.volume >= 0.4) {
+      setPlaying(true);
+      return;
+    }
+
+    const resumeFrom = ambient.paused || ambient.volume < 0.05 ? 0 : ambient.volume;
+    ambient.volume = resumeFrom;
+    void ambient
+      .play()
+      .then(() => {
+        setPlaying(true);
+        if (ambient.volume < 0.55) fadeVolume(ambient, 0.55, 1800);
+      })
+      .catch(() => {
+        setPlaying(false);
+      });
+  }, [fadeVolume, syncPlayback]);
 
   const toggle = React.useCallback(() => {
     wantedOn.current = !wantedOn.current;
@@ -218,17 +258,17 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
           aria-label={playing ? "Mute music" : "Play music"}
           aria-pressed={playing}
           className={cn(
-            "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFDF8]",
+            "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8D4A8] focus-visible:ring-offset-2 focus-visible:ring-offset-[#22243A]",
           )}
         >
           <span
             className={cn(
-              "flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[#DDBF8D]/70 bg-[#FFFDF8]/88 px-3 py-2.5 text-[#4a3236] shadow-[0_10px_28px_-18px_rgba(74,50,54,0.55)] backdrop-blur-[3px] transition-colors",
-              "hover:border-[#C9A66B] hover:bg-[#FFFDF8] hover:text-[#B76E79]",
+              "flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[#E8D4A8] bg-[#FFFDF8] px-3 py-2.5 text-[#4a3236] shadow-[0_12px_32px_rgba(0,0,0,0.45)] transition-colors",
+              "hover:border-[#F3E7D3] hover:bg-[#FFF8EE] hover:text-[#6d4a50]",
             )}
           >
             <MusicGlyph playing={playing} />
-            <span className={cn(smallCaps, "text-[9px] tracking-[0.22em] text-current sm:text-[10px]")}>
+            <span className={cn(smallCaps, "text-[9px] tracking-[0.22em] text-[#4a3236] sm:text-[10px]")}>
               {playing ? "Sound on" : "Sound off"}
             </span>
           </span>

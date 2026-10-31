@@ -87,14 +87,14 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
 
   const handleRevealStart = React.useCallback(() => {
     setPhase("revealing");
-    // Tangled theme begins as the website itself appears.
-    void audio?.start();
-  }, [audio]);
+  }, []);
 
   const handleOpened = React.useCallback(() => {
     setPhase("revealed");
     window.scrollTo({ top: 0 });
-  }, []);
+    // Start "I See the Light" only once the envelope is gone and the site is fully shown.
+    void audio?.start();
+  }, [audio]);
 
   const transitioning = phase === "opening" || phase === "revealing";
 

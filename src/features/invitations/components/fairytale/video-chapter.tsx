@@ -20,13 +20,24 @@ export function VideoChapter() {
   const audio = useInvitationAudio();
   const inView = useInView(ref, { amount: 0.45 });
   const [playing, setPlaying] = React.useState(false);
+  /** Only duck ambient while this film is actually playing — never on idle pause/out-of-view. */
+  const duckedAmbient = React.useRef(false);
   const film = fairytaleMedia.saveTheDate;
 
   const markPlaying = React.useCallback(
     (next: boolean) => {
       setPlaying(next);
-      if (next) audio?.duck();
-      else audio?.unduck();
+      if (next) {
+        if (!duckedAmbient.current) {
+          duckedAmbient.current = true;
+          audio?.duck();
+        }
+        return;
+      }
+      if (duckedAmbient.current) {
+        duckedAmbient.current = false;
+        audio?.unduck();
+      }
     },
     [audio],
   );
@@ -34,7 +45,7 @@ export function VideoChapter() {
   React.useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (!inView) {
+    if (!inView && !video.paused) {
       video.pause();
       markPlaying(false);
     }

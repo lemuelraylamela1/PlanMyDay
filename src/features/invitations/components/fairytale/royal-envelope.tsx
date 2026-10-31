@@ -45,17 +45,20 @@ const BUDGET = {
   desktop: { lanterns: 18, dust: 36, stars: 48 },
 } as const;
 
-/** Timeline marks (seconds from the open click). Kept under ~9s total. */
+/**
+ * Timeline marks (seconds from the open click).
+ * Open → brief card read (~7s) → dissolve → site fade. Edit live via `npm run dev`.
+ */
 const T = {
-  sealBreak: 0.75,
-  unroll: 0.95,
-  text: 2.1,
+  sealBreak: 0.85,
+  unroll: 1.1,
+  text: 2.4,
   /** Hold the open invitation long enough to read before it turns to stars. */
-  dissolve: 4.6,
+  dissolve: 9.5,
   /** Stars finish replacing the card; website fade begins. */
-  reveal: 6.6,
-  skipTo: 6.4,
-  opened: 8.6,
+  reveal: 12.2,
+  skipTo: 12.0,
+  opened: 15.0,
 } as const;
 
 const rollGradient =
@@ -434,27 +437,27 @@ export function RoyalEnvelope({
         T.unroll,
       );
     }
-    tl.to(sheet, { height: openHeight, duration: 1.7, ease: "power2.inOut" }, T.unroll);
+    tl.to(sheet, { height: openHeight, duration: 2.6, ease: "power2.inOut" }, T.unroll);
     if (haloRef.current) {
       tl.fromTo(
         haloRef.current,
         { opacity: 0, scale: 0.85 },
-        { opacity: 1, scale: 1.1, duration: 1.4, ease: "power2.out" },
-        1.6,
+        { opacity: 1, scale: 1.1, duration: 2.0, ease: "power2.out" },
+        T.unroll + 0.4,
       );
     }
     tl.to(
       [rollTopRef.current, rollBottomRef.current],
-      { opacity: 0, scaleY: 0.6, duration: 0.55, ease: "power1.in" },
-      2.75,
+      { opacity: 0, scaleY: 0.6, duration: 0.8, ease: "power1.in" },
+      T.text - 0.35,
     );
     tl.set(sheet, { height: "auto" }, T.text);
 
-    // 3 – 5s: the invitation is read.
+    // Invitation lines fade in; card then holds for reading until T.dissolve.
     lines.forEach((line, i) => {
-      tl.to(line, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, T.text + i * 0.2);
+      tl.to(line, { opacity: 1, y: 0, duration: 1.1, ease: "power2.out" }, T.text + i * 0.28);
     });
-    tl.to(scroll, { scale: 1.04, duration: 2, ease: "sine.inOut" }, T.text);
+    tl.to(scroll, { scale: 1.04, duration: 3.2, ease: "sine.inOut" }, T.text);
 
     // Card → star particles → slow fade into the website.
     const body = sheetBodyRef.current ?? sheet;
@@ -490,8 +493,8 @@ export function RoyalEnvelope({
       {
         opacity: 0.95,
         scale: 1.15,
-        duration: 1.4,
-        stagger: { each: 0.02, from: "center" },
+        duration: 2.6,
+        stagger: { each: 0.03, from: "center" },
         ease: "power2.out",
       },
       T.dissolve,
@@ -499,31 +502,31 @@ export function RoyalEnvelope({
 
     // Card softens into light, then vanishes — leaving only stars.
     if (sheetGlowRef.current) {
-      tl.to(sheetGlowRef.current, { opacity: 0.85, duration: 1.1, ease: "power2.out" }, T.dissolve + 0.35);
+      tl.to(sheetGlowRef.current, { opacity: 0.85, duration: 1.8, ease: "power2.out" }, T.dissolve + 0.5);
     }
-    tl.to(sheetShadow, { opacity: 0, duration: 0.7 }, T.dissolve + 0.4);
-    tl.to(shadow, { opacity: 0, duration: 0.7 }, T.dissolve + 0.4);
+    tl.to(sheetShadow, { opacity: 0, duration: 1.2 }, T.dissolve + 0.6);
+    tl.to(shadow, { opacity: 0, duration: 1.2 }, T.dissolve + 0.6);
     tl.to(
       [sheet, ...(haloRef.current ? [haloRef.current] : [])],
-      { opacity: 0, duration: 1.6, ease: "power2.inOut" },
-      T.dissolve + 0.7,
+      { opacity: 0, duration: 2.8, ease: "power2.inOut" },
+      T.dissolve + 1.0,
     );
     if (sheetGlowRef.current) {
-      tl.to(sheetGlowRef.current, { opacity: 0, duration: 0.9, ease: "power1.in" }, T.dissolve + 1.5);
+      tl.to(sheetGlowRef.current, { opacity: 0, duration: 1.4, ease: "power1.in" }, T.dissolve + 2.4);
     }
-    tl.to(blurLayer, { opacity: 0, duration: 1.6, ease: "power1.inOut" }, T.dissolve + 0.6);
-    tl.to(scrim, { opacity: 0.15, duration: 1.8 }, T.dissolve + 0.6);
-    tl.to(camera, { scale: 1, duration: 3.2, ease: "power2.out" }, T.dissolve);
+    tl.to(blurLayer, { opacity: 0, duration: 2.6, ease: "power1.inOut" }, T.dissolve + 0.9);
+    tl.to(scrim, { opacity: 0.15, duration: 2.8 }, T.dissolve + 0.9);
+    tl.to(camera, { scale: 1, duration: 5.0, ease: "power2.out" }, T.dissolve);
     tl.to(
       lanterns,
       {
         y: `-=${vh * 0.2}`,
         opacity: 0.85,
-        duration: 3.2,
+        duration: 5.0,
         ease: "sine.out",
-        stagger: { each: 0.04, from: "random" },
+        stagger: { each: 0.05, from: "random" },
       },
-      T.dissolve + 0.4,
+      T.dissolve + 0.5,
     );
 
     // Stars drift gently, then slowly fade as the website comes through.
@@ -535,10 +538,10 @@ export function RoyalEnvelope({
         {
           x: `+=${Math.cos(angle) * drift}`,
           y: `+=${Math.sin(angle) * drift - drift * 0.2}`,
-          duration: 2.8,
+          duration: 4.2,
           ease: "sine.out",
         },
-        T.dissolve + 1.3,
+        T.dissolve + 1.8,
       );
     });
 
@@ -546,15 +549,15 @@ export function RoyalEnvelope({
     tl.call(() => onRevealStart?.(), undefined, T.reveal);
 
     // Soft full-scene fade (no hard radial cut) into the website.
-    tl.to(stars, { opacity: 0, scale: 0.4, duration: 2.2, ease: "power1.inOut", stagger: 0.01 }, T.reveal);
-    tl.to(lanterns, { opacity: 0, duration: 2.0, ease: "power1.inOut" }, T.reveal + 0.15);
-    tl.to(root, { opacity: 0, duration: 2.4, ease: "power2.inOut" }, T.reveal + 0.1);
+    tl.to(stars, { opacity: 0, scale: 0.4, duration: 3.6, ease: "power1.inOut", stagger: 0.015 }, T.reveal);
+    tl.to(lanterns, { opacity: 0, duration: 3.4, ease: "power1.inOut" }, T.reveal + 0.2);
+    tl.to(root, { opacity: 0, duration: 4.2, ease: "power2.inOut" }, T.reveal + 0.15);
     burstDust(
       dust.filter((_, i) => i % 2 === 0),
-      T.reveal + 0.2,
+      T.reveal + 0.25,
       vmin * 0.05,
       vmax * 0.45,
-      1.6,
+      2.4,
     );
     tl.set({}, {}, T.opened);
   });

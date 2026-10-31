@@ -8,7 +8,10 @@ import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { submitInvitationRsvpAction } from "@/features/invitations/actions";
-import { RsvpCelebration } from "@/features/invitations/components/fairytale/rsvp-celebration";
+import {
+  RsvpCelebration,
+  RSVP_CELEBRATION_MS,
+} from "@/features/invitations/components/fairytale/rsvp-celebration";
 import {
   fairytaleMotion,
   fairytaleTransition,
@@ -113,7 +116,12 @@ export function RsvpForm({
     if (!celebration) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const timer = window.setTimeout(() => setCelebration(null), reduceMotion ? 1200 : 3800);
+    const holdMs = reduceMotion
+      ? RSVP_CELEBRATION_MS.reduced
+      : celebration === "accept"
+        ? RSVP_CELEBRATION_MS.accept
+        : RSVP_CELEBRATION_MS.decline;
+    const timer = window.setTimeout(() => setCelebration(null), holdMs);
     return () => {
       document.body.style.overflow = previous;
       window.clearTimeout(timer);

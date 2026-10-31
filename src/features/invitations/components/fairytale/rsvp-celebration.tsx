@@ -4,6 +4,8 @@ import * as React from "react";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import { useInvitationAudio } from "@/features/invitations/components/fairytale/invitation-audio";
+import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import { fairytale, fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { castleNightImages } from "@/features/invitations/components/fairytale/intro-castle-scene";
 import { inviteFontVariables } from "@/features/invitations/components/fairytale/invite-fonts";
@@ -13,11 +15,36 @@ import { fairytaleEase } from "@/features/invitations/components/fairytale/use-r
 
 export type RsvpCelebrationVariant = "accept" | "decline";
 
+/** Overlay + music hold for RSVP celebrations. */
+export const RSVP_CELEBRATION_MS = {
+  accept: 12_000,
+  decline: 12_000,
+  reduced: 1_400,
+  /** Crossfade celebration → ambient ("I See the Light"). */
+  fade: 2_500,
+} as const;
+
 interface Props {
   variant: RsvpCelebrationVariant;
   guestName: string;
   monogram: string;
   reduceMotion: boolean;
+}
+
+function fadeAudioVolume(audio: HTMLAudioElement, to: number, ms: number, onDone?: () => void) {
+  const from = audio.volume;
+  const steps = Math.max(1, Math.round(ms / 40));
+  let step = 0;
+  const id = window.setInterval(() => {
+    step += 1;
+    audio.volume = from + (to - from) * (step / steps);
+    if (step >= steps) {
+      window.clearInterval(id);
+      audio.volume = to;
+      onDone?.();
+    }
+  }, 40);
+  return () => window.clearInterval(id);
 }
 
 const BUDGET = {
@@ -93,9 +120,13 @@ function useIsDesktop() {
 
 export function RsvpCelebration({ variant, guestName, monogram, reduceMotion }: Props) {
   const isDesktop = useIsDesktop();
+  const ambient = useInvitationAudio();
+  const audioRef = React.useRef<HTMLAudioElement>(null);
   const budget = isDesktop ? BUDGET.desktop : BUDGET.mobile;
   const copy = COPY[variant];
   const lanternTone = variant === "accept" ? "dusk" : "parchment";
+  const track =
+    variant === "accept" ? fairytaleMedia.rsvpAcceptMusic : fairytaleMedia.rsvpDeclineMusic;
 
   const lanternCount =
     variant === "decline" ? Math.max(4, Math.floor(budget.lanterns * 0.65)) : budget.lanterns;
@@ -107,6 +138,80 @@ export function RsvpCelebration({ variant, guestName, monogram, reduceMotion }: 
 
   const waveDelay = (wave: number) => (wave === 0 ? 0.7 : 1.6);
   const riseScale = variant === "decline" ? 1.25 : 1;
+
+  React.useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    ambient?.duck();
+    let cancelled = false;
+    let stopFade: (() => void) | undefined;
+    let unducked = false;
+    const startAt = "startAtSeconds" in track ? track.startAtSeconds : 0;
+    const holdMs = reduceMotion
+      ? RSVP_CELEBRATION_MS.reduced
+      : variant === "accept"
+        ? RSVP_CELEBRATION_MS.accept
+        : RSVP_CELEBRATION_MS.decline;
+    const fadeMs = reduceMotion ? 400 : RSVP_CELEBRATION_MS.fade;
+    const fadeAt = Math.max(0, holdMs - fadeMs);
+
+    const releaseAmbient = () => {
+      if (unducked) return;
+      unducked = true;
+      ambient?.unduck();
+    };
+
+    const playTrack = async () => {
+      try {
+        el.pause();
+        const seek = () => {
+          if (cancelled) return;
+          try {
+            el.currentTime = startAt;
+          } catch {
+            /* seek may fail before metadata is ready */
+          }
+        };
+        if (el.readyState >= 1) seek();
+        else el.addEventListener("loadedmetadata", seek, { once: true });
+        el.volume = 0.85;
+        await el.play();
+        if (cancelled) el.pause();
+      } catch {
+        // Autoplay can still fail if the RSVP submit gesture was lost; fail quietly.
+      }
+    };
+
+    void playTrack();
+
+    const fadeTimer = window.setTimeout(() => {
+      if (cancelled) return;
+      releaseAmbient();
+      stopFade = fadeAudioVolume(el, 0, fadeMs, () => {
+        if (cancelled) return;
+        el.pause();
+        try {
+          el.currentTime = 0;
+        } catch {
+          /* ignore */
+        }
+      });
+    }, fadeAt);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(fadeTimer);
+      stopFade?.();
+      el.pause();
+      try {
+        el.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+      releaseAmbient();
+    };
+  }, [ambient, reduceMotion, track, variant]);
 
   return (
     <motion.div
@@ -121,6 +226,7 @@ export function RsvpCelebration({ variant, guestName, monogram, reduceMotion }: 
       role="status"
       aria-live="polite"
     >
+      <audio ref={audioRef} src={track.src} preload="auto" playsInline aria-hidden />
       {/* Full-bleed castle night — no mid-frame seam */}
       <motion.div
         aria-hidden

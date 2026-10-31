@@ -33,6 +33,10 @@ export const fairytaleMedia: {
   transitionMusic: { src: string; title: string };
   /** Unlocked on envelope click; starts when the website / hero appears. */
   ambientMusic: { src: string; title: string };
+  /** Plays during the RSVP accept celebration overlay. */
+  rsvpAcceptMusic: { src: string; title: string };
+  /** Plays during the RSVP decline celebration overlay (starts at startAtSeconds). */
+  rsvpDeclineMusic: { src: string; title: string; startAtSeconds: number };
   prenup: FairytaleGalleryImage[];
 } = {
   hero: [
@@ -67,6 +71,15 @@ export const fairytaleMedia: {
   ambientMusic: {
     src: "/proposal-audio/i-see-the-light.mp3",
     title: "I See the Light — Mandy Moore & Zachary Levi",
+  },
+  rsvpAcceptMusic: {
+    src: "/proposal-audio/royal-fanfare.mp3",
+    title: "The Best of Royal Fanfare Music",
+  },
+  rsvpDeclineMusic: {
+    src: "/proposal-audio/overstory-fairytale.mp3",
+    title: "The Overstory — Savfk",
+    startAtSeconds: 42,
   },
   prenup: [
     {
