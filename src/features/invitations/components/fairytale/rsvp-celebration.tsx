@@ -147,7 +147,8 @@ export function RsvpCelebration({ variant, guestName, monogram, reduceMotion }: 
     let cancelled = false;
     let stopFade: (() => void) | undefined;
     let unducked = false;
-    const startAt = "startAtSeconds" in track ? track.startAtSeconds : 0;
+    const startAt =
+      variant === "decline" ? fairytaleMedia.rsvpDeclineMusic.startAtSeconds : 0;
     const holdMs = reduceMotion
       ? RSVP_CELEBRATION_MS.reduced
       : variant === "accept"
