@@ -185,11 +185,13 @@ After the first deploy, if Vercel gives you a custom domain, update `NEXTAUTH_UR
 3. Deploy, then copy the RSVP production URL into PlanMyDay’s
    `NEXT_PUBLIC_RSVP_APP_URL` and `RSVP_ALLOWED_ORIGIN`, and **redeploy PlanMyDay**.
 
-Guest invite links are generated as:
+Guest invite links are generated on PlanMyDay (not the RSVP marketing site):
 
 ```text
-https://YOUR-RSVP.vercel.app/?token=...
+https://YOUR-PROJECT.vercel.app/invite/...
 ```
+
+The separate RSVP site (`NEXT_PUBLIC_RSVP_APP_URL`) is for the public wedding website preview and optional `/?token=` flow.
 
 ### Step 4 — Apply the database schema (once)
 

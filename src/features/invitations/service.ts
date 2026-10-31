@@ -7,10 +7,12 @@ import { env } from "@/lib/env";
 import { generateToken, hashToken } from "@/lib/tokens";
 
 export function invitationUrl(token: string) {
-  const base = env.rsvpAppUrl || env.appUrl;
+  // Guest invites live on PlanMyDay (`/invite/[token]`), not the separate
+  // RSVP marketing site (which uses `/?token=` and has no /invite route).
+  const base = (env.appUrl || env.rsvpAppUrl).replace(/\/+$/, "");
   const encoded = encodeURIComponent(token);
-  if (!env.rsvpAppUrl && env.isProd) {
-    console.error("[PlanMyDay] NEXT_PUBLIC_RSVP_APP_URL is missing; invite links may be wrong.");
+  if (!env.appUrl && env.isProd) {
+    console.error("[PlanMyDay] NEXT_PUBLIC_APP_URL is missing; invite links may be wrong.");
   }
   return `${base}/invite/${encoded}`;
 }
