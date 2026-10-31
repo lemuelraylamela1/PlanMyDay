@@ -1,16 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import {
+  useChapterScroll,
+  useDepthLayer,
+} from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
+import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 
 const dusk =
-  "linear-gradient(180deg,#FBF6EE 0%,#eadfce 7%,#9b8d7c 15%,#4a5048 24%,#24312a 34%,#15221c 48%,#111c17 66%,#1b2922 82%,#596057 91%,#d8cdbd 97%,#FBF6EE 100%)";
+  "linear-gradient(180deg,#FBF6EE 0%,#eadfce 7%,#8a8498 16%,#4a4d68 26%,#2a2c45 36%,#22243A 50%,#1a1c2e 66%,#2f3148 82%,#7a7488 91%,#d8cdbd 97%,#FBF6EE 100%)";
 
 const placeholderStory = [
   {
@@ -48,17 +53,19 @@ export function InterludeChapter({ story }: { story: string | null }) {
   const reveal = useReveal();
   const reduceMotion = useReducedMotion();
   const paragraphs = storyParagraphs(story);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-  const glowY = useTransform(scrollYProgress, [0, 1], ["-4%", "8%"]);
-  const ornamentY = useTransform(scrollYProgress, [0, 1], ["10%", "-12%"]);
+  const progress = useChapterScroll(sectionRef);
+  const { y: glowY } = useDepthLayer(progress, "far");
+  const { y: ornamentY } = useDepthLayer(progress, "near");
   const chapters =
     paragraphs.length > 0
       ? paragraphs.map((body, index) => ({
           eyebrow: `Chapter ${String(index + 1).padStart(2, "0")}`,
-          title: index === 0 ? "Where our story began" : index === paragraphs.length - 1 ? "And so our forever begins" : "A love made of moments",
+          title:
+            index === 0
+              ? "Where our story began"
+              : index === paragraphs.length - 1
+                ? "And so our forever begins"
+                : "A love made of moments",
           body,
         }))
       : placeholderStory;
@@ -73,13 +80,17 @@ export function InterludeChapter({ story }: { story: string | null }) {
       <LanternField tone="dusk" />
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[22%] h-[58%] bg-[radial-gradient(ellipse_at_center,rgba(221,191,141,0.12),transparent_66%)]"
-        style={reduceMotion ? undefined : { y: glowY }}
+        className="pointer-events-none absolute inset-x-0 top-[22%] h-[58%]"
+        style={{
+          y: reduceMotion ? 0 : glowY,
+          backgroundImage:
+            "radial-gradient(ellipse at center, rgba(232,212,168,0.14), transparent 66%), radial-gradient(ellipse at 30% 40%, rgba(201,184,232,0.1), transparent 60%)",
+        }}
       />
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-x-[18%] top-[18%] h-40 bg-[radial-gradient(ellipse_at_center,rgba(221,191,141,0.16),transparent_70%)]"
-        animate={reduceMotion ? undefined : { opacity: [0.4, 0.9, 0.4], scale: [1, 1.06, 1] }}
+        className="pointer-events-none absolute inset-x-[18%] top-[18%] h-40 bg-[radial-gradient(ellipse_at_center,rgba(232,184,199,0.14),transparent_70%)]"
+        animate={reduceMotion ? undefined : { opacity: [0.35, 0.8, 0.35], scale: [1, 1.05, 1] }}
         transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
       />
       <div
@@ -89,19 +100,19 @@ export function InterludeChapter({ story }: { story: string | null }) {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_52%,transparent_30%,rgba(5,12,9,0.5)_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_52%,transparent_30%,rgba(26,28,46,0.55)_100%)]"
       />
 
       <div className="relative mx-auto flex max-w-3xl flex-col items-center">
         <motion.div style={reduceMotion ? undefined : { y: ornamentY }}>
           <BotanicalSprig />
         </motion.div>
-        <motion.p {...reveal(0.12)} className={cn(smallCaps, "mt-6 text-[#DDBF8D]")}>
+        <motion.p {...reveal(0.12)} className={cn(smallCaps, "mt-6 text-[#E8D4A8]")}>
           Our love story
         </motion.p>
         <motion.h2
           {...reveal(0.24, 24)}
-          className={cn(displayFont, "mt-5 text-balance text-4xl font-light leading-[1.05] sm:text-7xl")}
+          className={cn(displayFont, "mt-5 text-balance text-4xl font-light leading-[1.05] tracking-[-0.02em] sm:text-7xl")}
         >
           Once upon a time,
           <span className="mt-2 block italic text-[#E8B8C7]">
@@ -133,23 +144,9 @@ export function InterludeChapter({ story }: { story: string | null }) {
           </div>
         </div>
 
-        <motion.a
-          {...reveal(0.25, 12)}
-          href="#rsvp"
-          className={cn(
-            smallCaps,
-            "mt-16 inline-flex flex-col items-center gap-3 text-[#DDBF8D]/75 transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
-          )}
-        >
+        <ChapterContinue href="#rsvp" tone="dusk" className="mt-16" revealProps={reveal(0.25, 12)}>
           Continue to RSVP
-          <span aria-hidden className="relative block h-12 w-px overflow-hidden bg-[#DDBF8D]/35">
-            <motion.span
-              className="absolute inset-x-0 top-0 block h-1/2 bg-[#E8B8C7]"
-              animate={{ y: ["-100%", "200%"] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: fairytaleEase }}
-            />
-          </span>
-        </motion.a>
+        </ChapterContinue>
       </div>
     </section>
   );
@@ -179,7 +176,7 @@ function StoryMoment({
       <motion.span
         aria-hidden
         className={cn(
-          "absolute top-1.5 h-3.5 w-3.5 rotate-45 border border-[#DDBF8D] bg-[#17211c] shadow-[0_0_18px_rgba(221,191,141,0.45)]",
+          "absolute top-1.5 h-3.5 w-3.5 rotate-45 border border-[#DDBF8D] bg-[#22243A] shadow-[0_0_18px_rgba(221,191,141,0.35)]",
           "-left-0 sm:left-auto",
           alignRight ? "sm:-left-[7px]" : "sm:-right-[7px]",
         )}
@@ -187,7 +184,7 @@ function StoryMoment({
         viewport={{ once: true }}
         transition={{ duration: 1.2, ease: fairytaleEase }}
       />
-      <p className={cn(smallCaps, "text-[9px] text-[#DDBF8D]/80")}>{chapter.eyebrow}</p>
+      <p className={cn(smallCaps, "text-[9px] text-[#E8D4A8]/80")}>{chapter.eyebrow}</p>
       <h3 className={cn(displayFont, "mt-3 text-3xl font-light leading-tight text-[#F8EFE2] sm:text-4xl")}>
         {chapter.title}
       </h3>

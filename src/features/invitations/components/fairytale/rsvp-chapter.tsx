@@ -7,16 +7,16 @@ import { cn } from "@/lib/utils";
 import { useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import {
   useChapterScroll,
-  useParallaxY,
+  useDepthLayer,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import {
   Fleuron,
-  GoldCorner,
   GoldDivider,
   displayFont,
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
+import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { RsvpForm } from "@/features/invitations/components/rsvp-form";
 import type {
@@ -37,8 +37,8 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
   const reduceMotion = useReducedMotion();
   const reveal = useReveal();
   const progress = useChapterScroll(ref);
-  const glowY = useParallaxY(progress, "-6%", "8%");
-  const cardY = useParallaxY(progress, "4%", "-3%");
+  const { y: glowY } = useDepthLayer(progress, "far");
+  const { y: cardY } = useDepthLayer(progress, "near");
 
   return (
     <section
@@ -53,8 +53,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
         className="pointer-events-none absolute inset-x-0 top-[-8%] h-[70%]"
         style={{
           y: reduceMotion ? 0 : glowY,
-          backgroundImage:
-            "radial-gradient(ellipse 58% 48% at 50% 28%, rgba(247,227,232,0.85), transparent 72%), radial-gradient(ellipse 36% 28% at 50% 18%, rgba(221,191,141,0.22), transparent 70%)",
+          backgroundImage: `${fairytaleAtmosphere.blushGlow}, radial-gradient(ellipse 36% 28% at 50% 18%, rgba(232,212,168,0.22), transparent 70%)`,
         }}
       />
 
@@ -82,12 +81,16 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
         >
           <motion.div
             {...reveal(0.42, 24)}
-            className="relative border border-[#DDBF8D]/55 bg-[#FFFDF8]/55 px-5 py-8 shadow-[0_24px_50px_-36px_rgba(74,50,54,0.45)] sm:px-8 sm:py-10"
+            className="relative border-y border-[#DDBF8D]/45 bg-[#FFFDF8]/40 px-5 py-10 sm:px-8 sm:py-12"
           >
-            <GoldCorner className="left-2 top-2" />
-            <GoldCorner className="right-2 top-2 rotate-90" />
-            <GoldCorner className="bottom-2 left-2 -rotate-90" />
-            <GoldCorner className="bottom-2 right-2 rotate-180" />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#E8D4A8]/80 to-transparent"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-[#E8D4A8]/80 to-transparent"
+            />
             <RsvpForm
               token={token}
               guestName={guest.name}

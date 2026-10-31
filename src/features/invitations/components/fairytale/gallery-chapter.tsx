@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
-import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { fairytaleMedia, type FairytaleGalleryImage } from "@/features/invitations/components/fairytale/fairytale-media";
+import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 
 /** Stable grid cells. CSS columns were dropping absolutely positioned photos. */
 const tileSpans = [
@@ -33,10 +33,17 @@ export function GalleryChapter() {
   return (
     <section
       id="prenup"
-      className="relative overflow-x-clip px-4 py-20 sm:px-8 sm:py-28"
+      className="relative overflow-x-clip px-4 py-24 sm:px-8 sm:py-32"
       style={{ backgroundImage: pageParchment }}
     >
-      <LanternField />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 50% 40% at 80% 10%, rgba(201,184,232,0.14), transparent 70%)",
+        }}
+      />
       <div className="relative mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
           <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#B76E79]")}>
@@ -44,19 +51,19 @@ export function GalleryChapter() {
           </motion.p>
           <motion.h2
             {...reveal(0.12, 20)}
-            className={cn(displayFont, "mt-4 text-3xl font-light text-[#4a3236] sm:text-5xl")}
+            className={cn(displayFont, "mt-4 text-3xl font-light tracking-[-0.02em] text-[#4a3236] sm:text-5xl")}
           >
             Moments before forever
           </motion.h2>
           <motion.p
             {...reveal(0.22)}
-            className={cn(displayFont, "mt-3 text-base italic text-[#6d4a50] sm:text-lg")}
+            className={cn(displayFont, "mt-4 text-base italic text-[#6d4a50] sm:text-lg")}
           >
             Quiet looks, shared laughter, and the day we began counting down.
           </motion.p>
         </div>
 
-        <div className="mt-10 grid grid-cols-2 grid-flow-dense auto-rows-[9.5rem] gap-2 sm:mt-12 sm:auto-rows-[12rem] sm:gap-3 md:auto-rows-[14rem]">
+        <div className="mt-12 grid grid-cols-2 grid-flow-dense auto-rows-[9.5rem] gap-3 sm:mt-16 sm:auto-rows-[12rem] sm:gap-4 md:auto-rows-[14rem]">
           {photos.map((item, index) => (
             <GalleryTile
               key={item.src ?? index}
@@ -68,23 +75,9 @@ export function GalleryChapter() {
           ))}
         </div>
 
-        <motion.a
-          {...reveal(0.15, 12)}
-          href="#countdown"
-          className={cn(
-            smallCaps,
-            "mx-auto mt-12 flex w-fit flex-col items-center gap-3 text-[#9b7b62] transition-colors hover:text-[#B76E79] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
-          )}
-        >
+        <ChapterContinue href="#countdown" className="mx-auto mt-14" revealProps={reveal(0.15, 12)}>
           Continue
-          <span aria-hidden className="relative block h-10 w-px overflow-hidden bg-[#DDBF8D]/40">
-            <motion.span
-              className="absolute inset-x-0 top-0 block h-1/2 bg-[#B76E79]"
-              animate={{ y: ["-100%", "200%"] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: fairytaleEase }}
-            />
-          </span>
-        </motion.a>
+        </ChapterContinue>
       </div>
 
       <PhotoLightbox photos={photos} active={active} onChange={setActive} />
@@ -111,7 +104,7 @@ function GalleryTile({
       onClick={onOpen}
       aria-label={`View photo ${index + 1}: ${item.alt}`}
       className={cn(
-        "group relative min-h-0 overflow-hidden bg-[#1c1619] text-left shadow-[0_16px_36px_-24px_rgba(74,50,54,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B76E79] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF6EE]",
+        "group relative min-h-0 overflow-hidden bg-[#22243A] text-left outline outline-1 outline-[#DDBF8D]/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B76E79] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFDF8]",
         span,
       )}
       initial={reduceMotion ? false : { opacity: 0, y: 16 }}
@@ -125,13 +118,13 @@ function GalleryTile({
           alt={item.alt}
           fill
           sizes="(min-width: 768px) 40vw, 80vw"
-          quality={75}
+          quality={78}
           className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
         />
       )}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_55%,rgba(18,14,17,0.28)_100%)] opacity-70 transition-opacity duration-500 group-hover:opacity-100"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_50%,rgba(34,36,58,0.35)_100%)] opacity-60 transition-opacity duration-500 group-hover:opacity-90"
       />
     </motion.button>
   );
@@ -180,7 +173,7 @@ function PhotoLightbox({
     <AnimatePresence>
       {photo?.src && active !== null && (
         <motion.div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#120e11]/92 p-4 sm:p-8"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#22243A]/94 p-4 sm:p-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -226,7 +219,6 @@ function PhotoLightbox({
               className="object-contain"
             />
           </motion.div>
-
         </motion.div>
       )}
     </AnimatePresence>

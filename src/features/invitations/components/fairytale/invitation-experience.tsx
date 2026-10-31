@@ -54,14 +54,14 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="relative min-h-[100svh] overflow-x-clip bg-[#16121a] text-[#4a3236]">
+      <main className="relative min-h-[100svh] overflow-x-clip bg-[#22243A] text-[#4a3236]">
         {opened && (
           <motion.div
             key="story"
             className="bg-[#FFFDF8]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.35, ease: fairytaleEase }}
+            transition={{ duration: 1.5, ease: fairytaleEase }}
           >
             <HeroChapter wedding={wedding} />
             <InvitationChapter wedding={wedding} />
@@ -77,9 +77,9 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
           {!opened && (
             <motion.div
               key="envelope"
-              className="fixed inset-0 z-30 overflow-hidden bg-[#16121a]"
+              className="fixed inset-0 z-30 overflow-hidden bg-[#22243A]"
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: fairytaleEase }}
+              transition={{ duration: 1.35, ease: fairytaleEase }}
             >
               <RoyalEnvelope
                 guestName={guest.name}

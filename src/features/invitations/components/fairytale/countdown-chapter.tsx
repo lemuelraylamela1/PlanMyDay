@@ -4,10 +4,11 @@ import * as React from "react";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
-import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import { useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
-import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
+import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
+import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 interface Remaining {
@@ -64,25 +65,26 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
     <section
       id="countdown"
       className="relative overflow-hidden px-6 py-28 text-center text-[#F3E7D3] sm:py-36"
-      style={{
-        backgroundImage:
-          "radial-gradient(ellipse 55% 40% at 50% 35%, rgba(221,191,141,0.16), transparent 72%), linear-gradient(180deg,#1d1820 0%,#241d22 48%,#16121a 100%)",
-      }}
+      style={{ backgroundImage: fairytaleAtmosphere.duskShell }}
     >
-      <LanternField tone="dusk" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
         style={{ backgroundImage: grainOverlay }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{ backgroundImage: fairytaleAtmosphere.lavenderMist }}
       />
 
       <div className="relative mx-auto flex max-w-3xl flex-col items-center">
-        <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#DDBF8D]")}>
+        <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#E8D4A8]")}>
           Counting the days
         </motion.p>
         <motion.h2
           {...reveal(0.15, 28)}
-          className={cn(displayFont, "mt-5 text-balance text-4xl font-light sm:text-5xl")}
+          className={cn(displayFont, "mt-5 text-balance text-4xl font-light tracking-[-0.02em] sm:text-5xl")}
         >
           {remaining.complete && hasTarget ? "Our day has arrived" : "Until we say I do"}
         </motion.h2>
@@ -99,26 +101,33 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
         {hasTarget ? (
           <motion.div
             {...reveal(0.55)}
-            className="mt-14 grid w-full max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6"
+            className="mt-14 flex w-full max-w-2xl flex-wrap items-end justify-center gap-x-4 gap-y-8 sm:gap-x-8"
             aria-live="polite"
             aria-atomic="true"
           >
             {units.map((unit, index) => (
-              <motion.div
-                key={unit.label}
-                {...reveal(0.6 + index * 0.08)}
-                className="flex flex-col items-center border border-[#DDBF8D]/25 bg-[#FFFDF8]/[0.03] px-3 py-6 sm:py-8"
-              >
-                <span
-                  className={cn(
-                    displayFont,
-                    "tabular-nums text-[clamp(2.4rem,8vw,3.6rem)] font-light leading-none text-[#FFFDF8]",
-                  )}
+              <React.Fragment key={unit.label}>
+                {index > 0 && (
+                  <span
+                    aria-hidden
+                    className="mb-8 hidden h-10 w-px bg-gradient-to-b from-transparent via-[#DDBF8D]/50 to-transparent sm:block"
+                  />
+                )}
+                <motion.div
+                  {...reveal(0.6 + index * 0.08)}
+                  className="flex min-w-[4.5rem] flex-col items-center sm:min-w-[5.5rem]"
                 >
-                  {unit.wide ? unit.value : pad(unit.value)}
-                </span>
-                <span className={cn(smallCaps, "mt-4 text-[9px] text-[#DDBF8D]/80")}>{unit.label}</span>
-              </motion.div>
+                  <span
+                    className={cn(
+                      displayFont,
+                      "tabular-nums text-[clamp(2.6rem,9vw,3.8rem)] font-light leading-none text-[#FFFDF8]",
+                    )}
+                  >
+                    {unit.wide ? unit.value : pad(unit.value)}
+                  </span>
+                  <span className={cn(smallCaps, "mt-4 text-[9px] text-[#E8D4A8]/80")}>{unit.label}</span>
+                </motion.div>
+              </React.Fragment>
             ))}
           </motion.div>
         ) : (
@@ -130,23 +139,9 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
           </motion.p>
         )}
 
-        <motion.a
-          {...reveal(0.9, 12)}
-          href="#interlude"
-          className={cn(
-            smallCaps,
-            "mt-16 inline-flex flex-col items-center gap-3 text-[#DDBF8D]/75 transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
-          )}
-        >
+        <ChapterContinue href="#interlude" tone="dusk" className="mt-16" revealProps={reveal(0.9, 12)}>
           Continue
-          <span aria-hidden className="relative block h-12 w-px overflow-hidden bg-[#DDBF8D]/35">
-            <motion.span
-              className="absolute inset-x-0 top-0 block h-1/2 bg-[#E8B8C7]"
-              animate={{ y: ["-100%", "200%"] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: fairytaleEase }}
-            />
-          </span>
-        </motion.a>
+        </ChapterContinue>
       </div>
     </section>
   );

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 import { cn } from "@/lib/utils";
 import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
@@ -17,6 +19,8 @@ import {
   stoneBackground,
   waxSealBackground,
 } from "@/features/invitations/components/fairytale/textures";
+
+gsap.registerPlugin(useGSAP);
 
 interface Props {
   guestName: string;
@@ -47,6 +51,9 @@ export function RoyalEnvelope({
   const [opening, setOpening] = React.useState(false);
   const [flapOpen, setFlapOpen] = React.useState(false);
   const [showContinue, setShowContinue] = React.useState(false);
+  const rootRef = React.useRef<HTMLElement>(null);
+  const sealGlowRef = React.useRef<HTMLSpanElement>(null);
+  const chamberRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!opening) return;
@@ -60,6 +67,52 @@ export function RoyalEnvelope({
     };
   }, [opening, onOpened]);
 
+  useGSAP(
+    () => {
+      if (reduceMotion || opening || !sealGlowRef.current) return;
+      const pulse = gsap.to(sealGlowRef.current, {
+        opacity: 0.85,
+        scale: 1.08,
+        duration: 2.4,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: -1,
+      });
+      return () => {
+        pulse.kill();
+      };
+    },
+    { scope: rootRef, dependencies: [reduceMotion, opening] },
+  );
+
+  useGSAP(
+    () => {
+      if (!opening || reduceMotion || !chamberRef.current) return;
+      const tl = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+      tl.to(
+        chamberRef.current,
+        {
+          opacity: 0.42,
+          scale: 1.03,
+          duration: 2.4,
+          delay: 3.2,
+        },
+        0,
+      );
+      if (sealGlowRef.current) {
+        tl.to(
+          sealGlowRef.current,
+          { opacity: 0, scale: 1.4, duration: 0.55 },
+          0,
+        );
+      }
+      return () => {
+        tl.kill();
+      };
+    },
+    { scope: rootRef, dependencies: [opening, reduceMotion] },
+  );
+
   function openEnvelope() {
     if (opening) return;
     onOpenStart?.();
@@ -71,8 +124,11 @@ export function RoyalEnvelope({
   }
 
   return (
-    <section className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <ChamberBackdrop animate={!reduceMotion && !opening} opening={opening} />
+    <section
+      ref={rootRef}
+      className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
+    >
+      <ChamberBackdrop ref={chamberRef} animate={!reduceMotion && !opening} />
 
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
         <motion.button
@@ -126,6 +182,11 @@ export function RoyalEnvelope({
             </EnvelopeShell>
 
             <span className="absolute left-1/2 top-[52%] z-40 block -translate-x-1/2 -translate-y-1/2">
+              <span
+                ref={sealGlowRef}
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(232,184,199,0.45),transparent_68%)] opacity-55"
+              />
               <WaxSeal monogram={monogram} opening={opening} />
             </span>
           </motion.span>
@@ -163,7 +224,7 @@ export function RoyalEnvelope({
                 }}
                 className={cn(
                   displayFont,
-                  "pointer-events-auto text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
+                  "pointer-events-auto text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
                 )}
               >
                 Continue when you are ready
@@ -171,7 +232,7 @@ export function RoyalEnvelope({
             </>
           ) : (
             <>
-              <p className={cn(smallCaps, "text-[8px] text-[#DDBF8D]/75 sm:text-[10px]")}>
+              <p className={cn(smallCaps, "text-[8px] text-[#E8D4A8]/80 sm:text-[10px]")}>
                 A private invitation awaits
               </p>
               <button
@@ -180,7 +241,7 @@ export function RoyalEnvelope({
                 disabled={opening}
                 className={cn(
                   displayFont,
-                  "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1820]",
+                  "text-lg italic text-[#F3E7D3] underline decoration-[#DDBF8D]/50 underline-offset-[6px] transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
                 )}
               >
                 Open your invitation
@@ -464,35 +525,31 @@ function WaxSeal({ monogram, opening }: { monogram: string; opening: boolean }) 
   );
 }
 
-function ChamberBackdrop({ animate, opening }: { animate: boolean; opening: boolean }) {
+const ChamberBackdrop = React.forwardRef<HTMLDivElement, { animate: boolean }>(
+  function ChamberBackdrop({ animate }, ref) {
   return (
-    <motion.div
-      aria-hidden
-      className="pointer-events-none absolute inset-0"
-      animate={opening ? { opacity: 0.38, scale: 1.025 } : { opacity: 1, scale: 1 }}
-      transition={{ duration: 2.2, ease: fairytaleEase, delay: opening ? 3.4 : 0 }}
-    >
+    <div ref={ref} aria-hidden className="pointer-events-none absolute inset-0">
       <div
         className="absolute inset-0"
         style={{
           backgroundImage:
-            "radial-gradient(ellipse 52% 45% at 50% 43%,rgba(221,191,141,0.2),transparent 72%),linear-gradient(180deg,#1d1820 0%,#241d22 54%,#120e11 100%)",
+            "radial-gradient(ellipse 52% 45% at 50% 43%,rgba(232,212,168,0.18),transparent 72%),radial-gradient(ellipse 40% 35% at 70% 60%,rgba(201,184,232,0.1),transparent 70%),linear-gradient(180deg,#2a2c45 0%,#22243A 54%,#1a1c2e 100%)",
         }}
       />
       <div
         className="absolute bottom-0 left-1/2 h-[94svh] w-[min(100vw,52rem)] -translate-x-1/2 rounded-t-full"
         style={{
           backgroundImage: stoneBackground,
-          boxShadow: "inset 0 0 100px rgba(0,0,0,0.68)",
+          boxShadow: "inset 0 0 100px rgba(0,0,0,0.62)",
         }}
       >
         <div
           className="absolute inset-x-[7%] bottom-0 top-[5%] rounded-t-full"
           style={{
             backgroundImage:
-              "radial-gradient(ellipse 70% 50% at 50% 48%,rgba(255,222,172,0.2),transparent 72%),linear-gradient(180deg,#2b2228 0%,#241c21 60%,#191317 100%)",
+              "radial-gradient(ellipse 70% 50% at 50% 48%,rgba(255,222,172,0.18),transparent 72%),linear-gradient(180deg,#343652 0%,#2a2c45 60%,#1a1c2e 100%)",
             boxShadow:
-              "inset 0 40px 75px rgba(0,0,0,0.58),inset 0 0 0 1px rgba(221,191,141,0.12)",
+              "inset 0 40px 75px rgba(0,0,0,0.52),inset 0 0 0 1px rgba(221,191,141,0.12)",
           }}
         />
       </div>
@@ -532,6 +589,6 @@ function ChamberBackdrop({ animate, opening }: { animate: boolean; opening: bool
         className="absolute inset-0 opacity-[0.07] mix-blend-overlay"
         style={{ backgroundImage: grainOverlay }}
       />
-    </motion.div>
+    </div>
   );
-}
+});

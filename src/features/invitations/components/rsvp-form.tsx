@@ -172,7 +172,7 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
             </p>
           )}
 
-          <div role="radiogroup" aria-label="Will you be attending?" className="grid gap-4 sm:grid-cols-2">
+          <div role="radiogroup" aria-label="Will you be attending?" className="grid gap-6 sm:grid-cols-2 sm:gap-10">
             {choices.map((choice) => {
               const selected = attending === choice.value;
               return (
@@ -186,21 +186,19 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
                     setError(null);
                   }}
                   className={cn(
-                    "relative border px-6 py-7 text-center transition-[color,background-color,border-color,transform] duration-500 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
-                    selected
-                      ? "border-[#B76E79] bg-[#F7E3E8]/60 text-[#4a3236]"
-                      : "border-[#DDBF8D]/70 text-[#6d4a50] hover:border-[#DDBF8D] hover:bg-[#FFFDF8]",
+                    "relative px-2 py-4 text-center transition-colors duration-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
+                    selected ? "text-[#4a3236]" : "text-[#6d4a50] hover:text-[#4a3236]",
                   )}
                 >
+                  <span className={cn(displayFont, "block text-2xl")}>{choice.title}</span>
+                  <span className={cn(smallCaps, "mt-2 block text-[#9b7b62]")}>{choice.note}</span>
                   <span
                     aria-hidden
                     className={cn(
-                      "absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-[#B76E79] bg-[#B76E79] transition-opacity duration-500",
+                      "mx-auto mt-4 block h-px w-16 bg-gradient-to-r from-transparent via-[#B76E79] to-transparent transition-opacity duration-500",
                       selected ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <span className={cn(displayFont, "block text-2xl")}>{choice.title}</span>
-                  <span className={cn(smallCaps, "mt-2 block text-[#9b7b62]")}>{choice.note}</span>
                 </button>
               );
             })}
@@ -211,7 +209,7 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
               <motion.div key="attending-details" {...fade} className="space-y-8">
                 <div>
                   <p className={cn(smallCaps, "text-[#9b7b62]")}>Meal preference</p>
-                  <div role="radiogroup" aria-label="Meal preference" className="mt-4 grid grid-cols-2 gap-3">
+                  <div role="radiogroup" aria-label="Meal preference" className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-3 sm:justify-start">
                     {mealChoices.map((choice) => {
                       const selected = mealPreference === choice;
                       return (
@@ -226,10 +224,10 @@ export function RsvpForm({ token, guestName, plusOneAllowed, initialStatus, init
                           }}
                           className={cn(
                             displayFont,
-                            "border px-4 py-4 text-center text-lg transition-[color,background-color,border-color] duration-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
+                            "border-b pb-1 text-lg transition-colors duration-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
                             selected
-                              ? "border-[#B76E79] bg-[#F7E3E8]/60 text-[#4a3236]"
-                              : "border-[#DDBF8D]/70 text-[#6d4a50] hover:border-[#DDBF8D] hover:bg-[#FFFDF8]",
+                              ? "border-[#B76E79] text-[#4a3236]"
+                              : "border-transparent text-[#6d4a50] hover:border-[#DDBF8D]/70 hover:text-[#4a3236]",
                           )}
                         >
                           {choice}

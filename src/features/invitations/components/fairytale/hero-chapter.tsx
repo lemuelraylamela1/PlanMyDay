@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils";
 import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import {
   useChapterScroll,
-  useParallaxY,
+  useDepthLayer,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
+import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
+import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
@@ -21,7 +23,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
   const reveal = useReveal();
   const [activeImage, setActiveImage] = React.useState(0);
   const progress = useChapterScroll(ref);
-  const imageY = useParallaxY(progress, "-4%", "6%");
+  const { y: imageY } = useDepthLayer(progress, "far");
   const heroImages = fairytaleMedia.hero;
 
   React.useEffect(() => {
@@ -35,7 +37,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section id="portrait" ref={ref} className="relative">
       <motion.div
-        className="relative h-[100svh] min-h-[36rem] overflow-hidden bg-[#241c20]"
+        className="relative h-[100svh] min-h-[36rem] overflow-hidden bg-[#22243A]"
         initial={reduceMotion ? false : { opacity: 0.7 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1.2, ease: fairytaleEase }}
@@ -67,7 +69,7 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
                     fill
                     priority={index === 0}
                     sizes="100vw"
-                    quality={70}
+                    quality={82}
                     className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
                   />
                 )}
@@ -80,47 +82,56 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
 
         <div
           aria-hidden
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,14,17,0.08)_25%,rgba(18,14,17,0.28)_58%,rgba(18,14,17,0.92)_100%)] sm:bg-[linear-gradient(90deg,rgba(18,14,17,0.64)_0%,rgba(18,14,17,0.12)_52%,transparent_78%),linear-gradient(0deg,rgba(18,14,17,0.72),transparent_50%)]"
+          className="absolute inset-0 sm:hidden"
+          style={{ backgroundImage: fairytaleAtmosphere.heroVignette }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 hidden sm:block"
+          style={{ backgroundImage: fairytaleAtmosphere.heroVignetteDesktop }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 45% 35% at 20% 80%, rgba(201,184,232,0.18), transparent 70%), radial-gradient(ellipse 40% 30% at 70% 30%, rgba(232,212,168,0.12), transparent 65%)",
+          }}
         />
 
-        <div className="absolute inset-x-0 bottom-0 z-10 max-w-xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
+        <div className="absolute inset-x-0 bottom-0 z-10 max-w-2xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
           {wedding.dateLabel && (
-            <motion.p {...reveal(0.3)} className={cn(smallCaps, "text-[#DDBF8D]")}>
+            <motion.p {...reveal(0.3)} className={cn(smallCaps, "text-[#E8D4A8]")}>
               {wedding.dateLabel}
             </motion.p>
           )}
-          <motion.p
+          <motion.h1
             {...reveal(0.5)}
             className={cn(
               displayFont,
-              "mt-3 max-w-[19rem] text-balance text-[2.6rem] font-light leading-[0.98] sm:max-w-none sm:text-6xl",
+              "mt-4 max-w-[20rem] text-balance text-[clamp(2.75rem,9vw,4.75rem)] font-light leading-[0.96] tracking-[-0.02em] sm:max-w-none",
             )}
           >
             {wedding.coupleNames}
-          </motion.p>
+          </motion.h1>
           <motion.p
             {...reveal(0.65)}
-            className="mt-4 max-w-xs text-sm leading-relaxed text-[#FFFDF8]/78"
+            className={cn(
+              displayFont,
+              "mt-5 max-w-sm text-base italic leading-relaxed text-[#FFFDF8]/72 sm:text-lg",
+            )}
           >
             A chapter written in wonder, and a promise made for always.
           </motion.p>
-          <motion.a
-            {...reveal(0.8)}
+          <ChapterContinue
             href="#invitation"
-            className={cn(
-              smallCaps,
-              "mt-7 inline-flex flex-col items-start gap-3 text-[#FFFDF8]/75 transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFDF8]",
-            )}
+            tone="hero"
+            align="start"
+            className="mt-8"
+            revealProps={reveal(0.8)}
           >
             Continue to the invitation
-            <span aria-hidden className="relative block h-10 w-px overflow-hidden bg-[#FFFDF8]/35">
-              <motion.span
-                className="absolute inset-x-0 top-0 block h-1/2 bg-[#DDBF8D]"
-                animate={{ y: ["-100%", "200%"] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: fairytaleEase }}
-              />
-            </span>
-          </motion.a>
+          </ChapterContinue>
         </div>
 
         {heroImages.length > 1 && (
@@ -161,7 +172,7 @@ function HeroPlaceholder({ monogram }: { monogram: string }) {
       className="absolute inset-0 flex items-start justify-center pt-[16%] sm:items-center sm:pt-0"
       style={{
         backgroundImage:
-          "radial-gradient(ellipse 50% 42% at 50% 42%, rgba(221,191,141,0.2), transparent 72%), linear-gradient(180deg,#2c2328,#1c1619)",
+          "radial-gradient(ellipse 50% 42% at 50% 42%, rgba(232,212,168,0.18), transparent 72%), linear-gradient(180deg,#2a2c45,#22243A)",
       }}
     >
       <div className="relative flex h-[46%] min-h-[15rem] w-[min(64vw,20rem)] flex-col items-center justify-center rounded-t-full border border-[#DDBF8D]/40">
