@@ -21,6 +21,29 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",
+      // Prevent CSRF false-rejects (and some hosts reporting 404) when
+      // production is reached via custom domain / www / preview URLs.
+      allowedOrigins: [
+        ...new Set(
+          [
+            process.env.NEXT_PUBLIC_APP_URL,
+            process.env.NEXTAUTH_URL,
+            process.env.AUTH_URL,
+            process.env.NEXT_PUBLIC_RSVP_APP_URL,
+            process.env.RSVP_ALLOWED_ORIGIN,
+          ]
+            .filter(Boolean)
+            .flatMap((value) => String(value).split(","))
+            .map((value) => {
+              try {
+                return new URL(value.trim()).host;
+              } catch {
+                return value.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+              }
+            })
+            .filter(Boolean),
+        ),
+      ],
     },
     optimizePackageImports: ["framer-motion"],
   },

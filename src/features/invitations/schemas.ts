@@ -21,3 +21,16 @@ export const publicRsvpSubmitSchema = z
   });
 
 export type PublicRsvpSubmitInput = z.infer<typeof publicRsvpSubmitSchema>;
+
+/** Same-origin invite page (`/invite/[token]`) — no guest email required. */
+export const invitationRsvpSubmitSchema = z.object({
+  token: tokenSchema,
+  attending: z.boolean(),
+  partySize: z.coerce.number().int().min(1).max(20).default(1),
+  mealPreference: z.string().trim().max(120).optional(),
+  dietaryRestrictions: z.string().trim().max(500).optional(),
+  plusOneName: z.string().trim().max(120).optional(),
+  message: z.string().trim().max(500).optional(),
+});
+
+export type InvitationRsvpSubmitInput = z.infer<typeof invitationRsvpSubmitSchema>;

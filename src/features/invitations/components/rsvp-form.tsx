@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { submitInvitationRsvpAction } from "@/features/invitations/actions";
 import {
   RsvpCelebration,
   RSVP_CELEBRATION_MS,
@@ -151,19 +150,37 @@ export function RsvpForm({
     setPending(true);
     setError(null);
     try {
-      const result = await submitInvitationRsvpAction(token, {
-        attending: reply.attending,
-        partySize: reply.partySize,
-        mealPreference: reply.mealPreference ?? "",
-        dietaryRestrictions: reply.dietaryRestrictions ?? "",
-        plusOneName: reply.plusOneName ?? "",
-        message: reply.message ?? "",
+      // Use a stable Route Handler instead of a Server Action — actions often
+      // 404 in production after deploys (action-id skew / Origin CSRF).
+      const response = await fetch("/api/public/invitation-rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          attending: reply.attending,
+          partySize: reply.partySize,
+          mealPreference: reply.mealPreference ?? "",
+          dietaryRestrictions: reply.dietaryRestrictions ?? "",
+          plusOneName: reply.plusOneName ?? "",
+          message: reply.message ?? "",
+        }),
       });
-      if (!result.success) {
-        setError(result.error);
-        toast.error(result.error);
+
+      const payload = (await response.json().catch(() => null)) as
+        | { success?: boolean; message?: string; error?: string }
+        | null;
+
+      if (!response.ok || !payload?.success) {
+        const failure =
+          payload?.error ||
+          (response.status === 404
+            ? "This invitation link is invalid or has expired."
+            : "We couldn't send your reply. Please try again.");
+        setError(failure);
+        toast.error(failure);
         return;
       }
+
       // Success UI only after the server confirms the RSVP.
       setStatus(reply.attending ? "ACCEPTED" : "DECLINED");
       setSavedResponse(reply);
