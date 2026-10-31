@@ -9,7 +9,9 @@ import { fairytaleMedia } from "@/features/invitations/components/fairytale/fair
 interface InvitationAudioApi {
   /** Call from a user gesture (envelope click) so later play() is allowed. */
   unlock: () => Promise<void>;
-  /** Begin looping the ambient track (hero / story appears). */
+  /** Soft magical bed while the scroll opens and dissolves. */
+  startTransition: () => Promise<void>;
+  /** Crossfade to the Tangled theme once the website is revealed. */
   start: () => Promise<void>;
   duck: () => void;
   unduck: () => void;
@@ -23,55 +25,125 @@ export function useInvitationAudio() {
 }
 
 export function InvitationAudioProvider({ children }: { children: React.ReactNode }) {
-  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const transitionRef = React.useRef<HTMLAudioElement>(null);
+  const ambientRef = React.useRef<HTMLAudioElement>(null);
   const unlocked = React.useRef(false);
   const wantedOn = React.useRef(false);
   const ducked = React.useRef(false);
+  const phase = React.useRef<"idle" | "transition" | "ambient">("idle");
   const [playing, setPlaying] = React.useState(false);
   const [started, setStarted] = React.useState(false);
-  const track = fairytaleMedia.ambientMusic;
+  const transitionTrack = fairytaleMedia.transitionMusic;
+  const ambientTrack = fairytaleMedia.ambientMusic;
+
+  const activeEl = React.useCallback(() => {
+    if (phase.current === "transition") return transitionRef.current;
+    if (phase.current === "ambient") return ambientRef.current;
+    return null;
+  }, []);
 
   const syncPlayback = React.useCallback(async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (wantedOn.current && !ducked.current) {
-      try {
-        await audio.play();
+    const transition = transitionRef.current;
+    const ambient = ambientRef.current;
+    if (!transition || !ambient) return;
+
+    const shouldPlay = wantedOn.current && !ducked.current;
+    if (!shouldPlay) {
+      transition.pause();
+      ambient.pause();
+      setPlaying(false);
+      return;
+    }
+
+    try {
+      if (phase.current === "transition") {
+        ambient.pause();
+        await transition.play();
         setPlaying(true);
-      } catch {
-        setPlaying(false);
+      } else if (phase.current === "ambient") {
+        transition.pause();
+        await ambient.play();
+        setPlaying(true);
       }
-    } else {
-      audio.pause();
+    } catch {
       setPlaying(false);
     }
   }, []);
 
   const unlock = React.useCallback(async () => {
-    const audio = audioRef.current;
-    if (!audio || unlocked.current) return;
-    const previousVolume = audio.volume;
-    audio.volume = 0;
-    try {
-      await audio.play();
-      audio.pause();
-      audio.currentTime = 0;
-      unlocked.current = true;
-    } catch {
-      // Still mark unlocked attempt; start() will retry when RSVP appears.
-    } finally {
-      audio.volume = previousVolume || 0.55;
+    if (unlocked.current) return;
+    const els = [transitionRef.current, ambientRef.current].filter(Boolean) as HTMLAudioElement[];
+    for (const audio of els) {
+      const previousVolume = audio.volume;
+      audio.volume = 0;
+      try {
+        await audio.play();
+        audio.pause();
+        audio.currentTime = 0;
+      } catch {
+        // Retry later from startTransition / start.
+      } finally {
+        audio.volume = previousVolume || 0.55;
+      }
     }
+    unlocked.current = true;
   }, []);
 
-  const start = React.useCallback(async () => {
-    const audio = audioRef.current;
-    if (!audio || wantedOn.current) return;
-    audio.volume = 0.55;
+  const fadeVolume = React.useCallback((audio: HTMLAudioElement, to: number, ms: number) => {
+    const from = audio.volume;
+    const steps = Math.max(1, Math.round(ms / 40));
+    let step = 0;
+    const id = window.setInterval(() => {
+      step += 1;
+      audio.volume = from + (to - from) * (step / steps);
+      if (step >= steps) {
+        window.clearInterval(id);
+        audio.volume = to;
+        if (to === 0) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      }
+    }, 40);
+  }, []);
+
+  const startTransition = React.useCallback(async () => {
+    const audio = transitionRef.current;
+    if (!audio || phase.current === "transition") return;
+    phase.current = "transition";
+    audio.volume = 0.45;
+    audio.currentTime = 0;
     wantedOn.current = true;
     setStarted(true);
     await syncPlayback();
   }, [syncPlayback]);
+
+  const start = React.useCallback(async () => {
+    const ambient = ambientRef.current;
+    const transition = transitionRef.current;
+    if (!ambient) return;
+    if (phase.current === "ambient" && wantedOn.current) {
+      await syncPlayback();
+      return;
+    }
+
+    if (transition && phase.current === "transition" && !transition.paused) {
+      fadeVolume(transition, 0, 900);
+    }
+
+    phase.current = "ambient";
+    ambient.volume = 0;
+    ambient.currentTime = 0;
+    wantedOn.current = true;
+    setStarted(true);
+    try {
+      await ambient.play();
+      setPlaying(true);
+      fadeVolume(ambient, 0.55, 1100);
+    } catch {
+      setPlaying(false);
+    }
+  }, [fadeVolume, syncPlayback]);
 
   const duck = React.useCallback(() => {
     ducked.current = true;
@@ -86,17 +158,46 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
   const toggle = React.useCallback(() => {
     wantedOn.current = !wantedOn.current;
     setStarted(true);
+    if (phase.current === "idle") phase.current = "ambient";
     void syncPlayback();
   }, [syncPlayback]);
 
   const api = React.useMemo(
-    () => ({ unlock, start, duck, unduck, playing }),
-    [unlock, start, duck, unduck, playing],
+    () => ({ unlock, startTransition, start, duck, unduck, playing }),
+    [unlock, startTransition, start, duck, unduck, playing],
   );
+
+  // Keep React state in sync if the active element ends unexpectedly.
+  React.useEffect(() => {
+    const onPause = () => {
+      const el = activeEl();
+      if (el && el.paused && wantedOn.current && !ducked.current) setPlaying(false);
+    };
+    const onPlay = () => setPlaying(true);
+    const els = [transitionRef.current, ambientRef.current];
+    els.forEach((el) => {
+      el?.addEventListener("pause", onPause);
+      el?.addEventListener("play", onPlay);
+    });
+    return () => {
+      els.forEach((el) => {
+        el?.removeEventListener("pause", onPause);
+        el?.removeEventListener("play", onPlay);
+      });
+    };
+  }, [activeEl]);
 
   return (
     <InvitationAudioContext.Provider value={api}>
-      <audio ref={audioRef} src={track.src} preload="auto" loop playsInline aria-hidden />
+      <audio
+        ref={transitionRef}
+        src={transitionTrack.src}
+        preload="auto"
+        loop
+        playsInline
+        aria-hidden
+      />
+      <audio ref={ambientRef} src={ambientTrack.src} preload="auto" loop playsInline aria-hidden />
       {children}
       {started && (
         <button
@@ -105,7 +206,6 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
           aria-label={playing ? "Mute music" : "Play music"}
           aria-pressed={playing}
           className={cn(
-            // difference blend flips light↔dark against whatever section sits behind it
             "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 mix-blend-difference focus-visible:outline-none",
           )}
         >

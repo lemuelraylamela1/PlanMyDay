@@ -25,7 +25,9 @@ export interface FairytaleGalleryImage extends FairytaleImage {
 export const fairytaleMedia: {
   hero: FairytaleHeroImage[];
   saveTheDate: { src: string; title: string };
-  /** Unlocked on envelope click; starts when the hero / story appears. */
+  /** Plays while the scroll opens and dissolves into stars. */
+  transitionMusic: { src: string; title: string };
+  /** Unlocked on envelope click; starts when the website / hero appears. */
   ambientMusic: { src: string; title: string };
   prenup: FairytaleGalleryImage[];
 } = {
@@ -52,6 +54,10 @@ export const fairytaleMedia: {
   saveTheDate: {
     src: "/proposal-video/save-the-date.mp4",
     title: "Save the date",
+  },
+  transitionMusic: {
+    src: "/proposal-audio/magical-ambience.mp3",
+    title: "Fantasy Fairy Tale Music Magical — Ethereal Fantasy (528 Hz)",
   },
   ambientMusic: {
     src: "/proposal-audio/i-see-the-light.mp3",

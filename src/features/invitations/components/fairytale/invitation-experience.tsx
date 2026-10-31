@@ -74,14 +74,20 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
   });
 
   const handleOpenStart = React.useCallback(() => {
-    // Unlock autoplay on the open click; music begins as the website is revealed.
-    void audio?.unlock();
+    // Unlock + start the magical bed on the same gesture as Open Invitation.
+    void audio?.unlock().then(() => audio?.startTransition());
     window.scrollTo({ top: 0 });
     setPhase("opening");
   }, [audio]);
 
+  const handleSealBreak = React.useCallback(() => {
+    // Ensure magical bed is running even if unlock was slow.
+    void audio?.startTransition();
+  }, [audio]);
+
   const handleRevealStart = React.useCallback(() => {
     setPhase("revealing");
+    // Tangled theme begins as the website itself appears.
     void audio?.start();
   }, [audio]);
 
@@ -154,6 +160,7 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
               monogram={wedding.monogram}
               dateLabel={wedding.dateLabel}
               onOpenStart={handleOpenStart}
+              onSealBreak={handleSealBreak}
               onRevealStart={handleRevealStart}
               onOpened={handleOpened}
             />

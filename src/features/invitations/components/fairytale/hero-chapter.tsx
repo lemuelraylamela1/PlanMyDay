@@ -115,7 +115,7 @@ export function HeroChapter({ wedding, entered = true }: Props) {
             className="pointer-events-none absolute inset-0 z-[2]"
             style={{
               backgroundImage:
-                "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,248,234,0.55), rgba(243,231,211,0.3) 55%, rgba(201,184,232,0.25))",
+                "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,214,150,0.22), rgba(88,62,128,0.45) 55%, rgba(29,26,51,0.75))",
             }}
             initial={{ opacity: 1 }}
             animate={{ opacity: entered ? 0 : 1 }}
