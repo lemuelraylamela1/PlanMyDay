@@ -27,6 +27,8 @@ export interface InvitationWedding {
   receptionTimeLabel: string | null;
   venueName: string | null;
   venueAddress: string | null;
+  /** From wedding settings; omit on the invite when blank. */
+  dressCode: string | null;
   /** Love story from wedding settings. Blank lines become separate paragraphs. */
   story: string | null;
 }

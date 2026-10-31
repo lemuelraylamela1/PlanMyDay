@@ -112,11 +112,24 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
     if (!audio || phase.current === "transition") return;
     phase.current = "transition";
     audio.volume = 0.45;
-    audio.currentTime = 0;
+    // Skip the intro; the magical bed begins at 0:06 (and on every loop).
+    audio.currentTime = 6;
     wantedOn.current = true;
     setStarted(true);
     await syncPlayback();
   }, [syncPlayback]);
+
+  React.useEffect(() => {
+    const audio = transitionRef.current;
+    if (!audio) return;
+    const restartFromCue = () => {
+      if (phase.current !== "transition" || !wantedOn.current || ducked.current) return;
+      audio.currentTime = 6;
+      void audio.play();
+    };
+    audio.addEventListener("ended", restartFromCue);
+    return () => audio.removeEventListener("ended", restartFromCue);
+  }, []);
 
   const start = React.useCallback(async () => {
     const ambient = ambientRef.current;
@@ -193,7 +206,6 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
         ref={transitionRef}
         src={transitionTrack.src}
         preload="auto"
-        loop
         playsInline
         aria-hidden
       />

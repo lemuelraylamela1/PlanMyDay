@@ -100,7 +100,6 @@ export function RoyalEnvelope({
   const sealFlareRef = React.useRef<HTMLSpanElement>(null);
   const haloRef = React.useRef<HTMLSpanElement>(null);
   const sheetGlowRef = React.useRef<HTMLSpanElement>(null);
-  const sweepRef = React.useRef<HTMLSpanElement>(null);
   const ctaRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -183,13 +182,13 @@ export function RoyalEnvelope({
         tl.to(ctaRef.current, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" }, 1.4);
       }
 
-      // Soft idle twinkle — a hint that something magical is waiting.
+      // Soft idle twinkle — sparse so the scene stays calm before open.
       stars.forEach((el, i) => {
-        if (i % 3 !== 0) return;
+        if (i % 4 !== 0) return;
         gsap.to(el, {
-          opacity: 0.35 + (i % 4) * 0.1,
-          scale: 0.85 + (i % 3) * 0.15,
-          duration: 1.4 + (i % 5) * 0.35,
+          opacity: 0.28 + (i % 4) * 0.08,
+          scale: 0.9 + (i % 3) * 0.1,
+          duration: 2.1 + (i % 5) * 0.4,
           ease: "sine.inOut",
           yoyo: true,
           repeat: -1,
@@ -199,18 +198,18 @@ export function RoyalEnvelope({
 
       lanterns.forEach((el, i) => {
         gsap.to(el, {
-          y: `-=${14 + (i % 4) * 8}`,
-          x: `+=${(i % 2 === 0 ? 1 : -1) * (4 + (i % 3) * 4)}`,
-          duration: 4.5 + (i % 5) * 0.8,
+          y: `-=${10 + (i % 4) * 5}`,
+          x: `+=${(i % 2 === 0 ? 1 : -1) * (3 + (i % 3) * 2)}`,
+          duration: 5.6 + (i % 5) * 0.9,
           ease: "sine.inOut",
           yoyo: true,
           repeat: -1,
-          delay: 1.9 + (i % 6) * 0.15,
+          delay: 1.9 + (i % 6) * 0.18,
         });
       });
       gsap.to(scrollRef.current, {
-        y: -5,
-        duration: 2.8,
+        y: -4,
+        duration: 3.4,
         ease: "sine.inOut",
         yoyo: true,
         repeat: -1,
@@ -218,9 +217,9 @@ export function RoyalEnvelope({
       });
       if (sealGlowRef.current) {
         gsap.to(sealGlowRef.current, {
-          opacity: 0.75,
-          scale: 1.18,
-          duration: 1.8,
+          opacity: 0.68,
+          scale: 1.1,
+          duration: 2.4,
           ease: "sine.inOut",
           yoyo: true,
           repeat: -1,
@@ -278,7 +277,6 @@ export function RoyalEnvelope({
 
     gsap.set(dust, { x: 0, y: 0, opacity: 0, scale: 0.5, rotate: 0 });
     gsap.set(stars, { x: 0, y: 0, opacity: 0, scale: 0.4, rotate: 0 });
-    if (sweepRef.current) gsap.set(sweepRef.current, { xPercent: -130, skewX: -16, opacity: 0 });
 
     const tl = gsap.timeline({
       defaults: { ease: "power2.inOut" },
@@ -760,14 +758,6 @@ export function RoyalEnvelope({
       </section>
 
       <div aria-hidden className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
-        <span
-          ref={sweepRef}
-          className="absolute -inset-y-[20%] left-0 w-[45vw] opacity-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, transparent 0%, rgba(255,244,220,0.08) 25%, rgba(255,240,205,0.45) 50%, rgba(255,244,220,0.08) 75%, transparent 100%)",
-          }}
-        />
         {dust.map((d) => (
           <span
             key={d.id}

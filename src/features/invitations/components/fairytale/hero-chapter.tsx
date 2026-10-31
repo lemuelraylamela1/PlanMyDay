@@ -5,7 +5,11 @@ import Image from "next/image";
 import { motion, useInView, useReducedMotion, type MotionProps } from "framer-motion";
 
 import { cn } from "@/lib/utils";
-import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
+import {
+  fairytaleEase,
+  fairytaleMotion,
+  fairytaleTransition,
+} from "@/features/invitations/components/fairytale/use-reveal";
 import {
   useChapterScroll,
   useDepthLayer,
@@ -37,11 +41,11 @@ export function HeroChapter({ wedding, entered = true }: Props) {
 
   const reveal = (delay = 0): MotionProps => {
     if (reduceMotion) return {};
-    const hidden = { opacity: 0, y: 28 };
+    const hidden = { opacity: 0, y: fairytaleMotion.rise + 6 };
     return {
       initial: hidden,
       animate: entered ? { opacity: 1, y: 0 } : hidden,
-      transition: { duration: 1.4, ease: fairytaleEase, delay },
+      transition: fairytaleTransition(fairytaleMotion.reveal + 0.15, delay),
     };
   };
 
@@ -60,13 +64,13 @@ export function HeroChapter({ wedding, entered = true }: Props) {
         style={{ backgroundColor: fairytale.midnight }}
         initial={false}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.7, ease: fairytaleEase }}
+        transition={fairytaleTransition(fairytaleMotion.panel + 0.15)}
       >
         <motion.div
           className="absolute inset-0"
-          initial={reduceMotion ? false : { scale: 1.08 }}
-          animate={{ scale: entered ? 1 : 1.08 }}
-          transition={{ duration: 2.6, ease: fairytaleEase }}
+          initial={reduceMotion ? false : { scale: 1.05 }}
+          animate={{ scale: entered ? 1 : 1.05 }}
+          transition={fairytaleTransition(fairytaleMotion.atmosphere)}
         >
           <div data-scene-camera className="absolute inset-0 will-change-transform">
             <motion.div
@@ -81,7 +85,7 @@ export function HeroChapter({ wedding, entered = true }: Props) {
                     className="absolute inset-0"
                     initial={false}
                     animate={{ opacity: index === activeImage ? 1 : 0 }}
-                    transition={{ opacity: { duration: 1.8, ease: fairytaleEase } }}
+                    transition={{ opacity: fairytaleTransition(fairytaleMotion.crossfade) }}
                     style={
                       {
                         "--mobile-position": image.mobileObjectPosition,
@@ -204,7 +208,7 @@ export function HeroChapter({ wedding, entered = true }: Props) {
                   className="absolute left-1/2 top-1/2 h-px -translate-x-1/2 -translate-y-1/2 bg-[#FFFDF8]"
                   initial={false}
                   animate={{ width: activeImage === index ? 20 : 0 }}
-                  transition={{ duration: 0.65, ease: fairytaleEase }}
+                  transition={fairytaleTransition(fairytaleMotion.ui + 0.15)}
                 />
               </button>
             ))}

@@ -4,13 +4,14 @@ import * as React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
-import { useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
 import {
   useChapterScroll,
   useDepthLayer,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import {
   Fleuron,
+  GoldCorner,
   GoldDivider,
   displayFont,
   smallCaps,
@@ -58,15 +59,34 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
           backgroundImage: `${fairytaleAtmosphere.blushGlow}, radial-gradient(ellipse 36% 28% at 50% 18%, rgba(232,212,168,0.22), transparent 70%)`,
         }}
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 50% 30% at 50% 100%, rgba(221,191,141,0.12), transparent 70%)",
+        }}
+      />
 
       <div data-scene-content className="relative mx-auto max-w-xl text-center">
         <motion.div {...reveal(0)} className="flex justify-center">
-          <Fleuron className="w-24 text-[#C9A66B]" />
+          <motion.div
+            animate={reduceMotion ? undefined : { y: [0, -3, 0], opacity: [0.88, 1, 0.88] }}
+            transition={{ duration: 9.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Fleuron className="w-24 text-[#C9A66B]" />
+          </motion.div>
         </motion.div>
         <motion.p {...reveal(0.08)} className={cn(smallCaps, "mt-6 text-[#B76E79]")}>
           Kindly respond
         </motion.p>
-        <motion.div {...reveal(0.16)} className="mt-6">
+        <motion.h2
+          {...reveal(0.14, 18)}
+          className={cn(displayFont, "mt-5 text-3xl font-light tracking-[-0.02em] text-[#4a3236] sm:text-4xl")}
+        >
+          The RSVP chamber
+        </motion.h2>
+        <motion.div {...reveal(0.2)} className="mt-6">
           <GoldDivider />
         </motion.div>
         <motion.p
@@ -77,27 +97,35 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
           Please let us know if you can join us.
         </motion.p>
 
-        <motion.div className="relative mt-14 text-left">
-          <motion.div
-            {...reveal(0.42, 24)}
-            className="relative border-y border-[#DDBF8D]/45 bg-[#FFFDF8]/40 px-5 py-10 sm:px-8 sm:py-12"
-          >
+        <motion.div
+          className="relative mt-14 text-left"
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.85, ease: fairytaleEase, delay: 0.1 }}
+        >
+          <div className="relative bg-[#FFFDF8]/55 px-5 py-11 shadow-[0_28px_80px_-48px_rgba(74,50,54,0.45)] sm:px-9 sm:py-14">
+            <GoldCorner className="left-1.5 top-1.5 opacity-80 sm:left-2 sm:top-2" />
+            <GoldCorner className="right-1.5 top-1.5 rotate-90 opacity-80 sm:right-2 sm:top-2" />
+            <GoldCorner className="bottom-1.5 left-1.5 -rotate-90 opacity-80 sm:bottom-2 sm:left-2" />
+            <GoldCorner className="bottom-1.5 right-1.5 rotate-180 opacity-80 sm:bottom-2 sm:right-2" />
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#E8D4A8]/80 to-transparent"
+              className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#E8D4A8]/85 to-transparent"
             />
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-[#E8D4A8]/80 to-transparent"
+              className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-[#E8D4A8]/85 to-transparent"
             />
             <RsvpForm
               token={token}
               guestName={guest.name}
+              monogram={wedding.monogram}
               plusOneAllowed={guest.plusOneAllowed}
               initialStatus={guest.rsvpStatus}
               initialResponse={response}
             />
-          </motion.div>
+          </div>
         </motion.div>
       </div>
 

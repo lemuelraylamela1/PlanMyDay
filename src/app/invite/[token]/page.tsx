@@ -83,6 +83,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           : null,
         venueName: wedding.venueName,
         venueAddress: wedding.venueAddress,
+        dressCode: wedding.settings?.dressCode?.trim() || null,
         story: wedding.settings?.story?.trim() || null,
       }}
     />

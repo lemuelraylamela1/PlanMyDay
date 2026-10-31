@@ -4,7 +4,7 @@ import { motion, useInView, useReducedMotion, type MotionProps } from "framer-mo
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
-import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
+import { fairytaleSoftEase } from "@/features/invitations/components/fairytale/use-reveal";
 import { smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 
 type Tone = "paper" | "dusk" | "hero";
@@ -57,7 +57,7 @@ export function ChapterContinue({
       {...revealProps}
       className={cn(
         smallCaps,
-        "inline-flex flex-col gap-3 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-4",
+        "inline-flex flex-col gap-3 transition-[color,opacity] duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-4",
         align === "center" ? "items-center" : "items-start",
         styles.link,
         className,
@@ -75,7 +75,7 @@ export function ChapterContinue({
           transition={
             reduceMotion || !inView
               ? { duration: 0.2 }
-              : { duration: 4.6, repeat: Infinity, ease: fairytaleEase, repeatDelay: 1.4 }
+              : { duration: 5.4, repeat: Infinity, ease: fairytaleSoftEase, repeatDelay: 2.2 }
           }
         />
       </span>

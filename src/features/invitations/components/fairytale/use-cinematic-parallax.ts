@@ -11,12 +11,15 @@ import {
 
 type Depth = "far" | "mid" | "near" | "foreground";
 
-/** Gentle vertical drift only — rotate/scale/z were dropped because they stutter on scroll. */
+/**
+ * Gentle vertical drift only — rotate/scale/z were dropped because they stutter
+ * on scroll. Ranges kept subtle so they don't fight GSAP scene layers.
+ */
 const yRange: Record<Depth, [string, string]> = {
-  far: ["-5%", "7%"],
-  mid: ["-3%", "4%"],
-  near: ["4%", "-5%"],
-  foreground: ["7%", "-8%"],
+  far: ["-3.5%", "4.5%"],
+  mid: ["-2%", "2.5%"],
+  near: ["2.5%", "-3%"],
+  foreground: ["4%", "-5%"],
 };
 
 export function useChapterScroll(ref: React.RefObject<HTMLElement | null>) {

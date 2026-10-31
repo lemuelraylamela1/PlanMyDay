@@ -1,13 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
+import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
-import { useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import {
+  useChapterScroll,
+  useParallaxY,
+} from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
-import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
+import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
@@ -36,8 +41,18 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
+const countdownPhoto =
+  fairytaleMedia.prenup.find((photo) => photo.src?.includes("hero-03")) ??
+  fairytaleMedia.prenup.find((photo) => Boolean(photo.src)) ??
+  fairytaleMedia.hero[0];
+
 export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
   const reveal = useReveal();
+  const reduceMotion = useReducedMotion();
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const progress = useChapterScroll(sectionRef);
+  const imageY = useParallaxY(progress, "-6%", "7%");
+
   const targetMs = wedding.countdownTargetIso
     ? Date.parse(wedding.countdownTargetIso)
     : Number.NaN;
@@ -65,23 +80,50 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section
       id="countdown"
+      ref={sectionRef}
       data-scene="countdown"
-      className="relative overflow-hidden px-6 py-28 text-center text-[#F3E7D3] sm:py-36"
-      style={{ backgroundImage: fairytaleAtmosphere.duskShell }}
+      className="relative overflow-hidden px-5 py-28 text-center text-[#F3E7D3] sm:px-8 sm:py-36"
     >
+      <div className="absolute inset-0 overflow-hidden bg-[#1a1c2e]">
+        {countdownPhoto?.src && (
+          <motion.div
+            className="absolute inset-x-0 bottom-[-8%] top-[-8%]"
+            style={reduceMotion ? undefined : { y: imageY }}
+          >
+            <Image
+              src={countdownPhoto.src}
+              alt=""
+              fill
+              sizes="100vw"
+              quality={72}
+              className="object-cover object-center opacity-35"
+              aria-hidden
+            />
+          </motion.div>
+        )}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,28,46,0.72)_0%,rgba(34,36,58,0.78)_45%,rgba(26,28,46,0.92)_100%)]"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: grainOverlay }}
+        />
+      </div>
+
       <SceneTransition tone="dusk" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{ backgroundImage: grainOverlay }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ backgroundImage: fairytaleAtmosphere.lavenderMist }}
-      />
 
       <div data-scene-content className="relative mx-auto flex max-w-3xl flex-col items-center">
+        <motion.span
+          aria-hidden
+          className="mb-8 h-10 w-px bg-gradient-to-b from-transparent via-[#DDBF8D]/70 to-transparent"
+          initial={reduceMotion ? false : { scaleY: 0, opacity: 0 }}
+          whileInView={{ scaleY: 1, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.2, ease: fairytaleEase }}
+        />
+
         <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#E8D4A8]")}>
           Counting the days
         </motion.p>
@@ -102,9 +144,8 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
         </motion.div>
 
         {hasTarget ? (
-          <motion.div
-            {...reveal(0.55)}
-            className="mt-14 flex w-full max-w-2xl flex-wrap items-end justify-center gap-x-4 gap-y-8 sm:gap-x-8"
+          <div
+            className="mt-14 flex w-full max-w-2xl flex-wrap items-end justify-center gap-x-5 gap-y-10 sm:gap-x-10"
             aria-live="polite"
             aria-atomic="true"
           >
@@ -113,26 +154,24 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
                 {index > 0 && (
                   <span
                     aria-hidden
-                    className="mb-8 hidden h-10 w-px bg-gradient-to-b from-transparent via-[#DDBF8D]/50 to-transparent sm:block"
-                  />
+                    className="mb-9 hidden text-2xl font-light text-[#DDBF8D]/45 sm:block"
+                  >
+                    ·
+                  </span>
                 )}
                 <motion.div
-                  {...reveal(0.6 + index * 0.08)}
-                  className="flex min-w-[4.5rem] flex-col items-center sm:min-w-[5.5rem]"
+                  {...reveal(0.5 + index * 0.08)}
+                  className="flex min-w-[4.75rem] flex-col items-center sm:min-w-[5.75rem]"
                 >
-                  <span
-                    className={cn(
-                      displayFont,
-                      "tabular-nums text-[clamp(2.6rem,9vw,3.8rem)] font-light leading-none text-[#FFFDF8]",
-                    )}
-                  >
-                    {unit.wide ? unit.value : pad(unit.value)}
-                  </span>
+                  <CountdownValue
+                    value={unit.wide ? String(unit.value) : pad(unit.value)}
+                    reduceMotion={Boolean(reduceMotion)}
+                  />
                   <span className={cn(smallCaps, "mt-4 text-[9px] text-[#E8D4A8]/80")}>{unit.label}</span>
                 </motion.div>
               </React.Fragment>
             ))}
-          </motion.div>
+          </div>
         ) : (
           <motion.p
             {...reveal(0.55)}
@@ -142,10 +181,56 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
           </motion.p>
         )}
 
+        {(wedding.venueName || wedding.ceremonyTimeLabel) && (
+          <motion.div
+            {...reveal(0.75)}
+            className="mt-14 flex max-w-md flex-col items-center gap-2"
+          >
+            {wedding.ceremonyTimeLabel && (
+              <p className={cn(displayFont, "text-base italic text-[#F3E7D3]/70")}>
+                Ceremony at {wedding.ceremonyTimeLabel}
+              </p>
+            )}
+            {wedding.venueName && (
+              <p className={cn(smallCaps, "text-[#E8D4A8]/65")}>{wedding.venueName}</p>
+            )}
+          </motion.div>
+        )}
+
         <ChapterContinue href="#interlude" tone="dusk" className="mt-16" revealProps={reveal(0.9, 12)}>
           Continue
         </ChapterContinue>
       </div>
     </section>
+  );
+}
+
+function CountdownValue({
+  value,
+  reduceMotion,
+}: {
+  value: string;
+  reduceMotion: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        displayFont,
+        "relative block h-[1.05em] overflow-hidden tabular-nums text-[clamp(2.6rem,9vw,3.9rem)] font-light leading-none text-[#FFFDF8]",
+      )}
+    >
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={value}
+          className="block"
+          initial={reduceMotion ? false : { y: "32%", opacity: 0 }}
+          animate={{ y: "0%", opacity: 1 }}
+          exit={reduceMotion ? undefined : { y: "-28%", opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0.01 : 0.32, ease: fairytaleEase }}
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }

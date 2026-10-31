@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -8,12 +9,14 @@ import { fairytaleEase, useReveal } from "@/features/invitations/components/fair
 import {
   useChapterScroll,
   useDepthLayer,
+  useParallaxY,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
 import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
+import { fairytaleMedia, type FairytaleGalleryImage } from "@/features/invitations/components/fairytale/fairytale-media";
 
 const dusk =
   "linear-gradient(180deg,#FBF6EE 0%,#eadfce 7%,#8a8498 16%,#4a4d68 26%,#2a2c45 36%,#22243A 50%,#1a1c2e 66%,#2f3148 82%,#7a7488 91%,#d8cdbd 97%,#FBF6EE 100%)";
@@ -36,6 +39,9 @@ const placeholderStory = [
   },
 ];
 
+/** Editorial plates drawn from existing prenup photographs — never stock. */
+const storyPlateIndexes = [0, 3, 7] as const;
+
 function storyParagraphs(story: string | null) {
   if (!story?.trim()) return [];
   const blocks = story
@@ -57,6 +63,11 @@ export function InterludeChapter({ story }: { story: string | null }) {
   const progress = useChapterScroll(sectionRef);
   const { y: glowY } = useDepthLayer(progress, "far");
   const { y: ornamentY } = useDepthLayer(progress, "near");
+  const photos = fairytaleMedia.prenup.filter((photo) => Boolean(photo.src));
+  const plates = storyPlateIndexes
+    .map((index) => photos[index])
+    .filter((photo): photo is FairytaleGalleryImage => Boolean(photo?.src));
+
   const chapters =
     paragraphs.length > 0
       ? paragraphs.map((body, index) => ({
@@ -93,8 +104,8 @@ export function InterludeChapter({ story }: { story: string | null }) {
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-x-[18%] top-[18%] h-40 bg-[radial-gradient(ellipse_at_center,rgba(232,184,199,0.14),transparent_70%)]"
-        animate={reduceMotion ? undefined : { opacity: [0.35, 0.8, 0.35], scale: [1, 1.05, 1] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+        animate={reduceMotion ? undefined : { opacity: [0.38, 0.68, 0.38], scale: [1, 1.025, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
       <div
         aria-hidden
@@ -106,7 +117,7 @@ export function InterludeChapter({ story }: { story: string | null }) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_52%,transparent_30%,rgba(26,28,46,0.55)_100%)]"
       />
 
-      <div data-scene-content className="relative mx-auto flex max-w-3xl flex-col items-center">
+      <div data-scene-content className="relative mx-auto flex max-w-5xl flex-col items-center">
         <motion.div style={reduceMotion ? undefined : { y: ornamentY }}>
           <BotanicalSprig />
         </motion.div>
@@ -115,39 +126,44 @@ export function InterludeChapter({ story }: { story: string | null }) {
         </motion.p>
         <motion.h2
           {...reveal(0.24, 24)}
-          className={cn(displayFont, "mt-5 text-balance text-4xl font-light leading-[1.05] tracking-[-0.02em] sm:text-7xl")}
+          className={cn(displayFont, "mt-5 max-w-3xl text-balance text-4xl font-light leading-[1.05] tracking-[-0.02em] sm:text-7xl")}
         >
           Once upon a time,
           <span className="mt-2 block italic text-[#E8B8C7]">
             two hearts found their way home.
           </span>
         </motion.h2>
-        <motion.div {...reveal(0.4)} className="mt-10">
+        <motion.p
+          {...reveal(0.34)}
+          className={cn(displayFont, "mt-6 max-w-xl text-base font-light italic leading-relaxed text-[#F3E7D3]/68 sm:text-lg")}
+        >
+          A quiet chronicle of how we found each other—told in soft light, lingering glances, and the moments that became forever.
+        </motion.p>
+        <motion.div {...reveal(0.44)} className="mt-10">
           <GoldDivider tone="light" />
         </motion.div>
 
-        <div className="relative mt-20 w-full max-w-2xl text-left sm:mt-28">
-          <motion.span
-            aria-hidden
-            className="absolute bottom-6 left-[7px] top-6 w-px origin-top bg-gradient-to-b from-[#DDBF8D]/70 via-[#E8B8C7]/45 to-transparent sm:left-1/2"
-            initial={reduceMotion ? false : { scaleY: 0 }}
-            whileInView={{ scaleY: 1 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 2.2, ease: fairytaleEase }}
-          />
+        {plates[0] && (
+          <EditorialOpener photo={plates[0]} progress={progress} />
+        )}
 
-          <div className="space-y-20 sm:space-y-28">
-            {chapters.map((chapter, index) => (
-              <StoryMoment
-                key={`${index}-${chapter.title}`}
-                chapter={chapter}
-                index={index}
-              />
-            ))}
+        <div className="relative mt-16 w-full sm:mt-24">
+          <div className="space-y-24 sm:space-y-32">
+            {chapters.map((chapter, index) => {
+              const plate = plates.length > 0 ? plates[(index + 1) % plates.length] : undefined;
+              return (
+                <StorySpread
+                  key={`${index}-${chapter.title}`}
+                  chapter={chapter}
+                  index={index}
+                  photo={plate}
+                />
+              );
+            })}
           </div>
         </div>
 
-        <ChapterContinue href="#rsvp" tone="dusk" className="mt-16" revealProps={reveal(0.25, 12)}>
+        <ChapterContinue href="#rsvp" tone="dusk" className="mt-20" revealProps={reveal(0.25, 12)}>
           Continue to RSVP
         </ChapterContinue>
       </div>
@@ -155,46 +171,172 @@ export function InterludeChapter({ story }: { story: string | null }) {
   );
 }
 
-function StoryMoment({
+function EditorialOpener({
+  photo,
+  progress,
+}: {
+  photo: FairytaleGalleryImage;
+  progress: ReturnType<typeof useChapterScroll>;
+}) {
+  const reduceMotion = useReducedMotion();
+  const imageY = useParallaxY(progress, "-2.5%", "3.5%");
+
+  return (
+    <motion.figure
+      className="relative mt-16 w-full overflow-hidden sm:mt-20"
+      initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{ duration: 1.2, ease: fairytaleEase }}
+    >
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#1a1c2e] sm:aspect-[21/9]">
+        <motion.div
+          className="absolute inset-x-0 bottom-[-6%] top-[-6%]"
+          style={reduceMotion ? undefined : { y: imageY }}
+        >
+          {photo.src && (
+            <Image
+              src={photo.src}
+              alt={photo.alt}
+              fill
+              sizes="(min-width: 1024px) 64rem, 100vw"
+              quality={82}
+              className="object-cover object-center"
+            />
+          )}
+        </motion.div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(26,28,46,0.15)_0%,transparent_35%,rgba(26,28,46,0.72)_100%)]"
+        />
+        <figcaption className="absolute inset-x-0 bottom-0 flex flex-col items-start px-5 py-6 text-left sm:px-8 sm:py-8">
+          <p className={cn(smallCaps, "text-[#E8D4A8]/85")}>Chapter zero</p>
+          <p className={cn(displayFont, "mt-2 max-w-md text-2xl font-light italic leading-snug text-[#F8EFE2] sm:text-3xl")}>
+            Before the vows, there was us.
+          </p>
+        </figcaption>
+      </div>
+    </motion.figure>
+  );
+}
+
+function StorySpread({
   chapter,
   index,
+  photo,
 }: {
   chapter: { eyebrow: string; title: string; body: string };
   index: number;
+  photo?: FairytaleGalleryImage;
 }) {
   const reduceMotion = useReducedMotion();
-  const alignRight = index % 2 === 1;
+  const photoLeft = index % 2 === 0;
 
   return (
     <motion.article
       className={cn(
-        "relative pl-10 sm:w-1/2 sm:pl-0",
-        alignRight ? "sm:ml-auto sm:pl-12" : "sm:pr-12 sm:text-right",
+        "grid items-center gap-8 sm:gap-10",
+        photo?.src ? "md:grid-cols-12" : "mx-auto max-w-2xl",
       )}
-      initial={reduceMotion ? false : { opacity: 0, x: alignRight ? 28 : -28, y: 16 }}
-      whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, amount: 0.45 }}
-      transition={{ duration: 1.1, ease: fairytaleEase }}
+      initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.28 }}
+      transition={{ duration: 1.05, ease: fairytaleEase }}
     >
-      <motion.span
-        aria-hidden
+      {photo?.src && (
+        <StoryPlate
+          photo={photo}
+          className={cn(
+            "md:col-span-7",
+            photoLeft ? "md:order-1" : "md:order-2",
+            index % 3 === 1 && "md:col-span-6 md:translate-y-6",
+            index % 3 === 2 && "md:col-span-8",
+          )}
+          tall={index % 3 !== 1}
+        />
+      )}
+
+      <div
         className={cn(
-          "absolute top-1.5 h-3.5 w-3.5 rotate-45 border border-[#DDBF8D] bg-[#22243A] shadow-[0_0_18px_rgba(221,191,141,0.35)]",
-          "-left-0 sm:left-auto",
-          alignRight ? "sm:-left-[7px]" : "sm:-right-[7px]",
+          "text-left",
+          photo?.src
+            ? cn(
+                "md:col-span-5",
+                photoLeft ? "md:order-2 md:pl-2" : "md:order-1 md:pr-2 md:text-right",
+                index % 3 === 2 && "md:col-span-4",
+              )
+            : "text-center",
         )}
-        whileInView={reduceMotion ? undefined : { rotate: [45, 225], scale: [0.7, 1] }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.2, ease: fairytaleEase }}
-      />
-      <p className={cn(smallCaps, "text-[9px] text-[#E8D4A8]/80")}>{chapter.eyebrow}</p>
-      <h3 className={cn(displayFont, "mt-3 text-3xl font-light leading-tight text-[#F8EFE2] sm:text-4xl")}>
-        {chapter.title}
-      </h3>
-      <p className={cn(displayFont, "mt-5 text-lg font-light italic leading-relaxed text-[#F3E7D3]/72 sm:text-xl")}>
-        {chapter.body}
-      </p>
+      >
+        <p className={cn(smallCaps, "text-[9px] text-[#E8D4A8]/80")}>{chapter.eyebrow}</p>
+        <h3 className={cn(displayFont, "mt-3 text-3xl font-light leading-tight text-[#F8EFE2] sm:text-4xl")}>
+          {chapter.title}
+        </h3>
+        <p
+          className={cn(
+            displayFont,
+            "mt-5 text-lg font-light italic leading-relaxed text-[#F3E7D3]/72 sm:text-xl",
+            photo?.src && !photoLeft && "md:ml-auto",
+            "max-w-md",
+            !photo?.src && "mx-auto",
+          )}
+        >
+          {chapter.body}
+        </p>
+      </div>
     </motion.article>
+  );
+}
+
+function StoryPlate({
+  photo,
+  className,
+  tall,
+}: {
+  photo: FairytaleGalleryImage;
+  className?: string;
+  tall?: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className={cn("group relative overflow-hidden bg-[#1a1c2e]", className)}
+      whileHover={reduceMotion ? undefined : { scale: 1.004 }}
+      transition={{ duration: 0.65, ease: fairytaleEase }}
+    >
+      <div
+        className={cn(
+          "relative w-full overflow-hidden",
+          tall ? "aspect-[4/5] sm:aspect-[3/4]" : "aspect-[5/4] sm:aspect-[4/3]",
+        )}
+      >
+        <div className="absolute inset-0">
+          <Image
+            src={photo.src!}
+            alt={photo.alt}
+            fill
+            sizes="(min-width: 768px) 48vw, 92vw"
+            quality={80}
+            className="object-cover object-center transition-transform duration-[1.35s] ease-out motion-safe:group-hover:scale-[1.03]"
+          />
+        </div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_48%,rgba(26,28,46,0.55)_100%)] opacity-80 transition-opacity duration-700 group-hover:opacity-95"
+        />
+        {photo.caption && (
+          <p
+            className={cn(
+              smallCaps,
+              "absolute bottom-4 left-4 text-[#E8D4A8]/75 transition-opacity duration-500 group-hover:opacity-100 sm:bottom-5 sm:left-5",
+            )}
+          >
+            Plate {photo.caption}
+          </p>
+        )}
+      </div>
+    </motion.div>
   );
 }
 

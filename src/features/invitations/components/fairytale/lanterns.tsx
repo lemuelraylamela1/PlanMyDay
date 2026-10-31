@@ -29,18 +29,28 @@ export function LanternField({ tone = "parchment" }: { tone?: "dusk" | "parchmen
               ? { y: "-42vh", opacity: 0.4 }
               : {
                   y: ["12vh", "-115vh"],
-                  x: [0, lantern.drift, lantern.drift * 0.35],
-                  opacity: [0, 0.75, 0.55, 0],
+                  x: [0, lantern.drift * 0.75, lantern.drift * 0.25],
+                  opacity: [0, 0.62, 0.48, 0],
                 }
           }
           transition={
             reduceMotion
               ? undefined
               : {
-                  y: { duration: lantern.duration, delay: lantern.delay, repeat: Infinity, ease: "linear" },
-                  x: { duration: lantern.duration, delay: lantern.delay, repeat: Infinity, ease: "easeInOut" },
+                  y: {
+                    duration: lantern.duration + 4,
+                    delay: lantern.delay,
+                    repeat: Infinity,
+                    ease: "linear",
+                  },
+                  x: {
+                    duration: lantern.duration + 4,
+                    delay: lantern.delay,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  },
                   opacity: {
-                    duration: lantern.duration,
+                    duration: lantern.duration + 4,
                     delay: lantern.delay,
                     repeat: Infinity,
                     ease: "easeInOut",
@@ -56,14 +66,16 @@ export function LanternField({ tone = "parchment" }: { tone?: "dusk" | "parchmen
   );
 }
 
-function SkyLantern({
+export function SkyLantern({
   tone,
   delay,
   reduceMotion,
+  className,
 }: {
   tone: "dusk" | "parchment";
   delay: number;
   reduceMotion: boolean;
+  className?: string;
 }) {
   const uid = useId().replace(/:/g, "");
   const paperId = `lantern-paper-${uid}`;
@@ -73,13 +85,13 @@ function SkyLantern({
     tone === "dusk" ? "rgba(232,212,168,0.55)" : "rgba(232,184,199,0.42)";
 
   return (
-    <span className="relative block h-36 w-28">
-      <span className="absolute left-1/2 top-[70%] h-16 w-16 -translate-x-1/2 -translate-y-1/2">
+    <span className={cn("relative block h-36 w-28", className)}>
+      <span className="absolute left-1/2 top-[70%] h-[45%] w-[55%] -translate-x-1/2 -translate-y-1/2">
         <motion.span
           className="block h-full w-full origin-center rounded-full"
           style={{ backgroundImage: `radial-gradient(circle, ${glow}, transparent 70%)` }}
-          animate={reduceMotion ? undefined : { opacity: [0.5, 0.85, 0.55], scale: [0.92, 1.06, 0.96] }}
-          transition={{ duration: 3.2, delay, repeat: Infinity, ease: "easeInOut" }}
+          animate={reduceMotion ? undefined : { opacity: [0.48, 0.72, 0.52], scale: [0.96, 1.03, 0.98] }}
+          transition={{ duration: 3.8, delay, repeat: Infinity, ease: "easeInOut" }}
         />
       </span>
       <svg viewBox="0 0 140 188" className="relative h-full w-full" aria-hidden>
@@ -125,8 +137,8 @@ function SkyLantern({
           rx="7"
           ry="2.4"
           fill="#FFF6CC"
-          animate={reduceMotion ? undefined : { opacity: [0.55, 0.9, 0.6], ry: [1.8, 2.8, 2.1] }}
-          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay }}
+          animate={reduceMotion ? undefined : { opacity: [0.55, 0.82, 0.6], ry: [1.9, 2.5, 2.1] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay }}
         />
       </svg>
     </span>

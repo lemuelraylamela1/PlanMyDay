@@ -14,7 +14,8 @@ interface Options {
 
 /**
  * Adds camera-like depth to decorative scene layers only. Chapter content
- * remains in normal document flow and individual reveals stay owned by Motion.
+ * remains in normal document flow — Motion owns content reveals / parallax so
+ * GSAP does not scrub `[data-scene-content]` (avoids stacked Y motion).
  */
 export function useChapterScrollTrigger(
   scope: React.RefObject<HTMLElement | null>,
@@ -37,13 +38,12 @@ export function useChapterScrollTrigger(
           if (reduceMotion) return;
 
           const scenes = gsap.utils.toArray<HTMLElement>("[data-scene]", scope.current);
-          const depth = desktop ? 1 : 0.32;
+          const depth = desktop ? 1 : 0.28;
 
           scenes.forEach((scene, index) => {
             const atmosphere = scene.querySelector<HTMLElement>("[data-scene-atmosphere]");
             const backdrop = scene.querySelector<HTMLElement>("[data-scene-backdrop]");
             const veil = scene.querySelector<HTMLElement>("[data-scene-veil]");
-            const content = scene.querySelector<HTMLElement>("[data-scene-content]");
             const camera = scene.querySelector<HTMLElement>("[data-scene-camera]");
             const particles = scene.querySelectorAll<HTMLElement>("[data-scene-particle]");
 
@@ -53,7 +53,7 @@ export function useChapterScrollTrigger(
                 trigger: scene,
                 start: "top bottom",
                 end: "bottom top",
-                scrub: desktop ? 1.1 : 0.45,
+                scrub: desktop ? 0.85 : 0.4,
                 invalidateOnRefresh: true,
               },
             });
@@ -61,8 +61,8 @@ export function useChapterScrollTrigger(
             if (atmosphere) {
               timeline.fromTo(
                 atmosphere,
-                { yPercent: 2.5 * depth },
-                { yPercent: -3.5 * depth, duration: 1 },
+                { yPercent: 1.8 * depth },
+                { yPercent: -2.4 * depth, duration: 1 },
                 0,
               );
             }
@@ -70,8 +70,8 @@ export function useChapterScrollTrigger(
             if (backdrop) {
               timeline.fromTo(
                 backdrop,
-                { scale: 1.01 },
-                { scale: 1 + 0.07 * depth, duration: 1 },
+                { scale: 1.008 },
+                { scale: 1 + 0.045 * depth, duration: 1 },
                 0,
               );
             }
@@ -79,17 +79,8 @@ export function useChapterScrollTrigger(
             if (veil) {
               timeline.fromTo(
                 veil,
-                { opacity: index === 0 ? 0.24 : 0.78 },
-                { keyframes: { opacity: [0.78, 0.36, 0.12] }, duration: 0.62 },
-                0,
-              );
-            }
-
-            if (content) {
-              timeline.fromTo(
-                content,
-                { y: 14 * depth },
-                { y: -10 * depth, duration: 1 },
+                { opacity: index === 0 ? 0.22 : 0.7 },
+                { keyframes: { opacity: [0.7, 0.34, 0.14] }, duration: 0.62 },
                 0,
               );
             }
@@ -98,7 +89,7 @@ export function useChapterScrollTrigger(
               timeline.fromTo(
                 camera,
                 { scale: 1 },
-                { scale: 1 + 0.075 * depth, duration: 1 },
+                { scale: 1 + 0.05 * depth, duration: 1 },
                 0,
               );
             }
@@ -106,11 +97,11 @@ export function useChapterScrollTrigger(
             if (particles.length > 0) {
               timeline.fromTo(
                 particles,
-                { y: 18 * depth, opacity: 0.15 },
+                { y: 12 * depth, opacity: 0.12 },
                 {
-                  y: -42 * depth,
-                  opacity: desktop ? 0.72 : 0.4,
-                  stagger: 0.025,
+                  y: -28 * depth,
+                  opacity: desktop ? 0.55 : 0.32,
+                  stagger: 0.03,
                   duration: 0.8,
                 },
                 0.08,
