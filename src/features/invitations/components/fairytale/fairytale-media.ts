@@ -54,8 +54,8 @@ export const fairytaleMedia: {
     title: "Save the date",
   },
   ambientMusic: {
-    src: "/proposal-audio/kahit-kailan.mp3",
-    title: "Kahit Kailan — South Border",
+    src: "/proposal-audio/i-see-the-light.mp3",
+    title: "I See the Light — Mandy Moore & Zachary Levi",
   },
   prenup: [
     {

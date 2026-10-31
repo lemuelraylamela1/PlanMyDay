@@ -9,6 +9,7 @@ import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/comp
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 interface Remaining {
@@ -64,9 +65,11 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section
       id="countdown"
+      data-scene="countdown"
       className="relative overflow-hidden px-6 py-28 text-center text-[#F3E7D3] sm:py-36"
       style={{ backgroundImage: fairytaleAtmosphere.duskShell }}
     >
+      <SceneTransition tone="dusk" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -78,7 +81,7 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
         style={{ backgroundImage: fairytaleAtmosphere.lavenderMist }}
       />
 
-      <div className="relative mx-auto flex max-w-3xl flex-col items-center">
+      <div data-scene-content className="relative mx-auto flex max-w-3xl flex-col items-center">
         <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#E8D4A8]")}>
           Counting the days
         </motion.p>

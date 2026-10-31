@@ -14,6 +14,7 @@ import { pageParchment } from "@/features/invitations/components/fairytale/textu
 import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
 interface Detail {
@@ -35,9 +36,11 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
   return (
     <section
       id="invitation"
+      data-scene="invitation"
       className="relative flex min-h-[100svh] scroll-mt-6 flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-28 text-center sm:pt-32"
       style={{ backgroundImage: pageParchment }}
     >
+      <SceneTransition tone="paper" />
       <LanternField />
       <div
         aria-hidden
@@ -53,7 +56,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
         }}
       />
 
-      <div className="relative flex w-full max-w-4xl flex-col items-center">
+      <div data-scene-content className="relative flex w-full max-w-4xl flex-col items-center">
         <motion.div {...reveal(0.1)} className="mb-8">
           <Fleuron className="w-24 text-[#C9A66B]" />
         </motion.div>

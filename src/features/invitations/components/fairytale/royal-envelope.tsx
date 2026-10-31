@@ -30,11 +30,19 @@ interface Props {
   dateLabel: string | null;
   /** Fires on the open click (same gesture browsers need to start audio). */
   onOpenStart?: () => void;
+  /** Fires when the website starts showing through the dissolving parchment. */
+  onRevealStart?: () => void;
+  /** Fires once the overlay is fully transparent and can be removed. */
   onOpened: () => void;
 }
 
 const PARTICLE_COUNT_DESKTOP = 28;
 const PARTICLE_COUNT_MOBILE = 14;
+const DUST_COUNT_DESKTOP = 36;
+const DUST_COUNT_MOBILE = 18;
+
+const revealMask =
+  "radial-gradient(circle at 50% 50%, transparent var(--reveal), #000 calc(var(--reveal) + 16%))";
 
 export function RoyalEnvelope({
   guestName,
@@ -42,13 +50,24 @@ export function RoyalEnvelope({
   monogram,
   dateLabel,
   onOpenStart,
+  onRevealStart,
   onOpened,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const [ready, setReady] = React.useState(Boolean(reduceMotion));
+  const [opening, setOpening] = React.useState(false);
   const [particleCount, setParticleCount] = React.useState(PARTICLE_COUNT_MOBILE);
-  const rootRef = React.useRef<HTMLElement>(null);
+  const openingRef = React.useRef(false);
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const veilRef = React.useRef<HTMLElement>(null);
   const sceneRef = React.useRef<HTMLDivElement>(null);
+  const kingdomRef = React.useRef<HTMLDivElement>(null);
+  const bloomRef = React.useRef<HTMLSpanElement>(null);
+  const sweepRef = React.useRef<HTMLSpanElement>(null);
+  const coreGlowRef = React.useRef<HTMLSpanElement>(null);
+  const luminousRef = React.useRef<HTMLSpanElement>(null);
+  const sealFlareRef = React.useRef<HTMLSpanElement>(null);
+  const haloRef = React.useRef<HTMLSpanElement>(null);
   const fogRefs = React.useRef<HTMLSpanElement[]>([]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const unrollRef = React.useRef<HTMLDivElement>(null);
@@ -61,15 +80,22 @@ export function RoyalEnvelope({
 
   React.useEffect(() => {
     const mq = window.matchMedia("(min-width: 640px)");
-    const sync = () => setParticleCount(mq.matches ? PARTICLE_COUNT_DESKTOP : PARTICLE_COUNT_MOBILE);
+    const sync = () =>
+      setParticleCount(mq.matches ? PARTICLE_COUNT_DESKTOP : PARTICLE_COUNT_MOBILE);
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  useGSAP(
+  const { contextSafe } = useGSAP(
     () => {
-      if (!sceneRef.current || !scrollRef.current || !unrollRef.current || !parchmentRef.current) {
+      if (
+        openingRef.current ||
+        !sceneRef.current ||
+        !scrollRef.current ||
+        !unrollRef.current ||
+        !parchmentRef.current
+      ) {
         return;
       }
 
@@ -211,11 +237,7 @@ export function RoyalEnvelope({
       }
 
       if (guestRef.current) {
-        tl.to(
-          guestRef.current,
-          { opacity: 1, y: 0, duration: 0.95, ease: "power2.out" },
-          3.55,
-        );
+        tl.to(guestRef.current, { opacity: 1, y: 0, duration: 0.95, ease: "power2.out" }, 3.55);
       }
 
       if (linesRef.current) {
@@ -233,11 +255,7 @@ export function RoyalEnvelope({
       }
 
       if (ctaRef.current) {
-        tl.to(
-          ctaRef.current,
-          { opacity: 1, y: 0, duration: 0.85, ease: "power2.out" },
-          5.0,
-        );
+        tl.to(ctaRef.current, { opacity: 1, y: 0, duration: 0.85, ease: "power2.out" }, 5.0);
       }
 
       // Idle atmosphere after intro
@@ -272,11 +290,186 @@ export function RoyalEnvelope({
     { scope: rootRef, dependencies: [reduceMotion, particleCount] },
   );
 
+  const playOpening = contextSafe(() => {
+    const root = rootRef.current;
+    const veil = veilRef.current;
+    const scroll = scrollRef.current;
+    if (!root || !veil || !scroll) {
+      onRevealStart?.();
+      onOpened();
+      return;
+    }
+
+    if (reduceMotion) {
+      gsap
+        .timeline({ onComplete: onOpened })
+        .call(() => onRevealStart?.(), undefined, 0)
+        .to(root, { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 0);
+      return;
+    }
+
+    const fog = fogRefs.current.filter(Boolean);
+    const ambient = gsap.utils.toArray<HTMLElement>("[data-particle]", root);
+    const dust = gsap.utils.toArray<HTMLElement>("[data-dust]", root);
+    const rods = gsap.utils.toArray<HTMLElement>("[data-rod]", root);
+    const shadow = root.querySelector<HTMLElement>("[data-scroll-shadow]");
+    gsap.killTweensOf([...fog, ...ambient]);
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const vmin = Math.min(vw, vh);
+    const vmax = Math.max(vw, vh);
+    const rect = scroll.getBoundingClientRect();
+    const currentScale = Number(gsap.getProperty(scroll, "scale")) || 1;
+    const coverScale = Math.max(vw / rect.width, vh / rect.height) * 1.25 * currentScale;
+    const centerLift = vh / 2 - (rect.top + rect.height / 2);
+
+    gsap.set(veil, { "--reveal": "-16%" });
+    gsap.set(dust, { x: 0, y: 0, opacity: 0, scale: 0.5, rotate: 0 });
+    if (sweepRef.current) gsap.set(sweepRef.current, { xPercent: -130, skewX: -16, opacity: 0 });
+
+    const tl = gsap.timeline({
+      defaults: { ease: "power2.inOut" },
+      onComplete: onOpened,
+    });
+
+    // 0 – 0.5s: the seal awakens and the dust stirs.
+    if (sealGlowRef.current) {
+      tl.to(sealGlowRef.current, { opacity: 1, scale: 1.9, duration: 0.6, ease: "power2.out" }, 0);
+    }
+    if (sealFlareRef.current) {
+      tl.fromTo(
+        sealFlareRef.current,
+        { opacity: 0, scale: 0.4 },
+        { opacity: 0.95, scale: 1.3, duration: 0.75, ease: "power2.out" },
+        0.05,
+      );
+    }
+    if (sealRef.current) {
+      tl.to(
+        sealRef.current,
+        { scale: 1.08, duration: 0.3, ease: "sine.out", yoyo: true, repeat: 1 },
+        0,
+      );
+    }
+    if (ctaRef.current) {
+      tl.to(ctaRef.current, { opacity: 0, y: 12, duration: 0.5, ease: "power1.in" }, 0);
+    }
+    tl.to(
+      ambient,
+      {
+        opacity: 1,
+        scale: 1.6,
+        x: (_i, el: HTMLElement) => (parseFloat(el.style.left) - 50) * 1.8,
+        y: (_i, el: HTMLElement) => (parseFloat(el.style.top) - 50) * 1.4,
+        duration: 1.4,
+        ease: "power2.out",
+        stagger: { each: 0.015, from: "center" },
+      },
+      0.05,
+    );
+
+    // 0.5 – 1.5s: the parchment unfolds and glows from its center.
+    tl.to(
+      scroll,
+      { scale: currentScale * 1.12, y: "-=6", duration: 1, ease: "power2.inOut" },
+      0.45,
+    );
+    if (shadow) tl.to(shadow, { opacity: 0, duration: 0.8 }, 0.6);
+    if (haloRef.current) {
+      tl.fromTo(
+        haloRef.current,
+        { opacity: 0, scale: 0.85 },
+        { opacity: 1, scale: 1.15, duration: 1.2, ease: "power2.out" },
+        0.15,
+      );
+    }
+    if (coreGlowRef.current) {
+      tl.fromTo(
+        coreGlowRef.current,
+        { opacity: 0, scale: 0.2 },
+        { opacity: 0.95, scale: 3.4, duration: 1.3, ease: "power2.out" },
+        0.55,
+      );
+    }
+    const softText = [guestRef.current, linesRef.current].filter(Boolean);
+    tl.to(softText, { opacity: 0.55, duration: 0.9 }, 0.7);
+
+    // 1.5 – 2.5s: the scroll rushes toward the camera as light floods the scene.
+    tl.to(scroll, { scale: coverScale, y: centerLift, duration: 1.15, ease: "power3.in" }, 1.4);
+    tl.to(
+      rods,
+      { opacity: 0, y: (i) => (i === 0 ? -28 : 28), duration: 0.6, ease: "power1.in" },
+      1.45,
+    );
+    if (luminousRef.current) tl.to(luminousRef.current, { opacity: 1, duration: 0.95 }, 1.45);
+    if (kingdomRef.current) tl.to(kingdomRef.current, { opacity: 1, duration: 1.1 }, 1.4);
+    if (sceneRef.current) tl.to(sceneRef.current, { opacity: 0, duration: 1.1 }, 1.5);
+    if (bloomRef.current) {
+      tl.fromTo(
+        bloomRef.current,
+        { opacity: 0, scale: 0.25 },
+        { opacity: 0.95, scale: 1.35, duration: 1.1, ease: "power2.out" },
+        1.55,
+      );
+    }
+    tl.call(() => onRevealStart?.(), undefined, 2.4);
+
+    // 2.5 – 3.6s: the parchment dissolves outward into golden dust.
+    tl.call(
+      () => {
+        veil.style.setProperty("mask-image", revealMask);
+        veil.style.setProperty("-webkit-mask-image", revealMask);
+      },
+      undefined,
+      2.45,
+    );
+    tl.to(veil, { "--reveal": "100%", duration: 1.35, ease: "power2.inOut" }, 2.45);
+    dust.forEach((el, i) => {
+      const angle = Number(el.dataset.angle);
+      const from = vmin * (0.08 + (i % 5) * 0.03);
+      const to = vmax * (0.6 + (i % 7) * 0.06);
+      const at = 2.45 + (i / dust.length) * 0.3 + (i % 4) * 0.04;
+      tl.set(el, { x: Math.cos(angle) * from, y: Math.sin(angle) * from }, at);
+      tl.to(
+        el,
+        {
+          x: Math.cos(angle) * to,
+          y: Math.sin(angle) * to,
+          rotate: (i % 2 === 0 ? 1 : -1) * (40 + (i % 5) * 25),
+          scale: 0.35,
+          duration: 1.35,
+          ease: "power2.out",
+        },
+        at,
+      );
+      tl.to(el, { opacity: 1, scale: 1.1, duration: 0.3, ease: "power1.out" }, at);
+      tl.to(el, { opacity: 0, duration: 0.7, ease: "power1.in" }, at + 0.65);
+    });
+    if (sweepRef.current) {
+      tl.to(sweepRef.current, { xPercent: 330, duration: 1.2, ease: "power1.inOut" }, 2.55);
+      tl.to(sweepRef.current, { opacity: 1, duration: 0.35, ease: "power1.out" }, 2.55);
+      tl.to(sweepRef.current, { opacity: 0, duration: 0.45, ease: "power1.in" }, 3.3);
+    }
+  });
+
   function openInvitation() {
-    if (!ready) return;
+    if (!ready || openingRef.current) return;
+    openingRef.current = true;
+    setOpening(true);
     onOpenStart?.();
-    onOpened();
+    playOpening();
   }
+
+  const dust = React.useMemo(() => {
+    const count = particleCount >= PARTICLE_COUNT_DESKTOP ? DUST_COUNT_DESKTOP : DUST_COUNT_MOBILE;
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      angle: (i / count) * Math.PI * 2 + ((i * 7) % 5) * 0.09,
+      fleck: i % 4 === 0,
+      size: i % 4 === 0 ? 4 + (i % 3) * 1.5 : 1.8 + (i % 5) * 0.9,
+    }));
+  }, [particleCount]);
 
   const particles = React.useMemo(
     () =>
@@ -291,194 +484,300 @@ export function RoyalEnvelope({
   );
 
   return (
-    <section
-      ref={rootRef}
-      className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
-    >
-      <div ref={sceneRef} aria-hidden className="pointer-events-none absolute inset-0">
-        <AtmosphericBackdrop />
-        <CastleSilhouette />
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            ref={(el) => {
-              if (el) fogRefs.current[i] = el;
-            }}
-            className="absolute inset-x-[-20%] h-[38%] blur-2xl"
-            style={{
-              top: `${18 + i * 22}%`,
-              backgroundImage:
-                i === 1
-                  ? "linear-gradient(90deg, transparent, rgba(232,212,168,0.22), transparent)"
-                  : "linear-gradient(90deg, transparent, rgba(243,231,211,0.14), transparent)",
-            }}
-          />
-        ))}
-        {!reduceMotion &&
-          particles.map((p) => (
+    <div ref={rootRef} className="relative h-full min-h-[100svh]">
+      <section
+        ref={veilRef}
+        className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden bg-[#22243A] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
+      >
+        <div
+          ref={kingdomRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-0"
+          style={{
+            backgroundImage: [
+              "radial-gradient(ellipse 60% 50% at 50% 46%, #FFF8EA 0%, rgba(243,231,211,0.95) 38%, transparent 72%)",
+              "radial-gradient(ellipse 70% 60% at 18% 82%, rgba(201,184,232,0.55), transparent 70%)",
+              "radial-gradient(ellipse 60% 50% at 84% 16%, rgba(232,184,199,0.35), transparent 70%)",
+              "linear-gradient(180deg, #E9DDF2 0%, #F3E7D3 52%, #DCCDEB 100%)",
+            ].join(", "),
+          }}
+        />
+        <div ref={sceneRef} aria-hidden className="pointer-events-none absolute inset-0">
+          <AtmosphericBackdrop />
+          <CastleSilhouette />
+          {[0, 1, 2].map((i) => (
             <span
-              key={p.id}
-              data-particle
-              className="absolute rounded-full"
+              key={i}
+              ref={(el) => {
+                if (el) fogRefs.current[i] = el;
+              }}
+              className="absolute inset-x-[-20%] h-[38%] blur-2xl"
               style={{
-                left: p.left,
-                top: p.top,
-                width: p.size,
-                height: p.size,
-                backgroundColor: fairytale.gold,
-                boxShadow: `0 0 ${4 + (p.id % 3) * 2}px rgba(221,191,141,0.55)`,
+                top: `${18 + i * 22}%`,
+                backgroundImage:
+                  i === 1
+                    ? "linear-gradient(90deg, transparent, rgba(232,212,168,0.22), transparent)"
+                    : "linear-gradient(90deg, transparent, rgba(243,231,211,0.14), transparent)",
               }}
             />
           ))}
-        <div
-          className="absolute inset-0 opacity-[0.07] mix-blend-overlay"
-          style={{ backgroundImage: grainOverlay }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 50%,rgba(0,0,0,0.58) 100%)",
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
-        <div
-          ref={scrollRef}
-          className="relative w-[min(92vw,22rem)] origin-center scale-[0.92] sm:w-[min(92vw,24rem)] sm:scale-100"
-          style={{ perspective: "1400px" }}
-        >
-          <span
-            aria-hidden
-            className="absolute -bottom-6 left-[8%] z-0 block h-16 w-[84%] rounded-[50%] bg-black/55 blur-3xl"
-          />
-
-          <ScrollRod position="top" />
-
-          {/* Height-driven reveal: bottom rod is a sibling so it rides the leading edge. */}
-          <div ref={unrollRef} className="relative overflow-hidden will-change-[height]">
-            <div
-              ref={parchmentRef}
-              className="relative mx-[6%] overflow-hidden"
-              style={{
-                backgroundImage: parchmentBackground,
-                boxShadow:
-                  "0 22px 48px rgba(0,0,0,0.45), inset 0 0 40px rgba(139,98,48,0.12), inset 0 1px 0 rgba(255,255,255,0.35)",
-                transformStyle: "preserve-3d",
-                perspective: "900px",
-              }}
-            >
+          {!reduceMotion &&
+            particles.map((p) => (
               <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0"
+                key={p.id}
+                data-particle
+                className="absolute rounded-full"
                 style={{
-                  backgroundImage:
-                    "linear-gradient(180deg, rgba(255,255,255,0.18), transparent 18%, transparent 82%, rgba(120,80,40,0.12)), repeating-linear-gradient(90deg, transparent 0 18px, rgba(139,98,48,0.035) 18px 19px)",
+                  left: p.left,
+                  top: p.top,
+                  width: p.size,
+                  height: p.size,
+                  backgroundColor: fairytale.gold,
+                  boxShadow: `0 0 ${4 + (p.id % 3) * 2}px rgba(221,191,141,0.55)`,
                 }}
               />
-              <span
-                aria-hidden
-                className="absolute inset-2 border border-[#C9A66B]/45 sm:inset-2.5"
-              />
-              <span
-                aria-hidden
-                className="absolute inset-3 border border-[#C9A66B]/20 sm:inset-3.5"
-              />
+            ))}
+          <div
+            className="absolute inset-0 opacity-[0.07] mix-blend-overlay"
+            style={{ backgroundImage: grainOverlay }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 50%,rgba(0,0,0,0.58) 100%)",
+            }}
+          />
+        </div>
 
-              <div className="relative flex flex-col items-center px-5 py-5 text-center sm:px-8 sm:py-10">
-                <div
-                  ref={sealRef}
-                  className="relative mb-3 flex items-center justify-center sm:mb-6"
-                >
-                  <span
-                    ref={sealGlowRef}
-                    aria-hidden
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(221,191,141,0.55),transparent_68%)]"
-                  />
-                  <WaxSeal monogram={monogram} />
-                </div>
+        <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
+          <div
+            ref={scrollRef}
+            className="relative w-[min(92vw,22rem)] origin-center scale-[0.92] sm:w-[min(92vw,24rem)] sm:scale-100"
+            style={{ perspective: "1400px" }}
+          >
+            <span
+              ref={haloRef}
+              aria-hidden
+              className="pointer-events-none absolute -inset-16 z-0 rounded-[40%] opacity-0"
+              style={{
+                backgroundImage:
+                  "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,222,150,0.55) 0%, rgba(232,190,112,0.28) 45%, transparent 72%)",
+              }}
+            />
+            <span
+              aria-hidden
+              data-scroll-shadow
+              className="absolute -bottom-6 left-[8%] z-0 block h-16 w-[84%] rounded-[50%] bg-black/55 blur-3xl"
+            />
 
-                <p ref={guestRef} className="max-w-full">
-                  <span className={cn(smallCaps, "block text-[10px] text-[#9b7b62] sm:text-[11px]")}>
-                    Hand delivered for
-                  </span>
-                  <span
-                    className={cn(
-                      displayFont,
-                      "mt-2 block truncate text-xl italic text-[#4a3236] sm:text-2xl",
-                    )}
-                  >
-                    {guestName}
-                  </span>
-                </p>
+            <ScrollRod position="top" />
 
-                <div ref={linesRef} className="mt-3 flex w-full flex-col items-center sm:mt-6">
-                  <span className="hidden sm:block">
-                    <Fleuron className="w-20 text-[#C9A66B]" />
-                  </span>
-                  <span
-                    className={cn(
-                      displayFont,
-                      "mt-2 text-base font-light leading-none text-[#B76E79] sm:mt-4 sm:text-2xl",
-                    )}
+            {/* Height-driven reveal: bottom rod is a sibling so it rides the leading edge. */}
+            <div ref={unrollRef} className="relative overflow-hidden will-change-[height]">
+              <div
+                ref={parchmentRef}
+                className="relative mx-[6%] overflow-hidden"
+                style={{
+                  backgroundImage: parchmentBackground,
+                  boxShadow:
+                    "0 22px 48px rgba(0,0,0,0.45), inset 0 0 40px rgba(139,98,48,0.12), inset 0 1px 0 rgba(255,255,255,0.35)",
+                  transformStyle: "preserve-3d",
+                  perspective: "900px",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(180deg, rgba(255,255,255,0.18), transparent 18%, transparent 82%, rgba(120,80,40,0.12)), repeating-linear-gradient(90deg, transparent 0 18px, rgba(139,98,48,0.035) 18px 19px)",
+                  }}
+                />
+                <span
+                  aria-hidden
+                  className="absolute inset-2 border border-[#C9A66B]/45 sm:inset-2.5"
+                />
+                <span
+                  aria-hidden
+                  className="absolute inset-3 border border-[#C9A66B]/20 sm:inset-3.5"
+                />
+
+                <div className="relative flex flex-col items-center px-5 py-5 text-center sm:px-8 sm:py-10">
+                  <div
+                    ref={sealRef}
+                    className="relative mb-3 flex items-center justify-center sm:mb-6"
                   >
-                    {monogram}
-                  </span>
-                  <span
-                    className={cn(
-                      displayFont,
-                      "mt-2 max-w-[16rem] text-balance text-[clamp(1.05rem,4.4vw,1.85rem)] font-light leading-[1.05] text-[#4a3236] sm:mt-3",
-                    )}
-                  >
-                    {coupleNames}
-                  </span>
-                  <span
-                    className={cn(
-                      scriptFont,
-                      "mt-1.5 max-w-full truncate text-sm text-[#B76E79] sm:mt-3 sm:text-lg",
-                    )}
-                  >
-                    invite {guestName}
-                  </span>
-                  {dateLabel && (
-                    <span className={cn(smallCaps, "mt-2 text-[10px] text-[#9b7b62] sm:mt-4 sm:text-[11px]")}>
-                      {dateLabel}
+                    <span
+                      ref={sealGlowRef}
+                      aria-hidden
+                      className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(221,191,141,0.55),transparent_68%)]"
+                    />
+                    <span
+                      ref={sealFlareRef}
+                      aria-hidden
+                      className="pointer-events-none absolute h-40 w-40 rounded-full opacity-0"
+                      style={{
+                        left: "calc(50% - 5rem)",
+                        top: "calc(50% - 5rem)",
+                        backgroundImage:
+                          "radial-gradient(circle, rgba(255,226,150,0.95) 0%, rgba(232,186,104,0.6) 30%, rgba(221,171,96,0.22) 52%, transparent 70%)",
+                      }}
+                    />
+                    <WaxSeal monogram={monogram} />
+                  </div>
+
+                  <p ref={guestRef} className="max-w-full">
+                    <span
+                      className={cn(smallCaps, "block text-[10px] text-[#9b7b62] sm:text-[11px]")}
+                    >
+                      Hand delivered for
                     </span>
-                  )}
+                    <span
+                      className={cn(
+                        displayFont,
+                        "mt-2 block truncate text-xl italic text-[#4a3236] sm:text-2xl",
+                      )}
+                    >
+                      {guestName}
+                    </span>
+                  </p>
+
+                  <div ref={linesRef} className="mt-3 flex w-full flex-col items-center sm:mt-6">
+                    <span className="hidden sm:block">
+                      <Fleuron className="w-20 text-[#C9A66B]" />
+                    </span>
+                    <span
+                      className={cn(
+                        displayFont,
+                        "mt-2 text-base font-light leading-none text-[#B76E79] sm:mt-4 sm:text-2xl",
+                      )}
+                    >
+                      {monogram}
+                    </span>
+                    <span
+                      className={cn(
+                        displayFont,
+                        "mt-2 max-w-[16rem] text-balance text-[clamp(1.05rem,4.4vw,1.85rem)] font-light leading-[1.05] text-[#4a3236] sm:mt-3",
+                      )}
+                    >
+                      {coupleNames}
+                    </span>
+                    <span
+                      className={cn(
+                        scriptFont,
+                        "mt-1.5 max-w-full truncate text-sm text-[#B76E79] sm:mt-3 sm:text-lg",
+                      )}
+                    >
+                      invite {guestName}
+                    </span>
+                    {dateLabel && (
+                      <span
+                        className={cn(
+                          smallCaps,
+                          "mt-2 text-[10px] text-[#9b7b62] sm:mt-4 sm:text-[11px]",
+                        )}
+                      >
+                        {dateLabel}
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                <span
+                  ref={coreGlowRef}
+                  aria-hidden
+                  className="pointer-events-none absolute z-10 h-64 w-64 rounded-full opacity-0"
+                  style={{
+                    left: "calc(50% - 8rem)",
+                    top: "calc(50% - 8rem)",
+                    backgroundImage:
+                      "radial-gradient(circle, rgba(255,246,222,0.98) 0%, rgba(255,222,150,0.75) 26%, rgba(232,190,112,0.32) 52%, transparent 72%)",
+                  }}
+                />
+                <span
+                  ref={luminousRef}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-10 opacity-0"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(ellipse 75% 65% at 50% 50%, #FFFBF1 0%, #FBF0DA 45%, #F3E2BE 100%)",
+                  }}
+                />
               </div>
             </div>
+
+            <ScrollRod position="bottom" />
           </div>
 
-          <ScrollRod position="bottom" />
+          <div
+            ref={ctaRef}
+            className="relative z-30 mt-6 flex flex-col items-center gap-2.5 text-center sm:mt-12 sm:gap-3"
+          >
+            <p className={cn(smallCaps, "text-[10px] text-[#E8D4A8]/85 sm:text-[11px]")}>
+              A private invitation awaits
+            </p>
+            <button
+              type="button"
+              onClick={openInvitation}
+              disabled={!ready || opening}
+              aria-label={`Open Invitation, ${guestName}`}
+              className={cn(
+                displayFont,
+                "min-h-11 rounded-sm border border-[#DDBF8D]/55 bg-[#DDBF8D]/12 px-7 py-2.5 text-lg italic text-[#F3E7D3] transition-colors",
+                "hover:border-[#DDBF8D] hover:bg-[#DDBF8D]/22 hover:text-[#DDBF8D]",
+                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
+                "disabled:cursor-wait disabled:opacity-50",
+              )}
+            >
+              Open Invitation
+            </button>
+          </div>
         </div>
 
-        <div
-          ref={ctaRef}
-          className="relative z-30 mt-6 flex flex-col items-center gap-2.5 text-center sm:mt-12 sm:gap-3"
-        >
-          <p className={cn(smallCaps, "text-[10px] text-[#E8D4A8]/85 sm:text-[11px]")}>
-            A private invitation awaits
-          </p>
-          <button
-            type="button"
-            onClick={openInvitation}
-            disabled={!ready}
-            aria-label={`Open Invitation, ${guestName}`}
+        <span
+          ref={bloomRef}
+          aria-hidden
+          className="pointer-events-none absolute z-20 h-[120vmax] w-[120vmax] rounded-full opacity-0"
+          style={{
+            left: "calc(50% - 60vmax)",
+            top: "calc(50% - 60vmax)",
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,250,238,0.98) 0%, rgba(250,236,204,0.9) 28%, rgba(232,212,168,0.55) 48%, rgba(201,184,232,0.2) 62%, transparent 72%)",
+          }}
+        />
+      </section>
+
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
+        <span
+          ref={sweepRef}
+          className="absolute -inset-y-[20%] left-0 w-[45vw] opacity-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, transparent 0%, rgba(255,244,220,0.08) 25%, rgba(255,240,205,0.5) 50%, rgba(255,244,220,0.08) 75%, transparent 100%)",
+          }}
+        />
+        {dust.map((d) => (
+          <span
+            key={d.id}
+            data-dust
+            data-angle={d.angle}
             className={cn(
-              displayFont,
-              "min-h-11 rounded-sm border border-[#DDBF8D]/55 bg-[#DDBF8D]/12 px-7 py-2.5 text-lg italic text-[#F3E7D3] transition-colors",
-              "hover:border-[#DDBF8D] hover:bg-[#DDBF8D]/22 hover:text-[#DDBF8D]",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#22243A]",
-              "disabled:cursor-wait disabled:opacity-50",
+              "absolute left-1/2 top-1/2 opacity-0",
+              d.fleck ? "rounded-[1px]" : "rounded-full",
             )}
-          >
-            Open Invitation
-          </button>
-        </div>
+            style={{
+              width: d.size,
+              height: d.fleck ? d.size * 0.7 : d.size,
+              backgroundColor: d.fleck ? "#F6E7C6" : fairytale.gold,
+              boxShadow: d.fleck
+                ? "0 0 6px rgba(255,240,205,0.65)"
+                : `0 0 ${6 + (d.id % 3) * 3}px rgba(255,226,160,0.85)`,
+            }}
+          />
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -539,6 +838,7 @@ function ScrollRod({ position }: { position: "top" | "bottom" }) {
   return (
     <div
       aria-hidden
+      data-rod={position}
       className={cn(
         "relative z-20 mx-auto flex h-4 w-[min(100%,26rem)] items-center justify-between sm:h-5",
         position === "top" ? "mb-[-1px]" : "mt-[-1px]",

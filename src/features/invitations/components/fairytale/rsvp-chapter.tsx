@@ -18,6 +18,7 @@ import {
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
 import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 import { RsvpForm } from "@/features/invitations/components/rsvp-form";
 import type {
   InvitationGuest,
@@ -43,9 +44,11 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
     <section
       id="rsvp"
       ref={ref}
+      data-scene="rsvp"
       className="relative scroll-mt-6 overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pb-28 sm:pt-32"
       style={{ backgroundImage: pageParchment }}
     >
+      <SceneTransition tone="dawn" />
       <LanternField />
       <motion.div
         aria-hidden
@@ -56,7 +59,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
         }}
       />
 
-      <div className="relative mx-auto max-w-xl text-center">
+      <div data-scene-content className="relative mx-auto max-w-xl text-center">
         <motion.div {...reveal(0)} className="flex justify-center">
           <Fleuron className="w-24 text-[#C9A66B]" />
         </motion.div>

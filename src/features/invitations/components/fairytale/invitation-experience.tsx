@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
 
-import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
 import {
   InvitationAudioProvider,
   useInvitationAudio,
@@ -11,6 +10,7 @@ import {
 import { RoyalEnvelope } from "@/features/invitations/components/fairytale/royal-envelope";
 import { HeroChapter } from "@/features/invitations/components/fairytale/hero-chapter";
 import { InvitationChapter } from "@/features/invitations/components/fairytale/invitation-chapter";
+import { useChapterScrollTrigger } from "@/features/invitations/components/fairytale/use-chapter-scroll-trigger";
 import type {
   InvitationGuest,
   InvitationResponse,
@@ -58,21 +58,49 @@ export function InvitationExperience(props: Props) {
   );
 }
 
+type Phase = "sealed" | "opening" | "revealing" | "revealed";
+
 function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
-  const [opened, setOpened] = React.useState(false);
+  const [phase, setPhase] = React.useState<Phase>("sealed");
   const [loadRest, setLoadRest] = React.useState(false);
+  const storyRef = React.useRef<HTMLElement>(null);
   const audio = useInvitationAudio();
+  const opened = phase === "revealed";
+  const storyMounted = phase !== "sealed";
+
+  useChapterScrollTrigger(storyRef, {
+    enabled: opened,
+    chapterVersion: loadRest ? 1 : 0,
+  });
 
   const handleOpenStart = React.useCallback(() => {
-    // Unlock autoplay on the open click; music begins when the hero story appears.
+    // Unlock autoplay on the open click; music begins as the website is revealed.
     void audio?.unlock();
+    window.scrollTo({ top: 0 });
+    setPhase("opening");
+  }, [audio]);
+
+  const handleRevealStart = React.useCallback(() => {
+    setPhase("revealing");
+    void audio?.start();
   }, [audio]);
 
   const handleOpened = React.useCallback(() => {
-    setOpened(true);
+    setPhase("revealed");
     window.scrollTo({ top: 0 });
-    void audio?.start();
-  }, [audio]);
+  }, []);
+
+  const transitioning = phase === "opening" || phase === "revealing";
+
+  React.useEffect(() => {
+    if (!transitioning) return;
+    const root = document.documentElement;
+    const previous = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = previous;
+    };
+  }, [transitioning]);
 
   React.useEffect(() => {
     if (!opened) return;
@@ -98,16 +126,13 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="relative min-h-[100svh] overflow-x-clip bg-[#22243A] text-[#4a3236]">
-        {opened && (
-          <motion.div
-            key="story"
-            className="bg-[#FFFDF8]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.85, ease: fairytaleEase }}
-          >
-            <HeroChapter wedding={wedding} />
+      <main
+        ref={storyRef}
+        className="relative min-h-[100svh] overflow-x-clip bg-[#22243A] text-[#4a3236]"
+      >
+        {storyMounted && (
+          <div key="story" className="bg-[#FFFDF8]" inert={!opened} aria-hidden={!opened}>
+            <HeroChapter wedding={wedding} entered={phase === "revealing" || opened} />
             <InvitationChapter wedding={wedding} />
             {loadRest && (
               <React.Suspense fallback={null}>
@@ -118,28 +143,22 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
                 <RsvpChapter token={token} guest={guest} response={response} wedding={wedding} />
               </React.Suspense>
             )}
-          </motion.div>
+          </div>
         )}
 
-        <AnimatePresence initial={false}>
-          {!opened && (
-            <motion.div
-              key="envelope"
-              className="fixed inset-0 z-30 overflow-hidden bg-[#22243A]"
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.9, ease: fairytaleEase }}
-            >
-              <RoyalEnvelope
-                guestName={guest.name}
-                coupleNames={wedding.coupleNames}
-                monogram={wedding.monogram}
-                dateLabel={wedding.dateLabel}
-                onOpenStart={handleOpenStart}
-                onOpened={handleOpened}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!opened && (
+          <div key="envelope" className="fixed inset-0 z-30 overflow-hidden">
+            <RoyalEnvelope
+              guestName={guest.name}
+              coupleNames={wedding.coupleNames}
+              monogram={wedding.monogram}
+              dateLabel={wedding.dateLabel}
+              onOpenStart={handleOpenStart}
+              onRevealStart={handleRevealStart}
+              onOpened={handleOpened}
+            />
+          </div>
+        )}
       </main>
     </MotionConfig>
   );

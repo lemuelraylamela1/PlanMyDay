@@ -2,40 +2,59 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView, useReducedMotion, type MotionProps } from "framer-motion";
 
 import { cn } from "@/lib/utils";
-import { fairytaleEase, useReveal } from "@/features/invitations/components/fairytale/use-reveal";
+import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
 import {
   useChapterScroll,
   useDepthLayer,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
 import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
-import { fairytale, fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
+import {
+  fairytale,
+  fairytaleAtmosphere,
+} from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 import type { InvitationWedding } from "@/features/invitations/components/fairytale/types";
 
-export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
+interface Props {
+  wedding: InvitationWedding;
+  /** Holds the hero entrance until the invitation transition reveals the page. */
+  entered?: boolean;
+}
+
+export function HeroChapter({ wedding, entered = true }: Props) {
   const ref = React.useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const inView = useInView(ref, { amount: 0.45 });
-  const reveal = useReveal();
   const [activeImage, setActiveImage] = React.useState(0);
   const progress = useChapterScroll(ref);
   const { y: imageY } = useDepthLayer(progress, "far");
   const heroImages = fairytaleMedia.hero;
 
+  const reveal = (delay = 0): MotionProps => {
+    if (reduceMotion) return {};
+    const hidden = { opacity: 0, y: 28 };
+    return {
+      initial: hidden,
+      animate: entered ? { opacity: 1, y: 0 } : hidden,
+      transition: { duration: 1.4, ease: fairytaleEase, delay },
+    };
+  };
+
   React.useEffect(() => {
-    if (reduceMotion || !inView || heroImages.length < 2) return;
+    if (reduceMotion || !entered || !inView || heroImages.length < 2) return;
     const timer = window.setInterval(() => {
       setActiveImage((current) => (current + 1) % heroImages.length);
     }, 5600);
     return () => window.clearInterval(timer);
-  }, [heroImages.length, inView, reduceMotion]);
+  }, [entered, heroImages.length, inView, reduceMotion]);
 
   return (
-    <section id="portrait" ref={ref} className="relative">
+    <section id="portrait" ref={ref} data-scene="hero" className="relative">
       <motion.div
         className="relative h-[100svh] min-h-[36rem] overflow-hidden"
         style={{ backgroundColor: fairytale.midnight }}
@@ -44,42 +63,65 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
         transition={{ duration: 0.7, ease: fairytaleEase }}
       >
         <motion.div
-          className="absolute inset-x-0 bottom-[-8%] top-[-8%]"
-          style={reduceMotion ? undefined : { y: imageY }}
+          className="absolute inset-0"
+          initial={reduceMotion ? false : { scale: 1.08 }}
+          animate={{ scale: entered ? 1 : 1.08 }}
+          transition={{ duration: 2.6, ease: fairytaleEase }}
         >
-          {heroImages.length > 0 ? (
-            heroImages.map((image, index) => (
-              <motion.div
-                key={image.src ?? `hero-${index}`}
-                aria-hidden={index !== activeImage}
-                className="absolute inset-0"
-                initial={false}
-                animate={{ opacity: index === activeImage ? 1 : 0 }}
-                transition={{ opacity: { duration: 1.8, ease: fairytaleEase } }}
-                style={
-                  {
-                    "--mobile-position": image.mobileObjectPosition,
-                    "--desktop-position": image.objectPosition,
-                  } as React.CSSProperties
-                }
-              >
-                {image.src && (
-                  <Image
-                    src={image.src}
-                    alt={image.alt}
-                    fill
-                    priority={index === 0}
-                    sizes="100vw"
-                    quality={82}
-                    className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
-                  />
-                )}
-              </motion.div>
-            ))
-          ) : (
-            <HeroPlaceholder monogram={wedding.monogram} />
-          )}
+          <div data-scene-camera className="absolute inset-0 will-change-transform">
+            <motion.div
+              className="absolute inset-x-0 bottom-[-8%] top-[-8%]"
+              style={reduceMotion ? undefined : { y: imageY }}
+            >
+              {heroImages.length > 0 ? (
+                heroImages.map((image, index) => (
+                  <motion.div
+                    key={image.src ?? `hero-${index}`}
+                    aria-hidden={index !== activeImage}
+                    className="absolute inset-0"
+                    initial={false}
+                    animate={{ opacity: index === activeImage ? 1 : 0 }}
+                    transition={{ opacity: { duration: 1.8, ease: fairytaleEase } }}
+                    style={
+                      {
+                        "--mobile-position": image.mobileObjectPosition,
+                        "--desktop-position": image.objectPosition,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {image.src && (
+                      <Image
+                        src={image.src}
+                        alt={image.alt}
+                        fill
+                        priority={index === 0}
+                        sizes="100vw"
+                        quality={82}
+                        className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
+                      />
+                    )}
+                  </motion.div>
+                ))
+              ) : (
+                <HeroPlaceholder monogram={wedding.monogram} />
+              )}
+            </motion.div>
+          </div>
         </motion.div>
+        <SceneTransition tone="hero" className="z-[1]" />
+        {!reduceMotion && (
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[2]"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,248,234,0.55), rgba(243,231,211,0.3) 55%, rgba(201,184,232,0.25))",
+            }}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: entered ? 0 : 1 }}
+            transition={{ duration: 2.4, ease: fairytaleEase }}
+          />
+        )}
 
         <div
           aria-hidden
@@ -100,7 +142,10 @@ export function HeroChapter({ wedding }: { wedding: InvitationWedding }) {
           }}
         />
 
-        <div className="absolute inset-x-0 bottom-0 z-10 max-w-2xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12">
+        <div
+          data-scene-content
+          className="absolute inset-x-0 bottom-0 z-10 max-w-2xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12"
+        >
           {wedding.dateLabel && (
             <motion.p {...reveal(0.15)} className={cn(smallCaps, "text-[#E8D4A8]")}>
               {wedding.dateLabel}

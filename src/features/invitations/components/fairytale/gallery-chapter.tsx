@@ -10,6 +10,7 @@ import { displayFont, smallCaps } from "@/features/invitations/components/fairyt
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
 import { fairytaleMedia, type FairytaleGalleryImage } from "@/features/invitations/components/fairytale/fairytale-media";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 
 /** Stable grid cells. CSS columns were dropping absolutely positioned photos. */
 const tileSpans = [
@@ -33,9 +34,11 @@ export function GalleryChapter() {
   return (
     <section
       id="prenup"
+      data-scene="gallery"
       className="relative overflow-x-clip px-4 py-24 sm:px-8 sm:py-32"
       style={{ backgroundImage: pageParchment }}
     >
+      <SceneTransition tone="gallery" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-60"
@@ -44,7 +47,7 @@ export function GalleryChapter() {
             "radial-gradient(ellipse 50% 40% at 80% 10%, rgba(201,184,232,0.14), transparent 70%)",
         }}
       />
-      <div className="relative mx-auto max-w-5xl">
+      <div data-scene-content className="relative mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
           <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#B76E79]")}>
             Our prenup

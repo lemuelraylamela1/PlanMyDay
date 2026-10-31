@@ -11,6 +11,7 @@ import { useInvitationAudio } from "@/features/invitations/components/fairytale/
 import { pageParchment } from "@/features/invitations/components/fairytale/textures";
 import { fairytaleAtmosphere } from "@/features/invitations/components/fairytale/fairytale-tokens";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 
 export function VideoChapter() {
   const ref = React.useRef<HTMLElement>(null);
@@ -62,15 +63,17 @@ export function VideoChapter() {
     <section
       id="film"
       ref={ref}
+      data-scene="film"
       className="relative overflow-hidden px-5 py-24 sm:px-10 sm:py-32"
       style={{ backgroundImage: pageParchment }}
     >
+      <SceneTransition tone="cinema" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{ backgroundImage: fairytaleAtmosphere.champagneMist }}
       />
-      <div className="relative mx-auto max-w-5xl">
+      <div data-scene-content className="relative mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
           <motion.p {...reveal(0)} className={cn(smallCaps, "text-[#B76E79]")}>
             Save the date

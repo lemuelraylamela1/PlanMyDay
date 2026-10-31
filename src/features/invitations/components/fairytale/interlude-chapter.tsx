@@ -13,6 +13,7 @@ import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/comp
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
+import { SceneTransition } from "@/features/invitations/components/fairytale/scene-transition";
 
 const dusk =
   "linear-gradient(180deg,#FBF6EE 0%,#eadfce 7%,#8a8498 16%,#4a4d68 26%,#2a2c45 36%,#22243A 50%,#1a1c2e 66%,#2f3148 82%,#7a7488 91%,#d8cdbd 97%,#FBF6EE 100%)";
@@ -74,9 +75,11 @@ export function InterludeChapter({ story }: { story: string | null }) {
     <section
       id="interlude"
       ref={sectionRef}
+      data-scene="interlude"
       className="relative overflow-hidden px-5 py-32 text-center text-[#F3E7D3] sm:px-8 sm:py-44"
       style={{ backgroundImage: dusk }}
     >
+      <SceneTransition tone="forest" />
       <LanternField tone="dusk" />
       <motion.div
         aria-hidden
@@ -103,7 +106,7 @@ export function InterludeChapter({ story }: { story: string | null }) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_52%,transparent_30%,rgba(26,28,46,0.55)_100%)]"
       />
 
-      <div className="relative mx-auto flex max-w-3xl flex-col items-center">
+      <div data-scene-content className="relative mx-auto flex max-w-3xl flex-col items-center">
         <motion.div style={reduceMotion ? undefined : { y: ornamentY }}>
           <BotanicalSprig />
         </motion.div>
