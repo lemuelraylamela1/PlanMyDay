@@ -57,7 +57,7 @@ export function ChapterContinue({
       {...revealProps}
       className={cn(
         smallCaps,
-        "inline-flex flex-col gap-3 transition-[color,opacity] duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-4",
+        "inline-flex min-h-11 flex-col justify-center gap-3 px-3 py-2 transition-[color,opacity] duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-4",
         align === "center" ? "items-center" : "items-start",
         styles.link,
         className,
@@ -70,12 +70,12 @@ export function ChapterContinue({
           animate={
             reduceMotion || !inView
               ? { y: "40%" }
-              : { y: ["-100%", "160%"] }
+              : { y: ["-100%", "140%"] }
           }
           transition={
             reduceMotion || !inView
               ? { duration: 0.2 }
-              : { duration: 5.4, repeat: Infinity, ease: fairytaleSoftEase, repeatDelay: 2.2 }
+              : { duration: 2.8, ease: fairytaleSoftEase, repeat: 1, repeatDelay: 4.5 }
           }
         />
       </span>

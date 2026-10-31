@@ -1,0 +1,48 @@
+/* Invite-scoped layout helpers — only applied under .invite-root */
+
+.invite-root {
+  --invite-gutter: 1.25rem;
+  --invite-section-y: 5rem;
+  scroll-behavior: smooth;
+}
+
+@media (min-width: 640px) {
+  .invite-root {
+    --invite-gutter: 2rem;
+    --invite-section-y: 8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-root {
+    scroll-behavior: auto;
+  }
+}
+
+/* Touch-first: captions stay visible. Hover devices can hide/reveal. */
+.invite-root .invite-hover-reveal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .invite-root .invite-hover-reveal {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+
+  .invite-root .group:hover .invite-hover-reveal,
+  .invite-root .group:focus-visible .invite-hover-reveal {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .invite-root .invite-hover-reveal-strong {
+    opacity: 0.7;
+  }
+
+  .invite-root .group:hover .invite-hover-reveal-strong,
+  .invite-root .group:focus-visible .invite-hover-reveal-strong {
+    opacity: 1;
+  }
+}

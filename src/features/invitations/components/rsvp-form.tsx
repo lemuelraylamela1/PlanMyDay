@@ -43,7 +43,7 @@ const statusHeadline: Record<Exclude<RsvpStatusValue, "PENDING">, string> = {
 
 const inputClass = cn(
   displayFont,
-  "w-full rounded-none border-0 border-b border-[#DDBF8D]/80 bg-transparent px-0 py-2.5 text-xl text-[#4a3236] placeholder:text-[#b9a294]/70 transition-[border-color,box-shadow,color] duration-500 focus:border-[#B76E79] focus:outline-none focus:ring-0 focus:shadow-[0_1px_0_0_rgba(183,110,121,0.55)]",
+  "w-full rounded-none border-0 border-b border-[#DDBF8D]/80 bg-transparent px-0 py-3 text-xl text-[#4a3236] placeholder:text-[#b9a294]/70 transition-[border-color,box-shadow,color] duration-500 focus:border-[#B76E79] focus:outline-none focus:ring-0 focus:shadow-[0_1px_0_0_rgba(183,110,121,0.55)]",
 );
 
 export function RsvpForm({
@@ -113,7 +113,7 @@ export function RsvpForm({
     if (!celebration) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const timer = window.setTimeout(() => setCelebration(null), reduceMotion ? 1200 : 9000);
+    const timer = window.setTimeout(() => setCelebration(null), reduceMotion ? 1200 : 3800);
     return () => {
       document.body.style.overflow = previous;
       window.clearTimeout(timer);
@@ -197,7 +197,7 @@ export function RsvpForm({
               disabled={Boolean(celebration)}
               className={cn(
                 smallCaps,
-                "mt-10 text-[#B76E79] underline decoration-[#DDBF8D] underline-offset-8 transition-colors hover:text-[#4a3236] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8] disabled:opacity-40",
+                "mt-8 inline-flex min-h-11 w-full items-center justify-center px-3 py-2 text-[#B76E79] underline decoration-[#DDBF8D] underline-offset-8 transition-colors hover:text-[#4a3236] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8] disabled:opacity-40",
               )}
             >
               Change my response
@@ -229,8 +229,10 @@ export function RsvpForm({
                       }}
                       whileTap={reduceMotion ? undefined : { scale: 0.99 }}
                       className={cn(
-                        "relative overflow-hidden px-3 py-5 text-center transition-colors duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
-                        selected ? "text-[#4a3236]" : "text-[#6d4a50] hover:text-[#4a3236]",
+                        "relative overflow-hidden border px-3 py-5 text-center transition-[color,border-color,background-color] duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
+                        selected
+                          ? "border-[#DDBF8D] bg-[#FFF8F0]/90 text-[#4a3236]"
+                          : "border-[#DDBF8D]/35 text-[#6d4a50] hover:border-[#DDBF8D]/70 hover:text-[#4a3236]",
                       )}
                     >
                       <motion.span
@@ -287,7 +289,7 @@ export function RsvpForm({
                             whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                             className={cn(
                               displayFont,
-                              "border-b pb-1 text-lg transition-colors duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
+                              "inline-flex min-h-11 items-center border-b px-2 pb-1 text-lg transition-colors duration-500 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFDF8]",
                               selected
                                 ? "border-[#B76E79] text-[#4a3236]"
                                 : "border-transparent text-[#6d4a50] hover:border-[#DDBF8D]/70 hover:text-[#4a3236]",
@@ -382,7 +384,7 @@ export function RsvpForm({
                   disabled={pending}
                   className={cn(
                     smallCaps,
-                    "block w-full py-2 text-center text-[#9b7b62] transition-colors hover:text-[#4a3236] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
+                    "flex min-h-11 w-full items-center justify-center py-2 text-center text-[#9b7b62] transition-colors hover:text-[#4a3236] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D]",
                   )}
                 >
                   Keep my current reply

@@ -14,7 +14,11 @@ import {
   useChapterScroll,
   useDepthLayer,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
-import { displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
+import {
+  displayFont,
+  heroDisplay,
+  smallCaps,
+} from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import {
   fairytale,
@@ -60,7 +64,7 @@ export function HeroChapter({ wedding, entered = true }: Props) {
   return (
     <section id="portrait" ref={ref} data-scene="hero" className="relative">
       <motion.div
-        className="relative h-[100svh] min-h-[36rem] overflow-hidden"
+        className="relative h-[100svh] min-h-[28rem] overflow-hidden"
         style={{ backgroundColor: fairytale.midnight }}
         initial={false}
         animate={{ opacity: 1 }}
@@ -139,16 +143,16 @@ export function HeroChapter({ wedding, entered = true }: Props) {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-40"
+          className="pointer-events-none absolute inset-0 opacity-35"
           style={{
             backgroundImage:
-              "radial-gradient(ellipse 45% 35% at 20% 80%, rgba(201,184,232,0.18), transparent 70%), radial-gradient(ellipse 40% 30% at 70% 30%, rgba(232,212,168,0.12), transparent 65%)",
+              "radial-gradient(ellipse 40% 30% at 70% 30%, rgba(232,212,168,0.14), transparent 65%)",
           }}
         />
 
         <div
           data-scene-content
-          className="absolute inset-x-0 bottom-0 z-10 max-w-2xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-[#FFFDF8] sm:p-12"
+          className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-2xl flex-col items-center p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center text-[#FFFDF8] sm:mx-0 sm:items-start sm:p-12 sm:text-left"
         >
           {wedding.dateLabel && (
             <motion.p {...reveal(0.15)} className={cn(smallCaps, "text-[#E8D4A8]")}>
@@ -159,7 +163,8 @@ export function HeroChapter({ wedding, entered = true }: Props) {
             {...reveal(0.28)}
             className={cn(
               displayFont,
-              "mt-4 max-w-[22rem] text-balance text-[clamp(2.75rem,9vw,4.75rem)] font-light leading-[0.96] tracking-[-0.02em] sm:max-w-none",
+              heroDisplay,
+              "mt-3 max-w-[20rem] text-balance sm:mt-4 sm:max-w-none",
             )}
           >
             {wedding.coupleNames}
@@ -169,18 +174,17 @@ export function HeroChapter({ wedding, entered = true }: Props) {
               {...reveal(0.4)}
               className={cn(
                 displayFont,
-                "mt-5 max-w-sm text-base italic leading-relaxed text-[#FFFDF8]/78 sm:text-lg",
+                "mt-5 max-w-sm text-base italic leading-relaxed text-[#FFFDF8]/88 sm:text-lg",
               )}
             >
-              {wedding.venueName}
-              {wedding.venueAddress ? ` · ${wedding.venueAddress}` : ""}
+              {heroVenueLine(wedding.venueName, wedding.venueAddress)}
             </motion.p>
           )}
           <ChapterContinue
             href="#invitation"
             tone="hero"
-            align="start"
-            className="mt-8"
+            align="center"
+            className="mt-8 sm:!items-start"
             revealProps={reveal(0.55)}
           >
             Continue to the invitation
@@ -217,6 +221,20 @@ export function HeroChapter({ wedding, entered = true }: Props) {
       </motion.div>
     </section>
   );
+}
+
+/** Short hero venue line — full address lives in the invitation chapter. */
+function heroVenueLine(venueName: string, venueAddress: string | null) {
+  if (!venueAddress?.trim()) return venueName;
+  const parts = venueAddress
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const city = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  const titled = (city ?? "")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return titled ? `${venueName} · ${titled}` : venueName;
 }
 
 function HeroPlaceholder({ monogram }: { monogram: string }) {

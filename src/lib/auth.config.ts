@@ -7,8 +7,13 @@ import { env } from "@/lib/env";
  * Used by middleware for lightweight route protection. The full config in
  * `auth.ts` extends this with the Prisma adapter and Credentials provider.
  */
+/** Secure cookies only on HTTPS — production `next start` on http://localhost must still log in. */
+const useSecureCookies = env.appUrl.startsWith("https://");
+
 export const authConfig = {
   secret: env.authSecret,
+  // Required so Auth.js accepts localhost / reverse-proxy hosts (avoids UntrustedHost).
+  trustHost: true,
   session: {
     strategy: "jwt",
     // Session JWT/cookie lifetime while the browser keeps the cookie (Auth.js sets expires on login).
@@ -20,7 +25,7 @@ export const authConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: env.isProd,
+        secure: useSecureCookies,
       },
     },
   },

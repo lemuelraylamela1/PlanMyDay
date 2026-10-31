@@ -10,7 +10,12 @@ import {
   useChapterScroll,
   useParallaxY,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
-import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
+import {
+  GoldDivider,
+  countdownDisplay,
+  displayFont,
+  smallCaps,
+} from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import { fairytaleMedia } from "@/features/invitations/components/fairytale/fairytale-media";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
@@ -82,7 +87,7 @@ export function CountdownChapter({ wedding }: { wedding: InvitationWedding }) {
       id="countdown"
       ref={sectionRef}
       data-scene="countdown"
-      className="relative overflow-hidden px-5 py-28 text-center text-[#F3E7D3] sm:px-8 sm:py-36"
+      className="relative scroll-mt-16 overflow-hidden px-5 py-20 text-center text-[#F3E7D3] sm:scroll-mt-20 sm:px-8 sm:py-36"
     >
       <div className="absolute inset-0 overflow-hidden bg-[#1a1c2e]">
         {countdownPhoto?.src && (
@@ -216,7 +221,8 @@ function CountdownValue({
     <span
       className={cn(
         displayFont,
-        "relative block h-[1.05em] overflow-hidden tabular-nums text-[clamp(2.6rem,9vw,3.9rem)] font-light leading-none text-[#FFFDF8]",
+        countdownDisplay,
+        "relative block h-[1.05em] overflow-hidden tabular-nums text-[#FFFDF8]",
       )}
     >
       <AnimatePresence mode="popLayout" initial={false}>

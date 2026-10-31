@@ -45,17 +45,17 @@ const BUDGET = {
   desktop: { lanterns: 18, dust: 36, stars: 48 },
 } as const;
 
-/** Timeline marks (seconds from the open click). */
+/** Timeline marks (seconds from the open click). Kept under ~9s total. */
 const T = {
-  sealBreak: 0.95,
-  unroll: 1.2,
-  text: 3.0,
+  sealBreak: 0.75,
+  unroll: 0.95,
+  text: 2.1,
   /** Hold the open invitation long enough to read before it turns to stars. */
-  dissolve: 8.5,
+  dissolve: 4.6,
   /** Stars finish replacing the card; website fade begins. */
-  reveal: 11.2,
-  skipTo: 11.0,
-  opened: 14.0,
+  reveal: 6.6,
+  skipTo: 6.4,
+  opened: 8.6,
 } as const;
 
 const rollGradient =
@@ -596,10 +596,10 @@ export function RoyalEnvelope({
           <IntroCastleScene lanternCount={budget.lanterns} />
         </div>
 
-        <div className="relative z-10 flex w-full flex-col items-center motion-reduce:gap-6">
+        <div className="relative z-10 flex w-full flex-col items-center gap-5 sm:gap-0 motion-reduce:gap-6">
           <div
             ref={scrollRef}
-            className="relative flex min-h-[min(25rem,66svh)] w-[min(90vw,40rem)] items-center justify-center sm:min-h-[23rem]"
+            className="relative flex min-h-[min(20rem,52svh)] w-[min(92vw,40rem)] items-center justify-center sm:min-h-[23rem]"
           >
             <span
               ref={haloRef}
@@ -714,7 +714,7 @@ export function RoyalEnvelope({
 
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-[-18%] z-30 sm:inset-[-22%]"
+              className="pointer-events-none absolute inset-[-10%] z-30 sm:inset-[-22%]"
             >
               <MagicalStars count={budget.stars} />
             </div>
@@ -723,17 +723,18 @@ export function RoyalEnvelope({
           <div
             ref={ctaRef}
             className={cn(
-              "absolute inset-x-0 top-[calc(50%+4.25rem)] z-30 flex flex-col items-center gap-2.5 text-center sm:top-[calc(50%+5rem)] sm:gap-3",
+              "relative z-30 flex flex-col items-center gap-2.5 text-center",
+              "sm:absolute sm:inset-x-0 sm:top-[calc(50%+5rem)] sm:gap-3",
               "motion-reduce:relative motion-reduce:inset-auto motion-reduce:sm:top-auto",
             )}
           >
-            <p className={cn(smallCaps, "text-[10px] text-[#E8D4A8]/85 sm:text-[11px]")}>
+            <p className={cn(smallCaps, "text-[#E8D4A8]/85")}>
               Hand delivered for
             </p>
             <p
               className={cn(
                 displayFont,
-                "-mt-1 max-w-[80vw] truncate text-xl italic text-[#FFF4DC] sm:text-2xl",
+                "-mt-1 max-w-[min(80vw,22rem)] text-balance text-xl italic leading-snug text-[#FFF4DC] line-clamp-2 sm:max-w-[80vw] sm:text-2xl",
               )}
             >
               {guestName}
@@ -745,9 +746,9 @@ export function RoyalEnvelope({
               aria-label={`Open Invitation, ${guestName}`}
               className={cn(
                 displayFont,
-                "mt-1 min-h-11 rounded-sm border border-[#DDBF8D]/60 bg-[#1d1a33]/45 px-7 py-2.5 text-lg italic text-[#F3E7D3] backdrop-blur-[2px] transition-colors",
-                "hover:border-[#DDBF8D] hover:bg-[#DDBF8D]/20 hover:text-[#FBE7BE]",
-                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1a33]",
+                "mt-1 min-h-11 rounded-sm border border-[#E8D4A8] bg-[#1d1a33]/78 px-7 py-2.5 text-lg italic text-[#FFFDF8] shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-[3px] transition-colors",
+                "hover:border-[#F3E7D3] hover:bg-[#DDBF8D]/28 hover:text-[#FFFDF8]",
+                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E8D4A8] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1a33]",
                 "disabled:cursor-wait disabled:opacity-50",
               )}
             >
@@ -787,7 +788,7 @@ export function RoyalEnvelope({
         className={cn(
           smallCaps,
           "absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-50 min-h-11 px-3 text-[#F3E7D3]/80 transition-opacity duration-500 hover:text-[#FBE7BE] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] sm:right-8 sm:top-6",
-          skippable ? "opacity-100 delay-700" : "pointer-events-none opacity-0",
+          skippable ? "opacity-100 delay-150" : "pointer-events-none opacity-0",
         )}
       >
         Skip
@@ -807,7 +808,7 @@ function SheetFace({
 }) {
   return (
     <div
-      className="relative min-h-[min(22rem,58svh)] w-full overflow-hidden sm:min-h-[20rem]"
+      className="relative min-h-[min(18rem,50svh)] w-full overflow-hidden sm:min-h-[20rem]"
       style={{
         backgroundImage: parchmentBackground,
         boxShadow: "inset 0 0 50px rgba(139,98,48,0.18), inset 0 1px 0 rgba(255,255,255,0.35)",

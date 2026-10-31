@@ -29,7 +29,7 @@ export const fairytaleMotion = {
 } as const;
 
 export function fairytaleTransition(
-  duration = fairytaleMotion.reveal,
+  duration: number = fairytaleMotion.reveal,
   delay = 0,
 ): Transition {
   return { duration, ease: fairytaleEase, delay };
@@ -42,7 +42,7 @@ export function fairytaleTransition(
 export function useReveal() {
   const reduceMotion = useReducedMotion();
 
-  return function reveal(delay = 0, distance = fairytaleMotion.rise): MotionProps {
+  return function reveal(delay = 0, distance: number = fairytaleMotion.rise): MotionProps {
     if (reduceMotion) return {};
     return {
       initial: { opacity: 0, y: distance },

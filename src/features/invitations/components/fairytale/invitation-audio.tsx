@@ -218,12 +218,17 @@ export function InvitationAudioProvider({ children }: { children: React.ReactNod
           aria-label={playing ? "Mute music" : "Play music"}
           aria-pressed={playing}
           className={cn(
-            "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 mix-blend-difference focus-visible:outline-none",
+            "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#DDBF8D] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFDF8]",
           )}
         >
-          <span className="flex items-center gap-2 border border-white px-3 py-2 text-white transition-opacity hover:opacity-80">
+          <span
+            className={cn(
+              "flex min-h-11 min-w-11 items-center justify-center gap-2 border border-[#DDBF8D]/70 bg-[#FFFDF8]/88 px-3 py-2.5 text-[#4a3236] shadow-[0_10px_28px_-18px_rgba(74,50,54,0.55)] backdrop-blur-[3px] transition-colors",
+              "hover:border-[#C9A66B] hover:bg-[#FFFDF8] hover:text-[#B76E79]",
+            )}
+          >
             <MusicGlyph playing={playing} />
-            <span className={cn(smallCaps, "text-[8px] tracking-[0.18em] text-white")}>
+            <span className={cn(smallCaps, "text-[9px] tracking-[0.22em] text-current sm:text-[10px]")}>
               {playing ? "Sound on" : "Sound off"}
             </span>
           </span>

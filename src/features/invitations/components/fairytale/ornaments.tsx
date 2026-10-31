@@ -2,7 +2,24 @@ import { cn } from "@/lib/utils";
 
 export const displayFont = "font-[family-name:var(--font-display)]";
 export const scriptFont = "font-[family-name:var(--font-script)]";
-export const smallCaps = "text-[10px] font-medium uppercase tracking-[0.34em] sm:text-[11px] sm:tracking-[0.38em]";
+/** Eyebrow labels — tracking tuned so 360px phones do not overflow. */
+export const smallCaps =
+  "text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px] sm:tracking-[0.38em]";
+/** Hero couple names — fluid across 360–430 before sm. */
+export const heroDisplay =
+  "text-[clamp(2.35rem,11vw,4.75rem)] font-light leading-[0.96] tracking-[-0.02em]";
+/** Chapter display headlines. */
+export const chapterDisplay =
+  "text-[clamp(2rem,7.5vw,3.5rem)] font-light leading-[1.05] tracking-[-0.02em]";
+/** Interlude story headline — intentional phone scale, not shrunk desktop. */
+export const interludeDisplay =
+  "text-[clamp(2.15rem,8.5vw,4.5rem)] font-light leading-[1.05] tracking-[-0.02em]";
+/** Countdown digit size. */
+export const countdownDisplay =
+  "text-[clamp(2.25rem,10vw,3.9rem)] font-light leading-none tracking-[-0.02em]";
+/** Shared chapter hash offset for Continue links. */
+export const chapterScrollMt = "scroll-mt-16 sm:scroll-mt-20";
+
 
 export function GoldCorner({ className }: { className?: string }) {
   return (

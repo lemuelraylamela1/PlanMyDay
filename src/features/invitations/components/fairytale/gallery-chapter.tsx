@@ -34,14 +34,14 @@ const tileSpans = [
 ];
 
 const overlayCopy = [
-  "A quiet beginning",
+  "At the carriage",
   "Soft light",
   "Hand in hand",
-  "Garden hush",
+  "Fernwood gardens",
   "Looking back",
-  "Nearly forever",
+  "Nearly there",
   "Beneath the trees",
-  "Carriage wait",
+  "Stepping down",
   "Together",
   "Walking home",
 ];
@@ -60,7 +60,7 @@ export function GalleryChapter() {
       id="prenup"
       ref={sectionRef}
       data-scene="gallery"
-      className="relative overflow-x-clip px-4 py-24 sm:px-8 sm:py-32"
+      className="relative scroll-mt-16 overflow-x-clip px-4 py-20 sm:scroll-mt-20 sm:px-8 sm:py-32"
       style={{ backgroundImage: pageParchment }}
     >
       <SceneTransition tone="gallery" />
@@ -103,7 +103,7 @@ export function GalleryChapter() {
           />
         )}
 
-        <div className="mt-5 grid grid-cols-2 grid-flow-dense auto-rows-[8.5rem] gap-3 sm:mt-6 sm:auto-rows-[11.5rem] sm:gap-4 md:auto-rows-[13.5rem] md:grid-cols-4">
+        <div className="mt-5 grid grid-cols-2 grid-flow-dense auto-rows-[10rem] gap-2.5 sm:mt-6 sm:auto-rows-[11.5rem] sm:gap-4 md:auto-rows-[13.5rem] md:grid-cols-4">
           {mosaic.map((item, mosaicIndex) => {
             const index = mosaicIndex + 1;
             return (
@@ -154,10 +154,16 @@ function FeaturePlate({
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.9, ease: fairytaleEase }}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[21/9]">
+      <div className="relative aspect-[5/3] w-full overflow-hidden sm:aspect-[21/9]">
         <motion.div
           className="absolute inset-x-0 bottom-[-6%] top-[-6%]"
-          style={reduceMotion ? undefined : { y: imageY }}
+          style={
+            {
+              ...(reduceMotion ? {} : { y: imageY }),
+              "--mobile-position": item.mobileObjectPosition ?? "50% 40%",
+              "--desktop-position": item.objectPosition ?? "50% 45%",
+            } as React.CSSProperties
+          }
         >
           <Image
             src={item.src!}
@@ -165,7 +171,7 @@ function FeaturePlate({
             fill
             sizes="(min-width: 1024px) 72rem, 100vw"
             quality={82}
-            className="object-cover object-center transition-transform duration-[1.35s] ease-out motion-safe:group-hover:scale-[1.025]"
+            className="object-cover [object-position:var(--mobile-position)] transition-transform duration-[1.35s] ease-out motion-safe:group-hover:scale-[1.025] sm:[object-position:var(--desktop-position)]"
           />
         </motion.div>
         <span
@@ -220,17 +226,23 @@ function GalleryTile({
           fill
           sizes="(min-width: 768px) 40vw, 80vw"
           quality={78}
-          className="object-cover object-center transition-transform duration-[1.15s] ease-out motion-safe:group-hover:scale-[1.03]"
+          style={
+            {
+              "--mobile-position": item.mobileObjectPosition ?? "50% 40%",
+              "--desktop-position": item.objectPosition ?? "50% 45%",
+            } as React.CSSProperties
+          }
+          className="object-cover [object-position:var(--mobile-position)] transition-transform duration-[1.15s] ease-out motion-safe:group-hover:scale-[1.03] sm:[object-position:var(--desktop-position)]"
         />
       )}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(34,36,58,0.55)_100%)] opacity-55 transition-opacity duration-500 group-hover:opacity-90"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(34,36,58,0.55)_100%)] opacity-70 transition-opacity duration-500 group-hover:opacity-90"
       />
       <span
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 translate-y-1 px-3 py-3 opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100 sm:px-4",
-          isLarge && "opacity-70 group-hover:opacity-100",
+          "invite-hover-reveal pointer-events-none absolute inset-x-0 bottom-0 px-3 py-3 transition-[opacity,transform] duration-500 ease-out sm:px-4",
+          isLarge && "invite-hover-reveal-strong",
         )}
       >
         <span className={cn(displayFont, "block text-sm font-light italic text-[#F8EFE2] sm:text-base")}>

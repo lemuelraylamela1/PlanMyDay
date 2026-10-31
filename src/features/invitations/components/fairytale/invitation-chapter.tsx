@@ -14,6 +14,7 @@ import {
   Fleuron,
   GoldCorner,
   GoldDivider,
+  chapterDisplay,
   displayFont,
   scriptFont,
   smallCaps,
@@ -56,7 +57,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
       id="invitation"
       ref={sectionRef}
       data-scene="invitation"
-      className="relative flex min-h-[100svh] scroll-mt-6 flex-col items-center overflow-hidden px-5 pb-24 pt-28 text-center sm:px-8 sm:pt-36"
+      className="relative flex min-h-[100svh] scroll-mt-16 flex-col items-center overflow-hidden px-5 pb-16 pt-16 text-center sm:scroll-mt-20 sm:px-8 sm:pb-24 sm:pt-28"
       style={{ backgroundImage: pageParchment }}
     >
       <SceneTransition tone="paper" />
@@ -77,12 +78,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
 
       <div data-scene-content className="relative flex w-full max-w-5xl flex-col items-center">
         <motion.div {...reveal(0.08)} className="mb-8">
-          <motion.div
-            animate={reduceMotion ? undefined : { y: [0, -3, 0], opacity: [0.88, 1, 0.88] }}
-            transition={{ duration: 9.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Fleuron className="w-24 text-[#C9A66B]" />
-          </motion.div>
+          <Fleuron className="w-24 text-[#C9A66B]" />
         </motion.div>
 
         <motion.p {...reveal(0.16)} className={cn(smallCaps, "text-[#B76E79]")}>
@@ -93,7 +89,8 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
           {...reveal(0.26, 24)}
           className={cn(
             displayFont,
-            "mt-6 max-w-2xl text-balance text-[clamp(2.1rem,6vw,3.5rem)] font-light leading-[1.05] tracking-[-0.02em] text-[#4a3236]",
+            chapterDisplay,
+            "mt-5 max-w-2xl text-balance text-[#4a3236] sm:mt-6",
           )}
         >
           Join us for a day of love, laughter, and forever after.
@@ -109,14 +106,14 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
           Your presence is the greatest gift as we begin this new chapter together.
         </motion.p>
 
-        <motion.div {...reveal(0.48)} className="mt-12">
+        <motion.div {...reveal(0.48)} className="mt-10">
           <GoldDivider />
         </motion.div>
 
         {/* Royal invitation plate */}
         <motion.div
           {...reveal(0.55, 20)}
-          className="relative mt-14 w-full max-w-3xl px-6 py-12 sm:px-14 sm:py-16"
+          className="relative mt-10 w-full max-w-3xl px-6 py-10 sm:mt-12 sm:px-14 sm:py-14"
         >
           <GoldCorner className="left-1 top-1 sm:left-2 sm:top-2" />
           <GoldCorner className="right-1 top-1 rotate-90 sm:right-2 sm:top-2" />
@@ -144,20 +141,15 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
           )}
 
           {wedding.monogram && (
-            <motion.p
-              aria-hidden
-              className={cn(scriptFont, "mt-10 text-3xl text-[#DDBF8D]/70")}
-              animate={reduceMotion ? undefined : { opacity: [0.5, 0.78, 0.5] }}
-              transition={{ duration: 8.5, repeat: Infinity, ease: "easeInOut" }}
-            >
+            <p aria-hidden className={cn(scriptFont, "mt-10 text-3xl text-[#DDBF8D]/70")}>
               {wedding.monogram}
-            </motion.p>
+            </p>
           )}
         </motion.div>
 
         {/* Ceremony & reception schedule — editorial, not cards */}
         {schedule.length > 0 && (
-          <div className="relative mt-16 w-full max-w-xl sm:mt-20">
+          <div className="relative mt-12 w-full max-w-xl sm:mt-16">
             <motion.p {...reveal(0.1)} className={cn(smallCaps, "text-[#B76E79]")}>
               The day&apos;s rhythm
             </motion.p>
@@ -205,7 +197,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
 
         {/* Venue photography + address + directions */}
         {hasVenue && (
-          <div className="mt-20 w-full sm:mt-28">
+          <div className="mt-14 w-full sm:mt-20">
             <motion.p {...reveal(0.08)} className={cn(smallCaps, "text-[#B76E79]")}>
               The setting
             </motion.p>
@@ -251,7 +243,9 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
                   )}
                   {wedding.venueAddress && (
                     <p className={cn(displayFont, "mt-2 max-w-xl text-sm italic leading-relaxed text-[#F3E7D3]/80 sm:text-base")}>
-                      {wedding.venueAddress}
+                      {wedding.venueAddress
+                        .toLowerCase()
+                        .replace(/\b\w/g, (char) => char.toUpperCase())}
                     </p>
                   )}
                 </figcaption>
@@ -290,7 +284,7 @@ export function InvitationChapter({ wedding }: { wedding: InvitationWedding }) {
           </motion.div>
         )}
 
-        <ChapterContinue href="#film" className="mt-20" revealProps={reveal(0.2, 12)}>
+        <ChapterContinue href="#film" className="mt-14 sm:mt-16" revealProps={reveal(0.2, 12)}>
           Continue to the film
         </ChapterContinue>
       </div>

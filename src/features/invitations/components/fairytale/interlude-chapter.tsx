@@ -11,7 +11,12 @@ import {
   useDepthLayer,
   useParallaxY,
 } from "@/features/invitations/components/fairytale/use-cinematic-parallax";
-import { GoldDivider, displayFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
+import {
+  GoldDivider,
+  displayFont,
+  interludeDisplay,
+  smallCaps,
+} from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay } from "@/features/invitations/components/fairytale/textures";
 import { LanternField } from "@/features/invitations/components/fairytale/lanterns";
 import { ChapterContinue } from "@/features/invitations/components/fairytale/chapter-continue";
@@ -87,7 +92,7 @@ export function InterludeChapter({ story }: { story: string | null }) {
       id="interlude"
       ref={sectionRef}
       data-scene="interlude"
-      className="relative overflow-hidden px-5 py-32 text-center text-[#F3E7D3] sm:px-8 sm:py-44"
+      className="relative scroll-mt-16 overflow-hidden px-5 py-14 text-center text-[#F3E7D3] sm:scroll-mt-20 sm:px-8 sm:py-28"
       style={{ backgroundImage: dusk }}
     >
       <SceneTransition tone="forest" />
@@ -98,14 +103,12 @@ export function InterludeChapter({ story }: { story: string | null }) {
         style={{
           y: reduceMotion ? 0 : glowY,
           backgroundImage:
-            "radial-gradient(ellipse at center, rgba(232,212,168,0.14), transparent 66%), radial-gradient(ellipse at 30% 40%, rgba(201,184,232,0.1), transparent 60%)",
+            "radial-gradient(ellipse at center, rgba(232,212,168,0.14), transparent 66%), radial-gradient(ellipse at 30% 40%, rgba(201,184,232,0.05), transparent 60%)",
         }}
       />
-      <motion.div
+      <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-[18%] top-[18%] h-40 bg-[radial-gradient(ellipse_at_center,rgba(232,184,199,0.14),transparent_70%)]"
-        animate={reduceMotion ? undefined : { opacity: [0.38, 0.68, 0.38], scale: [1, 1.025, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        className="pointer-events-none absolute inset-x-[18%] top-[18%] h-40 bg-[radial-gradient(ellipse_at_center,rgba(232,184,199,0.1),transparent_70%)]"
       />
       <div
         aria-hidden
@@ -126,7 +129,7 @@ export function InterludeChapter({ story }: { story: string | null }) {
         </motion.p>
         <motion.h2
           {...reveal(0.24, 24)}
-          className={cn(displayFont, "mt-5 max-w-3xl text-balance text-4xl font-light leading-[1.05] tracking-[-0.02em] sm:text-7xl")}
+          className={cn(displayFont, interludeDisplay, "mt-5 max-w-3xl text-balance")}
         >
           Once upon a time,
           <span className="mt-2 block italic text-[#E8B8C7]">
@@ -147,8 +150,8 @@ export function InterludeChapter({ story }: { story: string | null }) {
           <EditorialOpener photo={plates[0]} progress={progress} />
         )}
 
-        <div className="relative mt-16 w-full sm:mt-24">
-          <div className="space-y-24 sm:space-y-32">
+        <div className="relative mt-12 w-full sm:mt-16">
+          <div className="space-y-12 sm:space-y-20">
             {chapters.map((chapter, index) => {
               const plate = plates.length > 0 ? plates[(index + 1) % plates.length] : undefined;
               return (
@@ -163,7 +166,7 @@ export function InterludeChapter({ story }: { story: string | null }) {
           </div>
         </div>
 
-        <ChapterContinue href="#rsvp" tone="dusk" className="mt-20" revealProps={reveal(0.25, 12)}>
+        <ChapterContinue href="#rsvp" tone="dusk" className="mt-14 sm:mt-16" revealProps={reveal(0.25, 12)}>
           Continue to RSVP
         </ChapterContinue>
       </div>
@@ -183,16 +186,22 @@ function EditorialOpener({
 
   return (
     <motion.figure
-      className="relative mt-16 w-full overflow-hidden sm:mt-20"
+      className="relative mt-10 w-full overflow-hidden sm:mt-14"
       initial={reduceMotion ? false : { opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 1.2, ease: fairytaleEase }}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#1a1c2e] sm:aspect-[21/9]">
+      <div className="relative aspect-[5/3] w-full overflow-hidden bg-[#1a1c2e] sm:aspect-[21/9]">
         <motion.div
           className="absolute inset-x-0 bottom-[-6%] top-[-6%]"
-          style={reduceMotion ? undefined : { y: imageY }}
+          style={
+            {
+              ...(reduceMotion ? {} : { y: imageY }),
+              "--mobile-position": photo.mobileObjectPosition ?? "50% 38%",
+              "--desktop-position": photo.objectPosition ?? "50% 45%",
+            } as React.CSSProperties
+          }
         >
           {photo.src && (
             <Image
@@ -201,7 +210,7 @@ function EditorialOpener({
               fill
               sizes="(min-width: 1024px) 64rem, 100vw"
               quality={82}
-              className="object-cover object-center"
+              className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
             />
           )}
         </motion.div>
@@ -311,14 +320,22 @@ function StoryPlate({
           tall ? "aspect-[4/5] sm:aspect-[3/4]" : "aspect-[5/4] sm:aspect-[4/3]",
         )}
       >
-        <div className="absolute inset-0">
+        <div
+          className="absolute inset-0"
+          style={
+            {
+              "--mobile-position": photo.mobileObjectPosition ?? "50% 36%",
+              "--desktop-position": photo.objectPosition ?? "50% 42%",
+            } as React.CSSProperties
+          }
+        >
           <Image
             src={photo.src!}
             alt={photo.alt}
             fill
             sizes="(min-width: 768px) 48vw, 92vw"
             quality={80}
-            className="object-cover object-center transition-transform duration-[1.35s] ease-out motion-safe:group-hover:scale-[1.03]"
+            className="object-cover [object-position:var(--mobile-position)] transition-transform duration-[1.35s] ease-out motion-safe:group-hover:scale-[1.03] sm:[object-position:var(--desktop-position)]"
           />
         </div>
         <div

@@ -26,7 +26,7 @@ export function LanternField({ tone = "parchment" }: { tone?: "dusk" | "parchmen
           initial={false}
           animate={
             reduceMotion
-              ? { y: "-42vh", opacity: 0.4 }
+              ? { y: "-28vh", opacity: 0.35, x: 0 }
               : {
                   y: ["12vh", "-115vh"],
                   x: [0, lantern.drift * 0.75, lantern.drift * 0.25],
@@ -85,7 +85,7 @@ export function SkyLantern({
     tone === "dusk" ? "rgba(232,212,168,0.55)" : "rgba(232,184,199,0.42)";
 
   return (
-    <span className={cn("relative block h-36 w-28", className)}>
+    <span className={cn("relative block h-24 w-20 sm:h-36 sm:w-28", className)}>
       <span className="absolute left-1/2 top-[70%] h-[45%] w-[55%] -translate-x-1/2 -translate-y-1/2">
         <motion.span
           className="block h-full w-full origin-center rounded-full"

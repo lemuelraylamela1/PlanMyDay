@@ -29,8 +29,8 @@ export function useChapterScrollTrigger(
 
       media.add(
         {
-          desktop: "(min-width: 768px)",
-          mobile: "(max-width: 767px)",
+          desktop: "(min-width: 640px)",
+          mobile: "(max-width: 639px)",
           reduceMotion: "(prefers-reduced-motion: reduce)",
         },
         (context) => {

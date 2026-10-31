@@ -46,7 +46,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
       id="rsvp"
       ref={ref}
       data-scene="rsvp"
-      className="relative scroll-mt-6 overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pb-28 sm:pt-32"
+      className="relative scroll-mt-16 overflow-hidden px-4 pb-16 pt-20 sm:scroll-mt-20 sm:px-8 sm:pb-28 sm:pt-32"
       style={{ backgroundImage: pageParchment }}
     >
       <SceneTransition tone="dawn" />
@@ -70,12 +70,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
 
       <div data-scene-content className="relative mx-auto max-w-xl text-center">
         <motion.div {...reveal(0)} className="flex justify-center">
-          <motion.div
-            animate={reduceMotion ? undefined : { y: [0, -3, 0], opacity: [0.88, 1, 0.88] }}
-            transition={{ duration: 9.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Fleuron className="w-24 text-[#C9A66B]" />
-          </motion.div>
+          <Fleuron className="w-24 text-[#C9A66B]" />
         </motion.div>
         <motion.p {...reveal(0.08)} className={cn(smallCaps, "mt-6 text-[#B76E79]")}>
           Kindly respond
@@ -84,7 +79,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
           {...reveal(0.14, 18)}
           className={cn(displayFont, "mt-5 text-3xl font-light tracking-[-0.02em] text-[#4a3236] sm:text-4xl")}
         >
-          The RSVP chamber
+          Your reply
         </motion.h2>
         <motion.div {...reveal(0.2)} className="mt-6">
           <GoldDivider />
@@ -104,7 +99,7 @@ export function RsvpChapter({ token, guest, response, wedding }: Props) {
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.85, ease: fairytaleEase, delay: 0.1 }}
         >
-          <div className="relative bg-[#FFFDF8]/55 px-5 py-11 shadow-[0_28px_80px_-48px_rgba(74,50,54,0.45)] sm:px-9 sm:py-14">
+          <div className="relative bg-[#FFFDF8]/55 px-4 py-9 shadow-[0_28px_80px_-48px_rgba(74,50,54,0.45)] sm:px-9 sm:py-14">
             <GoldCorner className="left-1.5 top-1.5 opacity-80 sm:left-2 sm:top-2" />
             <GoldCorner className="right-1.5 top-1.5 rotate-90 opacity-80 sm:right-2 sm:top-2" />
             <GoldCorner className="bottom-1.5 left-1.5 -rotate-90 opacity-80 sm:bottom-2 sm:left-2" />

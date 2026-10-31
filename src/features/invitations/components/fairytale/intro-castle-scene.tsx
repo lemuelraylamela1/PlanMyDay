@@ -104,7 +104,7 @@ function CastlePicture({
         alt=""
         decoding="async"
         fetchPriority="high"
-        className="block h-full w-full object-cover object-[50%_42%] sm:object-[50%_45%]"
+        className="block h-full w-full object-cover object-[50%_36%] sm:object-[50%_45%]"
       />
     </picture>
   );

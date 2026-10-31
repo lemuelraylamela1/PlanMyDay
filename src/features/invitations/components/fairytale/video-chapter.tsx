@@ -64,7 +64,7 @@ export function VideoChapter() {
       id="film"
       ref={ref}
       data-scene="film"
-      className="relative overflow-hidden px-5 py-24 sm:px-10 sm:py-32"
+      className="relative scroll-mt-16 overflow-hidden px-5 py-20 sm:scroll-mt-20 sm:px-10 sm:py-32"
       style={{ backgroundImage: pageParchment }}
     >
       <SceneTransition tone="cinema" />
