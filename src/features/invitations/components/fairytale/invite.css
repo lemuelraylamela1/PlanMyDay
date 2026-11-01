@@ -19,6 +19,33 @@
   }
 }
 
+/*
+ * Adaptive quality: the envelope's GSAP timeline is bound to its particle
+ * nodes, so a mid-sequence downgrade hides some of them instead of
+ * re-rendering. One step keeps half, two steps keep a quarter.
+ */
+[data-anim-thin] [data-star]:nth-of-type(2n),
+[data-anim-thin] [data-dust]:nth-of-type(2n),
+[data-anim-thin] [data-lantern]:nth-of-type(2n),
+[data-anim-thin="2"] [data-star]:nth-of-type(4n + 3),
+[data-anim-thin="2"] [data-dust]:nth-of-type(4n + 3),
+[data-anim-thin="2"] [data-lantern]:nth-of-type(4n + 3) {
+  display: none;
+}
+
+[data-anim-thin] [data-dust] {
+  box-shadow: 0 0 5px rgba(255, 226, 160, 0.8) !important;
+}
+
+[data-anim-thin] [data-lantern] {
+  box-shadow: 0 0 12px rgba(255, 180, 90, 0.5) !important;
+}
+
+[data-anim-thin] [data-open-button] {
+  backdrop-filter: none;
+  background-color: rgba(29, 26, 51, 0.9);
+}
+
 /* Touch-first: captions stay visible. Hover devices can hide/reveal. */
 .invite-root .invite-hover-reveal {
   opacity: 1;

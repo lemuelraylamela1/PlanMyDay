@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { useAnimationQuality } from "@/features/invitations/components/fairytale/animation-quality/animation-quality-provider";
 
 export type SceneTone =
   | "hero"
@@ -67,10 +68,12 @@ interface Props {
 
 /**
  * Decorative scene depth owned by ScrollTrigger. It stays static when
- * JavaScript, reduced motion, or mobile performance constraints disable it.
+ * JavaScript, reduced motion, or the animation quality tier disables it.
  */
 export function SceneTransition({ tone, className }: Props) {
   const isNight = tone === "hero" || tone === "dusk" || tone === "forest";
+  const { profile } = useAnimationQuality();
+  const visibleMotes = motes.slice(0, profile.sceneParticles);
 
   return (
     <div
@@ -88,9 +91,9 @@ export function SceneTransition({ tone, className }: Props) {
         className="absolute inset-x-0 top-0 h-40 opacity-70 sm:h-56"
         style={{ backgroundImage: veilByTone[tone] }}
       />
-      {particlesByTone[tone] && (
+      {particlesByTone[tone] && visibleMotes.length > 0 && (
         <div className="absolute inset-0 opacity-55">
-          {motes.map((mote, index) => (
+          {visibleMotes.map((mote, index) => (
             <span
               key={`${mote.left}-${mote.top}`}
               data-scene-particle

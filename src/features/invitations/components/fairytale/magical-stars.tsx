@@ -7,8 +7,9 @@ interface Props {
 
 /**
  * Soft golden star field. Each star is addressed with `[data-star]` so the
- * parent timeline can twinkle them in and send them outward. No SVG filters —
- * the glow is a layered box-shadow, which is cheap on phones.
+ * parent timeline can twinkle them in and send them outward. The glow lives in
+ * the radial gradient — a box-shadow would be clipped away by the star shape
+ * and only cost paint time.
  */
 export function MagicalStars({ count, className }: Props) {
   const stars = Array.from({ length: count }, (_, i) => {
@@ -44,7 +45,6 @@ export function MagicalStars({ count, className }: Props) {
             marginTop: -s.size / 2,
             backgroundImage:
               "radial-gradient(circle, #FFF8E4 0%, #FFE2A0 38%, rgba(255,200,120,0.35) 62%, transparent 74%)",
-            boxShadow: `0 0 ${s.size * 1.6}px rgba(255,220,150,0.85), 0 0 ${s.size * 3.4}px rgba(255,190,110,0.35)`,
             clipPath:
               "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)",
           }}

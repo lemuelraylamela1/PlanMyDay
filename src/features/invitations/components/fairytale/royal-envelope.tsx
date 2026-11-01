@@ -22,6 +22,13 @@ import {
 } from "@/features/invitations/components/fairytale/textures";
 import { IntroCastleScene } from "@/features/invitations/components/fairytale/intro-castle-scene";
 import { MagicalStars } from "@/features/invitations/components/fairytale/magical-stars";
+import { useAnimationQuality } from "@/features/invitations/components/fairytale/animation-quality/animation-quality-provider";
+import {
+  QUALITY_ORDER,
+  QUALITY_PROFILES,
+  densityCount,
+  type AnimationQuality,
+} from "@/features/invitations/components/fairytale/animation-quality/quality-profiles";
 
 gsap.registerPlugin(useGSAP);
 
@@ -40,10 +47,10 @@ interface Props {
   onOpened: () => void;
 }
 
-const BUDGET = {
-  mobile: { lanterns: 8, dust: 14, stars: 22 },
-  desktop: { lanterns: 18, dust: 36, stars: 48 },
-} as const;
+interface EnvelopeVariant {
+  quality: AnimationQuality;
+  compact: boolean;
+}
 
 /**
  * Timeline marks (seconds from the open click).
@@ -78,11 +85,30 @@ export function RoyalEnvelope({
   onOpened,
 }: Props) {
   const reduceMotion = useReducedMotion();
+  const live = useAnimationQuality();
   const [ready, setReady] = React.useState(false);
   const [opening, setOpening] = React.useState(false);
   const [skippable, setSkippable] = React.useState(false);
-  const [isDesktop, setIsDesktop] = React.useState(false);
-  const budget = isDesktop ? BUDGET.desktop : BUDGET.mobile;
+
+  // The GSAP timelines bind to these DOM nodes, so the element counts are
+  // fixed once the intro starts. Later downgrades thin them via CSS instead.
+  const [variant, setVariant] = React.useState<EnvelopeVariant | null>(null);
+  if (live.ready && variant === null) {
+    setVariant({ quality: live.quality, compact: live.compact });
+  }
+  const profile = QUALITY_PROFILES[variant?.quality ?? "high"];
+  const compact = variant?.compact ?? false;
+  const budget = variant
+    ? {
+        lanterns: densityCount(profile.introLanterns, compact, 4),
+        dust: densityCount(profile.dust, compact),
+        stars: densityCount(profile.introStars, compact, 8),
+      }
+    : { lanterns: 0, dust: 0, stars: 0 };
+  const idleLoops = profile.idleLoops;
+  const thinSteps = variant
+    ? Math.max(0, QUALITY_ORDER.indexOf(live.quality) - QUALITY_ORDER.indexOf(variant.quality))
+    : 0;
 
   const openingRef = React.useRef(false);
   const openTlRef = React.useRef<gsap.core.Timeline | null>(null);
@@ -105,18 +131,17 @@ export function RoyalEnvelope({
   const sheetGlowRef = React.useRef<HTMLSpanElement>(null);
   const ctaRef = React.useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
-    const mq = window.matchMedia("(min-width: 640px)");
-    const sync = () => setIsDesktop(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-
   const { contextSafe } = useGSAP(
     () => {
       const root = rootRef.current;
-      if (openingRef.current || !root || !sceneRef.current || !scrollRef.current || !sheetRef.current) {
+      if (
+        !variant ||
+        openingRef.current ||
+        !root ||
+        !sceneRef.current ||
+        !scrollRef.current ||
+        !sheetRef.current
+      ) {
         return;
       }
 
@@ -185,31 +210,33 @@ export function RoyalEnvelope({
         tl.to(ctaRef.current, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" }, 1.4);
       }
 
-      // Soft idle twinkle — sparse so the scene stays calm before open.
-      stars.forEach((el, i) => {
-        if (i % 4 !== 0) return;
-        gsap.to(el, {
-          opacity: 0.28 + (i % 4) * 0.08,
-          scale: 0.9 + (i % 3) * 0.1,
-          duration: 2.1 + (i % 5) * 0.4,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-          delay: 1.8 + Number(el.dataset.delay || 0),
+      if (idleLoops) {
+        // Soft idle twinkle — sparse so the scene stays calm before open.
+        stars.forEach((el, i) => {
+          if (i % 4 !== 0) return;
+          gsap.to(el, {
+            opacity: 0.28 + (i % 4) * 0.08,
+            scale: 0.9 + (i % 3) * 0.1,
+            duration: 2.1 + (i % 5) * 0.4,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            delay: 1.8 + Number(el.dataset.delay || 0),
+          });
         });
-      });
 
-      lanterns.forEach((el, i) => {
-        gsap.to(el, {
-          y: `-=${10 + (i % 4) * 5}`,
-          x: `+=${(i % 2 === 0 ? 1 : -1) * (3 + (i % 3) * 2)}`,
-          duration: 5.6 + (i % 5) * 0.9,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-          delay: 1.9 + (i % 6) * 0.18,
+        lanterns.forEach((el, i) => {
+          gsap.to(el, {
+            y: `-=${10 + (i % 4) * 5}`,
+            x: `+=${(i % 2 === 0 ? 1 : -1) * (3 + (i % 3) * 2)}`,
+            duration: 5.6 + (i % 5) * 0.9,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            delay: 1.9 + (i % 6) * 0.18,
+          });
         });
-      });
+      }
       gsap.to(scrollRef.current, {
         y: -4,
         duration: 3.4,
@@ -234,7 +261,7 @@ export function RoyalEnvelope({
         tl.kill();
       };
     },
-    { scope: rootRef, dependencies: [reduceMotion, isDesktop] },
+    { scope: rootRef, dependencies: [reduceMotion, variant, idleLoops] },
   );
 
   const playOpening = contextSafe(() => {
@@ -590,13 +617,17 @@ export function RoyalEnvelope({
   );
 
   return (
-    <div ref={rootRef} className="relative h-full min-h-[100svh]">
+    <div
+      ref={rootRef}
+      data-anim-thin={thinSteps > 0 ? thinSteps : undefined}
+      className="relative h-full min-h-[100svh]"
+    >
       <section
         ref={veilRef}
         className="relative flex h-full min-h-[100svh] items-center justify-center overflow-hidden bg-[#1d1a33] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
       >
         <div ref={sceneRef} className="absolute inset-0">
-          <IntroCastleScene lanternCount={budget.lanterns} />
+          <IntroCastleScene lanternCount={budget.lanterns} richGlow={profile.richGlow} />
         </div>
 
         <div className="relative z-10 flex w-full flex-col items-center gap-5 sm:gap-0 motion-reduce:gap-6">
@@ -613,11 +644,23 @@ export function RoyalEnvelope({
                   "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,222,150,0.5) 0%, rgba(232,190,112,0.24) 45%, transparent 72%)",
               }}
             />
-            <span
-              aria-hidden
-              data-scroll-shadow
-              className="pointer-events-none absolute left-[10%] top-1/2 z-0 block h-10 w-[80%] -translate-y-1/2 rounded-[50%] bg-black/60 blur-2xl"
-            />
+            {profile.blurEffects ? (
+              <span
+                aria-hidden
+                data-scroll-shadow
+                className="pointer-events-none absolute left-[10%] top-1/2 z-0 block h-10 w-[80%] -translate-y-1/2 rounded-[50%] bg-black/60 blur-2xl"
+              />
+            ) : (
+              <span
+                aria-hidden
+                data-scroll-shadow
+                className="pointer-events-none absolute left-[4%] top-1/2 z-0 block h-20 w-[92%] -translate-y-1/2"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.28) 45%, transparent 72%)",
+                }}
+              />
+            )}
 
             {/*
               Closed: top rod + rolled core + bottom rod (a real scroll).
@@ -747,9 +790,11 @@ export function RoyalEnvelope({
               onClick={openInvitation}
               disabled={!ready || opening}
               aria-label={`Open Invitation, ${guestName}`}
+              data-open-button
               className={cn(
                 displayFont,
-                "mt-1 min-h-11 rounded-sm border border-[#E8D4A8] bg-[#1d1a33]/78 px-7 py-2.5 text-lg italic text-[#FFFDF8] shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-[3px] transition-colors",
+                "mt-1 min-h-11 rounded-sm border border-[#E8D4A8] px-7 py-2.5 text-lg italic text-[#FFFDF8] shadow-[0_8px_28px_rgba(0,0,0,0.45)] transition-colors",
+                profile.blurEffects ? "bg-[#1d1a33]/78 backdrop-blur-[3px]" : "bg-[#1d1a33]/90",
                 "hover:border-[#F3E7D3] hover:bg-[#DDBF8D]/28 hover:text-[#FFFDF8]",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E8D4A8] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1a33]",
                 "disabled:cursor-wait disabled:opacity-50",
@@ -777,7 +822,9 @@ export function RoyalEnvelope({
               backgroundColor: d.fleck ? "#F6E7C6" : fairytale.gold,
               boxShadow: d.fleck
                 ? "0 0 6px rgba(255,240,205,0.65)"
-                : `0 0 ${6 + (d.id % 3) * 3}px rgba(255,226,160,0.85)`,
+                : profile.richGlow
+                  ? `0 0 ${6 + (d.id % 3) * 3}px rgba(255,226,160,0.85)`
+                  : "0 0 5px rgba(255,226,160,0.8)",
             }}
           />
         ))}

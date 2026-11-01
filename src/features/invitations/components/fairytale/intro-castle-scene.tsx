@@ -11,6 +11,8 @@ export const castleNightImages = {
 
 interface Props {
   lanternCount: number;
+  /** Two-layer lantern halo; lighter tiers use a single layer. */
+  richGlow?: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * sharp image (not a heavy blur) so the kingdom stays HD; a soft vignette does
  * the depth work instead of a blur filter.
  */
-export function IntroCastleScene({ lanternCount }: Props) {
+export function IntroCastleScene({ lanternCount, richGlow = true }: Props) {
   const lanterns = React.useMemo(
     () =>
       Array.from({ length: lanternCount }, (_, i) => {
@@ -73,7 +75,9 @@ export function IntroCastleScene({ lanternCount }: Props) {
             ["--lantern-opacity" as string]: l.opacity,
             backgroundImage:
               "radial-gradient(ellipse 70% 60% at 50% 72%, #FFF1C4 0%, #F7B955 48%, #C26A2C 100%)",
-            boxShadow: `0 0 ${l.size}px rgba(255,186,96,0.65), 0 0 ${l.size * 2.4}px rgba(255,160,80,0.25)`,
+            boxShadow: richGlow
+              ? `0 0 ${l.size}px rgba(255,186,96,0.65), 0 0 ${l.size * 2.4}px rgba(255,160,80,0.25)`
+              : `0 0 ${l.size * 1.4}px rgba(255,180,90,0.55)`,
           }}
         />
       ))}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useId } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useId, useRef } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fairytale } from "@/features/invitations/components/fairytale/fairytale-tokens";
+import { useAnimationQuality } from "@/features/invitations/components/fairytale/animation-quality/animation-quality-provider";
 
 const lanterns = [
   { className: "left-[7%]", duration: 20, delay: 0, drift: 16 },
@@ -13,13 +14,20 @@ const lanterns = [
   { className: "right-[22%] hidden md:flex", duration: 22, delay: 12, drift: -18 },
 ];
 
-/** Sky lanterns that rise through the section and fade as they leave. */
+/**
+ * Sky lanterns that rise through the section and fade as they leave. The
+ * infinite loops only mount while the section is near the viewport.
+ */
 export function LanternField({ tone = "parchment" }: { tone?: "dusk" | "parchment" }) {
   const reduceMotion = useReducedMotion();
+  const { profile } = useAnimationQuality();
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const nearViewport = useInView(fieldRef, { margin: "25% 0px 25% 0px" });
+  const visible = nearViewport || Boolean(reduceMotion);
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {lanterns.map((lantern) => (
+    <div ref={fieldRef} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {visible && lanterns.slice(0, profile.lanternField).map((lantern) => (
         <motion.span
           key={lantern.className}
           className={cn("absolute bottom-0 flex flex-col items-center", lantern.className)}
@@ -78,6 +86,8 @@ export function SkyLantern({
   className?: string;
 }) {
   const uid = useId().replace(/:/g, "");
+  const { profile } = useAnimationQuality();
+  const flicker = reduceMotion ? "none" : profile.lanternFlicker;
   const paperId = `lantern-paper-${uid}`;
   const sideId = `lantern-side-${uid}`;
   const mouthId = `lantern-mouth-${uid}`;
@@ -89,8 +99,17 @@ export function SkyLantern({
       <span className="absolute left-1/2 top-[70%] h-[45%] w-[55%] -translate-x-1/2 -translate-y-1/2">
         <motion.span
           className="block h-full w-full origin-center rounded-full"
-          style={{ backgroundImage: `radial-gradient(circle, ${glow}, transparent 70%)` }}
-          animate={reduceMotion ? undefined : { opacity: [0.48, 0.72, 0.52], scale: [0.96, 1.03, 0.98] }}
+          style={{
+            backgroundImage: `radial-gradient(circle, ${glow}, transparent 70%)`,
+            opacity: flicker === "none" ? 0.6 : undefined,
+          }}
+          animate={
+            flicker === "full"
+              ? { opacity: [0.48, 0.72, 0.52], scale: [0.96, 1.03, 0.98] }
+              : flicker === "soft"
+                ? { opacity: [0.5, 0.7, 0.54] }
+                : undefined
+          }
           transition={{ duration: 3.8, delay, repeat: Infinity, ease: "easeInOut" }}
         />
       </span>
@@ -131,13 +150,15 @@ export function SkyLantern({
           <path d="M62 136 L82 130" />
         </g>
         <ellipse cx="84" cy="130" rx="4.2" ry="1.6" fill={fairytale.dustyRose} />
+        {/* Animating SVG geometry repaints the whole lantern, so only the top tier flickers. */}
         <motion.ellipse
           cx="84"
           cy="126"
           rx="7"
           ry="2.4"
           fill="#FFF6CC"
-          animate={reduceMotion ? undefined : { opacity: [0.55, 0.82, 0.6], ry: [1.9, 2.5, 2.1] }}
+          opacity={flicker === "full" ? undefined : 0.7}
+          animate={flicker === "full" ? { opacity: [0.55, 0.82, 0.6], ry: [1.9, 2.5, 2.1] } : undefined}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay }}
         />
       </svg>

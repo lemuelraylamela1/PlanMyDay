@@ -12,6 +12,8 @@ import { inviteFontVariables } from "@/features/invitations/components/fairytale
 import { SkyLantern } from "@/features/invitations/components/fairytale/lanterns";
 import { displayFont, scriptFont, smallCaps } from "@/features/invitations/components/fairytale/ornaments";
 import { fairytaleEase } from "@/features/invitations/components/fairytale/use-reveal";
+import { useAnimationQuality } from "@/features/invitations/components/fairytale/animation-quality/animation-quality-provider";
+import { densityCount } from "@/features/invitations/components/fairytale/animation-quality/quality-profiles";
 
 export type RsvpCelebrationVariant = "accept" | "decline";
 
@@ -46,11 +48,6 @@ function fadeAudioVolume(audio: HTMLAudioElement, to: number, ms: number, onDone
   }, 40);
   return () => window.clearInterval(id);
 }
-
-const BUDGET = {
-  mobile: { lanterns: 6, particles: 11 },
-  desktop: { lanterns: 12, particles: 22 },
-} as const;
 
 /** Staggered rise specs; sliced by budget. Wave 0 starts ~0.7s, wave 1 ~1.6s. */
 const LANTERN_SPECS = [
@@ -106,32 +103,28 @@ const COPY = {
   },
 } as const;
 
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(min-width: 640px)");
-    const sync = () => setIsDesktop(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  return isDesktop;
-}
-
 export function RsvpCelebration({ variant, guestName, monogram, reduceMotion }: Props) {
-  const isDesktop = useIsDesktop();
+  const { profile, compact } = useAnimationQuality();
   const ambient = useInvitationAudio();
   const audioRef = React.useRef<HTMLAudioElement>(null);
-  const budget = isDesktop ? BUDGET.desktop : BUDGET.mobile;
+  // Fixed for the overlay's short life so a tier change can't pop lanterns out mid-rise.
+  const [budget] = React.useState(() => ({
+    lanterns: densityCount(profile.celebrationLanterns, compact, 3),
+    particles: densityCount(profile.celebrationParticles, compact),
+  }));
   const copy = COPY[variant];
   const lanternTone = variant === "accept" ? "dusk" : "parchment";
   const track =
     variant === "accept" ? fairytaleMedia.rsvpAcceptMusic : fairytaleMedia.rsvpDeclineMusic;
 
   const lanternCount =
-    variant === "decline" ? Math.max(4, Math.floor(budget.lanterns * 0.65)) : budget.lanterns;
+    variant === "decline"
+      ? Math.min(budget.lanterns, Math.max(4, Math.floor(budget.lanterns * 0.65)))
+      : budget.lanterns;
   const particleCount =
-    variant === "decline" ? Math.max(6, Math.floor(budget.particles * 0.55)) : budget.particles;
+    variant === "decline"
+      ? Math.min(budget.particles, Math.max(6, Math.floor(budget.particles * 0.55)))
+      : budget.particles;
 
   const lanterns = LANTERN_SPECS.slice(0, lanternCount);
   const particles = PARTICLE_SPECS.slice(0, particleCount);

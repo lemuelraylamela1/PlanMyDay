@@ -11,11 +11,24 @@ import { RoyalEnvelope } from "@/features/invitations/components/fairytale/royal
 import { HeroChapter } from "@/features/invitations/components/fairytale/hero-chapter";
 import { InvitationChapter } from "@/features/invitations/components/fairytale/invitation-chapter";
 import { useChapterScrollTrigger } from "@/features/invitations/components/fairytale/use-chapter-scroll-trigger";
+import {
+  AnimationQualityProvider,
+  useAnimationQuality,
+} from "@/features/invitations/components/fairytale/animation-quality/animation-quality-provider";
 import type {
   InvitationGuest,
   InvitationResponse,
   InvitationWedding,
 } from "@/features/invitations/components/fairytale/types";
+
+const AnimationQualityDebug =
+  process.env.NODE_ENV === "production"
+    ? null
+    : React.lazy(() =>
+        import("@/features/invitations/components/fairytale/animation-quality/animation-quality-debug").then(
+          (m) => ({ default: m.AnimationQualityDebug }),
+        ),
+      );
 
 const VideoChapter = React.lazy(() =>
   import("@/features/invitations/components/fairytale/video-chapter").then((m) => ({
@@ -51,26 +64,37 @@ interface Props {
 }
 
 export function InvitationExperience(props: Props) {
+  const [phase, setPhase] = React.useState<Phase>("sealed");
   return (
-    <InvitationAudioProvider>
-      <InvitationExperienceInner {...props} />
-    </InvitationAudioProvider>
+    <AnimationQualityProvider transitionActive={phase === "opening" || phase === "revealing"}>
+      <InvitationAudioProvider>
+        <InvitationExperienceInner {...props} phase={phase} setPhase={setPhase} />
+      </InvitationAudioProvider>
+    </AnimationQualityProvider>
   );
 }
 
 type Phase = "sealed" | "opening" | "revealing" | "revealed";
 
-function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
-  const [phase, setPhase] = React.useState<Phase>("sealed");
+function InvitationExperienceInner({
+  token,
+  guest,
+  response,
+  wedding,
+  phase,
+  setPhase,
+}: Props & { phase: Phase; setPhase: (phase: Phase) => void }) {
   const [loadRest, setLoadRest] = React.useState(false);
   const storyRef = React.useRef<HTMLElement>(null);
   const audio = useInvitationAudio();
+  const { quality } = useAnimationQuality();
   const opened = phase === "revealed";
   const storyMounted = phase !== "sealed";
 
   useChapterScrollTrigger(storyRef, {
     enabled: opened,
     chapterVersion: loadRest ? 1 : 0,
+    quality,
   });
 
   const handleOpenStart = React.useCallback(() => {
@@ -78,7 +102,7 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
     void audio?.unlock().then(() => audio?.startTransition());
     window.scrollTo({ top: 0 });
     setPhase("opening");
-  }, [audio]);
+  }, [audio, setPhase]);
 
   const handleSealBreak = React.useCallback(() => {
     // Ensure magical bed is running even if unlock was slow.
@@ -87,14 +111,14 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
 
   const handleRevealStart = React.useCallback(() => {
     setPhase("revealing");
-  }, []);
+  }, [setPhase]);
 
   const handleOpened = React.useCallback(() => {
     setPhase("revealed");
     window.scrollTo({ top: 0 });
     // Start "I See the Light" only once the envelope is gone and the site is fully shown.
     void audio?.start();
-  }, [audio]);
+  }, [audio, setPhase]);
 
   const transitioning = phase === "opening" || phase === "revealing";
 
@@ -134,6 +158,7 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
     <MotionConfig reducedMotion="user">
       <main
         ref={storyRef}
+        data-anim-quality={quality}
         className="relative min-h-[100svh] overflow-x-clip bg-[#22243A] text-[#4a3236]"
       >
         {storyMounted && (
@@ -167,6 +192,11 @@ function InvitationExperienceInner({ token, guest, response, wedding }: Props) {
           </div>
         )}
       </main>
+      {AnimationQualityDebug && (
+        <React.Suspense fallback={null}>
+          <AnimationQualityDebug />
+        </React.Suspense>
+      )}
     </MotionConfig>
   );
 }
