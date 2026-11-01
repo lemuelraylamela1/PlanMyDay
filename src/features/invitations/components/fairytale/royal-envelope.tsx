@@ -128,7 +128,6 @@ export function RoyalEnvelope({
   const sealGlowRef = React.useRef<HTMLSpanElement>(null);
   const sealFlareRef = React.useRef<HTMLSpanElement>(null);
   const haloRef = React.useRef<HTMLSpanElement>(null);
-  const sheetGlowRef = React.useRef<HTMLSpanElement>(null);
   const ctaRef = React.useRef<HTMLDivElement>(null);
 
   const { contextSafe } = useGSAP(
@@ -416,7 +415,9 @@ export function RoyalEnvelope({
       },
       0.15,
     );
-    tl.to(lanterns, { y: "-=18", duration: T.dissolve, ease: "none" }, 0);
+    if (!compact) {
+      tl.to(lanterns, { y: "-=18", duration: T.dissolve, ease: "none" }, 0);
+    }
 
     // 1 – 3s: the seal breaks, stars surge, and the scroll unrolls.
     tl.call(() => onSealBreak?.(), undefined, T.sealBreak);
@@ -456,12 +457,14 @@ export function RoyalEnvelope({
 
     tl.to(shadow, { opacity: 0.25, duration: 0.8 }, T.unroll);
     tl.to(sheetShadow, { opacity: 1, duration: 0.6 }, T.unroll);
-    // Rolled core yields to the invitation sheet growing between the two rods.
+    // Rolled core yields as the sheet grows — fade first so the rods never
+    // sit stacked with a blank strip between them (common mobile glitch).
     if (rolledCoreRef.current) {
+      tl.to(rolledCoreRef.current, { opacity: 0, duration: 0.35, ease: "power1.in" }, T.unroll);
       tl.to(
         rolledCoreRef.current,
-        { opacity: 0, height: 0, marginTop: 0, marginBottom: 0, duration: 0.45, ease: "power1.in" },
-        T.unroll,
+        { height: 0, marginTop: 0, marginBottom: 0, duration: 0.9, ease: "power1.in" },
+        T.unroll + 0.2,
       );
     }
     tl.to(sheet, { height: openHeight, duration: 2.6, ease: "power2.inOut" }, T.unroll);
@@ -480,13 +483,20 @@ export function RoyalEnvelope({
     );
     tl.set(sheet, { height: "auto" }, T.text);
 
-    // Invitation lines fade in; card then holds for reading until T.dissolve.
+    // Start text while the sheet is still unrolling so the parchment never sits blank.
     lines.forEach((line, i) => {
-      tl.to(line, { opacity: 1, y: 0, duration: 1.1, ease: "power2.out" }, T.text + i * 0.28);
+      tl.to(
+        line,
+        { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" },
+        T.unroll + 0.85 + i * 0.22,
+      );
     });
     tl.to(scroll, { scale: 1.04, duration: 3.2, ease: "sine.inOut" }, T.text);
 
-    // Card → star particles → slow fade into the website.
+    // Card → star particles → soft dissolve into the website.
+    // On phones a cream rectangle fading over the castle reads as a glitch, so
+    // parchment and text leave first; only a soft oval glow remains, then stars.
+    const paper = q<HTMLElement>("[data-sheet-paper]");
     const body = sheetBodyRef.current ?? sheet;
     const sheetRect = body.getBoundingClientRect();
     const scrollRect = scroll.getBoundingClientRect();
@@ -494,8 +504,10 @@ export function RoyalEnvelope({
     const sheetCy = sheetRect.top + sheetRect.height / 2 - (scrollRect.top + scrollRect.height / 2);
     const sheetW = sheetRect.width;
     const sheetH = sheetRect.height;
+    // Compact screens clear the card a beat earlier so nothing rectangular
+    // is still visible when the website starts showing through.
+    const clearBy = compact ? T.reveal - 0.85 : T.reveal - 0.45;
 
-    // Seed stars across the card face so the parchment can "become" them.
     stars.forEach((el, i) => {
       const u = (i * 0.6180339887) % 1;
       const v = (i * 0.3819660113 + 0.13) % 1;
@@ -514,49 +526,59 @@ export function RoyalEnvelope({
       );
     });
 
-    // Stars slowly appear over the card.
     tl.to(
       stars,
       {
         opacity: 0.95,
         scale: 1.15,
-        duration: 2.6,
-        stagger: { each: 0.03, from: "center" },
+        duration: 2.2,
+        stagger: { each: 0.025, from: "center" },
         ease: "power2.out",
       },
       T.dissolve,
     );
 
-    // Card softens into light, then vanishes — leaving only stars.
-    if (sheetGlowRef.current) {
-      tl.to(sheetGlowRef.current, { opacity: 0.85, duration: 1.8, ease: "power2.out" }, T.dissolve + 0.5);
+    tl.to(paper, { opacity: 0, duration: 1.15, ease: "power2.inOut" }, T.dissolve + 0.25);
+    tl.to(lines, { opacity: 0, duration: 0.9, ease: "power1.in", stagger: 0.03 }, T.dissolve + 0.35);
+    tl.to(sheetShadow, { opacity: 0, duration: 0.8 }, T.dissolve + 0.3);
+    tl.to(shadow, { opacity: 0, duration: 0.8 }, T.dissolve + 0.3);
+    if (haloRef.current) {
+      tl.to(haloRef.current, { opacity: 0, duration: 1.0, ease: "power1.in" }, T.dissolve + 0.4);
     }
-    tl.to(sheetShadow, { opacity: 0, duration: 1.2 }, T.dissolve + 0.6);
-    tl.to(shadow, { opacity: 0, duration: 1.2 }, T.dissolve + 0.6);
-    tl.to(
-      [sheet, ...(haloRef.current ? [haloRef.current] : [])],
-      { opacity: 0, duration: 2.8, ease: "power2.inOut" },
-      T.dissolve + 1.0,
-    );
-    if (sheetGlowRef.current) {
-      tl.to(sheetGlowRef.current, { opacity: 0, duration: 1.4, ease: "power1.in" }, T.dissolve + 2.4);
-    }
-    tl.to(blurLayer, { opacity: 0, duration: 2.6, ease: "power1.inOut" }, T.dissolve + 0.9);
-    tl.to(scrim, { opacity: 0.15, duration: 2.8 }, T.dissolve + 0.9);
-    tl.to(camera, { scale: 1, duration: 5.0, ease: "power2.out" }, T.dissolve);
-    tl.to(
-      lanterns,
-      {
-        y: `-=${vh * 0.2}`,
-        opacity: 0.85,
-        duration: 5.0,
-        ease: "sine.out",
-        stagger: { each: 0.05, from: "random" },
-      },
-      T.dissolve + 0.5,
-    );
 
-    // Stars drift gently, then slowly fade as the website comes through.
+    // After parchment is gone, fade the empty sheet shell.
+    tl.to(
+      sheet,
+      {
+        opacity: 0,
+        duration: Math.max(0.45, clearBy - (T.dissolve + 0.85)),
+        ease: "power2.in",
+      },
+      T.dissolve + 0.85,
+    );
+    // Guarantee nothing rectangular remains when the website starts showing through.
+    tl.set(sheet, { visibility: "hidden" }, clearBy);
+
+    tl.to(blurLayer, { opacity: 0, duration: 2.2, ease: "power1.inOut" }, T.dissolve + 0.7);
+    tl.to(scrim, { opacity: 0.15, duration: 2.4 }, T.dissolve + 0.7);
+    tl.to(camera, { scale: 1, duration: compact ? 3.4 : 4.6, ease: "power2.out" }, T.dissolve);
+    if (compact) {
+      // Phones: quiet fade instead of drifting every lantern during the dissolve.
+      tl.to(lanterns, { opacity: 0.55, duration: 2.2, ease: "power1.inOut" }, T.dissolve + 0.3);
+    } else {
+      tl.to(
+        lanterns,
+        {
+          y: `-=${vh * 0.2}`,
+          opacity: 0.85,
+          duration: 4.6,
+          ease: "sine.out",
+          stagger: { each: 0.05, from: "random" },
+        },
+        T.dissolve + 0.4,
+      );
+    }
+
     stars.forEach((el, i) => {
       const angle = Number(el.dataset.angle);
       const drift = vmax * (0.18 + (i % 6) * 0.04);
@@ -565,18 +587,18 @@ export function RoyalEnvelope({
         {
           x: `+=${Math.cos(angle) * drift}`,
           y: `+=${Math.sin(angle) * drift - drift * 0.2}`,
-          duration: 4.2,
+          duration: 3.8,
           ease: "sine.out",
         },
-        T.dissolve + 1.8,
+        T.dissolve + 1.4,
       );
     });
 
     tl.call(() => setSkippable(false), undefined, T.skipTo);
     tl.call(() => onRevealStart?.(), undefined, T.reveal);
 
-    // Soft full-scene fade (no hard radial cut) into the website.
-    tl.to(stars, { opacity: 0, scale: 0.4, duration: 3.6, ease: "power1.inOut", stagger: 0.015 }, T.reveal);
+    // Soft full-scene fade into the website.
+    tl.to(stars, { opacity: 0, scale: 0.4, duration: 3.2, ease: "power1.inOut", stagger: 0.015 }, T.reveal);
     tl.to(lanterns, { opacity: 0, duration: 3.4, ease: "power1.inOut" }, T.reveal + 0.2);
     tl.to(root, { opacity: 0, duration: 4.2, ease: "power2.inOut" }, T.reveal + 0.15);
     burstDust(
@@ -697,18 +719,8 @@ export function RoyalEnvelope({
                     className="pointer-events-none absolute inset-0 opacity-0 shadow-[0_26px_60px_rgba(0,0,0,0.5)]"
                   />
                   <SheetFace guestName={guestName} coupleNames={coupleNames} dateLabel={dateLabel} />
-                  <span
-                    ref={sheetGlowRef}
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 z-20 opacity-0"
-                    style={{
-                      backgroundImage:
-                        "radial-gradient(ellipse 70% 60% at 50% 50%, #FFF8E8 0%, rgba(255,230,170,0.92) 42%, rgba(255,214,140,0.55) 68%, transparent 85%)",
-                    }}
-                  />
                 </div>
               </div>
-
               <ScrollRoll ref={rollBottomRef} position="bottom" />
 
               {/* Seal sits on the closed cylinder. */}
@@ -857,15 +869,24 @@ function SheetFace({
   dateLabel: string | null;
 }) {
   return (
-    <div
-      className="relative min-h-[min(18rem,50svh)] w-full overflow-hidden sm:min-h-[20rem]"
-      style={{
-        backgroundImage: parchmentBackground,
-        boxShadow: "inset 0 0 50px rgba(139,98,48,0.18), inset 0 1px 0 rgba(255,255,255,0.35)",
-      }}
-    >
+    <div className="relative min-h-[min(18rem,50svh)] w-full overflow-hidden sm:min-h-[20rem]">
+      {/*
+        Paper layers are separate from the text so the dissolve can fade the
+        cream rectangle away before the website reveal — otherwise mobile shows
+        a floating parchment blotch over the castle.
+      */}
       <span
         aria-hidden
+        data-sheet-paper
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: parchmentBackground,
+          boxShadow: "inset 0 0 50px rgba(139,98,48,0.18), inset 0 1px 0 rgba(255,255,255,0.35)",
+        }}
+      />
+      <span
+        aria-hidden
+        data-sheet-paper
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
@@ -874,11 +895,20 @@ function SheetFace({
       />
       <span
         aria-hidden
+        data-sheet-paper
         className="absolute inset-0 opacity-[0.05] mix-blend-multiply"
         style={{ backgroundImage: grainOverlay }}
       />
-      <span aria-hidden className="absolute inset-2.5 border border-[#C9A66B]/45 sm:inset-3" />
-      <span aria-hidden className="absolute inset-4 border border-[#C9A66B]/20 sm:inset-[1.125rem]" />
+      <span
+        aria-hidden
+        data-sheet-paper
+        className="absolute inset-2.5 border border-[#C9A66B]/45 sm:inset-3"
+      />
+      <span
+        aria-hidden
+        data-sheet-paper
+        className="absolute inset-4 border border-[#C9A66B]/20 sm:inset-[1.125rem]"
+      />
 
       <div className="relative flex h-full flex-col items-center justify-center px-6 text-center sm:px-12">
         <span data-sheet-line className="block">
