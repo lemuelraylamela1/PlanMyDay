@@ -457,31 +457,42 @@ export function RoyalEnvelope({
 
     tl.to(shadow, { opacity: 0.25, duration: 0.8 }, T.unroll);
     tl.to(sheetShadow, { opacity: 1, duration: 0.6 }, T.unroll);
-    // Rolled core yields as the sheet grows — fade first so the rods never
-    // sit stacked with a blank strip between them (common mobile glitch).
+
+    // Opaque parchment fill while height animates — stops the castle showing
+    // through a hollow sheet on mobile WebViews.
+    gsap.set(sheet, { backgroundColor: "#fcf5e6" });
+
+    // Grow the sheet first; only then collapse the rolled core so the rods
+    // never sit stacked with a blank gap (the mid-open glitch on phones).
+    tl.to(sheet, {
+      height: openHeight,
+      duration: compact ? 2.0 : 2.6,
+      ease: "power2.inOut",
+      // Height tweens on Android WebViews jank less without a 3D layer.
+      force3D: false,
+    }, T.unroll);
     if (rolledCoreRef.current) {
-      tl.to(rolledCoreRef.current, { opacity: 0, duration: 0.35, ease: "power1.in" }, T.unroll);
       tl.to(
         rolledCoreRef.current,
-        { height: 0, marginTop: 0, marginBottom: 0, duration: 0.9, ease: "power1.in" },
-        T.unroll + 0.2,
+        { opacity: 0, duration: 0.4, ease: "power1.in" },
+        T.unroll + (compact ? 0.55 : 0.7),
+      );
+      tl.to(
+        rolledCoreRef.current,
+        { height: 0, marginTop: 0, marginBottom: 0, duration: 0.55, ease: "power1.in" },
+        T.unroll + (compact ? 0.7 : 0.9),
       );
     }
-    tl.to(sheet, { height: openHeight, duration: 2.6, ease: "power2.inOut" }, T.unroll);
+    // No yellow halo wash behind the opening scroll — it reads as a glitch on mobile.
     if (haloRef.current) {
-      tl.fromTo(
-        haloRef.current,
-        { opacity: 0, scale: 0.85 },
-        { opacity: 1, scale: 1.1, duration: 2.0, ease: "power2.out" },
-        T.unroll + 0.4,
-      );
+      gsap.set(haloRef.current, { opacity: 0 });
     }
     tl.to(
       [rollTopRef.current, rollBottomRef.current],
       { opacity: 0, scaleY: 0.6, duration: 0.8, ease: "power1.in" },
       T.text - 0.35,
     );
-    tl.set(sheet, { height: "auto" }, T.text);
+    tl.set(sheet, { height: "auto", backgroundColor: "transparent" }, T.text);
 
     // Start text while the sheet is still unrolling so the parchment never sits blank.
     lines.forEach((line, i) => {
@@ -810,6 +821,7 @@ export function RoyalEnvelope({
                 "hover:border-[#F3E7D3] hover:bg-[#DDBF8D]/28 hover:text-[#FFFDF8]",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E8D4A8] focus-visible:ring-offset-4 focus-visible:ring-offset-[#1d1a33]",
                 "disabled:cursor-wait disabled:opacity-50",
+                "[-webkit-tap-highlight-color:transparent]",
               )}
             >
               Open Invitation
@@ -880,6 +892,9 @@ function SheetFace({
         data-sheet-paper
         className="pointer-events-none absolute inset-0"
         style={{
+          // Solid fill first so mobile WebViews never show the castle through
+          // the sheet while the parchment image is compositing.
+          backgroundColor: "#fcf5e6",
           backgroundImage: parchmentBackground,
           boxShadow: "inset 0 0 50px rgba(139,98,48,0.18), inset 0 1px 0 rgba(255,255,255,0.35)",
         }}

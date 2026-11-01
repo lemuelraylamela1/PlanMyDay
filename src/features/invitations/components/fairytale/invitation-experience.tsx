@@ -85,17 +85,30 @@ function InvitationExperienceInner({
   setPhase,
 }: Props & { phase: Phase; setPhase: (phase: Phase) => void }) {
   const [loadRest, setLoadRest] = React.useState(false);
+  const [storyMounted, setStoryMounted] = React.useState(false);
   const storyRef = React.useRef<HTMLElement>(null);
   const audio = useInvitationAudio();
   const { quality } = useAnimationQuality();
   const opened = phase === "revealed";
-  const storyMounted = phase !== "sealed";
+  const storyVisible = phase === "revealing" || phase === "revealed";
 
   useChapterScrollTrigger(storyRef, {
     enabled: opened,
     chapterVersion: loadRest ? 1 : 0,
     quality,
   });
+
+  // Warm the website after the scroll has finished unrolling — never on the
+  // Open click itself, which stalls GSAP mid-animation on phones.
+  React.useEffect(() => {
+    if (phase !== "opening") return;
+    const id = window.setTimeout(() => setStoryMounted(true), 4500);
+    return () => window.clearTimeout(id);
+  }, [phase]);
+
+  React.useEffect(() => {
+    if (storyVisible) setStoryMounted(true);
+  }, [storyVisible]);
 
   const handleOpenStart = React.useCallback(() => {
     // Unlock + start the magical bed on the same gesture as Open Invitation.
@@ -162,8 +175,14 @@ function InvitationExperienceInner({
         className="relative min-h-[100svh] overflow-x-clip bg-[#22243A] text-[#4a3236]"
       >
         {storyMounted && (
-          <div key="story" className="bg-[#FFFDF8]" inert={!opened} aria-hidden={!opened}>
-            <HeroChapter wedding={wedding} entered={phase === "revealing" || opened} />
+          <div
+            key="story"
+            className="bg-[#FFFDF8]"
+            inert={!opened}
+            aria-hidden={!storyVisible}
+            style={storyVisible ? undefined : { visibility: "hidden", pointerEvents: "none" }}
+          >
+            <HeroChapter wedding={wedding} entered={storyVisible} />
             <InvitationChapter wedding={wedding} />
             {loadRest && (
               <React.Suspense fallback={null}>
