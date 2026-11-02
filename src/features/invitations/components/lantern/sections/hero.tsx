@@ -173,28 +173,8 @@ export function Hero() {
         <motion.p
           initial={false}
           animate={mounted ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 1, delay: 0.8 }}
-          className="font-serif text-lg italic text-blush/95 sm:text-2xl"
-        >
-          {wedding.event.dateLong.toLowerCase().startsWith(wedding.event.dayOfWeek.toLowerCase())
-            ? wedding.event.dateLong
-            : `${wedding.event.dayOfWeek}, ${wedding.event.dateLong}`}
-        </motion.p>
-
-        <motion.p
-          initial={false}
-          animate={mounted ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 1, delay: 0.9 }}
-          className="mt-2 font-sans text-[11px] uppercase tracking-[0.22em] text-cream/70 sm:text-sm sm:tracking-[0.3em]"
-        >
-          {wedding.event.venue.name} &middot; {wedding.event.venue.city}
-        </motion.p>
-
-        <motion.p
-          initial={false}
-          animate={mounted ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 1, delay: 1 }}
-          className="mx-auto mt-5 max-w-2xl px-1 font-serif text-[0.95rem] leading-7 text-cream/78 sm:mt-6 sm:text-lg sm:leading-8"
+          transition={{ duration: 1, delay: 0.85 }}
+          className="mx-auto mt-1 max-w-2xl px-1 font-serif text-[0.95rem] leading-7 text-cream/78 sm:text-lg sm:leading-8"
         >
           {wedding.hero.closing}
         </motion.p>

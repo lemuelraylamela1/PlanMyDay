@@ -141,8 +141,9 @@ export function InvitationsManager({ guests }: { guests: InviteGuestRow[] }) {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Share this secure link or QR code. It identifies the guest by a private token — no
-                personal details are exposed in the URL.
+                Share this secure link or QR code. Links look like
+                /invite/lemuelandgraziellewedding/guest-name/… The guest name is for sharing; access
+                still requires the private token.
               </p>
             </div>
           )}

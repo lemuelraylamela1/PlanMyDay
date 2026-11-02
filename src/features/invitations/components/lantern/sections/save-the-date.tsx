@@ -2,31 +2,80 @@
 
 import * as React from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { Play } from "lucide-react";
+import { Maximize2, Minimize2, Play } from "lucide-react";
 
 import { SAVE_THE_DATE_VIDEO } from "../media";
 import { MagicDust } from "../effects/magic-dust";
+import { useExperience } from "../experience/experience-provider";
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
+
+type VideoWithWebkit = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+  webkitDisplayingFullscreen?: boolean;
+};
+
+function getFullscreenElement() {
+  const doc = document as Document & {
+    webkitFullscreenElement?: Element | null;
+  };
+  return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+}
 
 /**
  * Save-the-date film after the quote — exact viewport height, full-bleed 2K 16:9.
  */
 export function SaveTheDate() {
   const reduceMotion = useReducedMotion();
+  const { setAmbientSuspended } = useExperience();
   const sectionRef = React.useRef<HTMLElement>(null);
+  const stageRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const inView = useInView(sectionRef, { amount: 0.4 });
   const [playing, setPlaying] = React.useState(false);
+  const [fullscreen, setFullscreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const sync = () => {
+      const video = videoRef.current as VideoWithWebkit | null;
+      const stage = stageRef.current;
+      const active = getFullscreenElement();
+      const webkitFs = Boolean(video?.webkitDisplayingFullscreen);
+      setFullscreen(
+        webkitFs ||
+          (active != null &&
+            (active === stage || active === video || stage?.contains(active) === true)),
+      );
+    };
+
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    const video = videoRef.current as VideoWithWebkit | null;
+    video?.addEventListener("webkitbeginfullscreen", sync);
+    video?.addEventListener("webkitendfullscreen", sync);
+    sync();
+
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+      video?.removeEventListener("webkitbeginfullscreen", sync);
+      video?.removeEventListener("webkitendfullscreen", sync);
+    };
+  }, []);
 
   React.useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || fullscreen) return;
     if (!inView && !video.paused) {
       video.pause();
       setPlaying(false);
+      setAmbientSuspended(false);
     }
-  }, [inView]);
+  }, [inView, fullscreen, setAmbientSuspended]);
+
+  React.useEffect(() => {
+    return () => setAmbientSuspended(false);
+  }, [setAmbientSuspended]);
 
   async function togglePlayback() {
     const video = videoRef.current;
@@ -36,14 +85,73 @@ export function SaveTheDate() {
         video.muted = false;
         await video.play();
         setPlaying(true);
+        setAmbientSuspended(true);
       } catch {
         video.muted = true;
         await video.play();
         setPlaying(true);
+        setAmbientSuspended(true);
       }
     } else {
       video.pause();
       setPlaying(false);
+      setAmbientSuspended(false);
+    }
+  }
+
+  function handleVideoPlay() {
+    setPlaying(true);
+    setAmbientSuspended(true);
+  }
+
+  function handleVideoPause() {
+    setPlaying(false);
+    setAmbientSuspended(false);
+  }
+
+  function handleVideoEnded() {
+    setPlaying(false);
+    setAmbientSuspended(false);
+  }
+
+  async function toggleFullscreen() {
+    const stage = stageRef.current;
+    const video = videoRef.current as VideoWithWebkit | null;
+    if (!stage || !video) return;
+
+    try {
+      if (fullscreen) {
+        const doc = document as Document & {
+          webkitExitFullscreen?: () => Promise<void> | void;
+        };
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+        setFullscreen(false);
+        return;
+      }
+
+      if (stage.requestFullscreen) {
+        await stage.requestFullscreen();
+        setFullscreen(true);
+        return;
+      }
+
+      const stageWebkit = stage as HTMLDivElement & {
+        webkitRequestFullscreen?: () => Promise<void> | void;
+      };
+      if (stageWebkit.webkitRequestFullscreen) {
+        await stageWebkit.webkitRequestFullscreen();
+        setFullscreen(true);
+        return;
+      }
+
+      // iOS Safari: fullscreen the video element itself
+      if (typeof video.webkitEnterFullscreen === "function") {
+        video.webkitEnterFullscreen();
+        setFullscreen(true);
+      }
+    } catch {
+      // Fullscreen can be blocked without a user gesture or on restricted browsers.
     }
   }
 
@@ -98,7 +206,10 @@ export function SaveTheDate() {
         transition={{ duration: 0.9, ease: LUXURY, delay: 0.12 }}
         className="relative z-10 mx-auto mt-4 min-h-0 w-full flex-1 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:mt-6 sm:px-6 lg:px-10"
       >
-        <div className="relative h-full w-full overflow-hidden">
+        <div
+          ref={stageRef}
+          className="relative h-full w-full overflow-hidden bg-night"
+        >
           <video
             ref={videoRef}
             className="absolute inset-0 h-full w-full object-contain object-center"
@@ -108,9 +219,9 @@ export function SaveTheDate() {
             controls={false}
             width={SAVE_THE_DATE_VIDEO.width}
             height={SAVE_THE_DATE_VIDEO.height}
-            onEnded={() => setPlaying(false)}
-            onPause={() => setPlaying(false)}
-            onPlay={() => setPlaying(true)}
+            onEnded={handleVideoEnded}
+            onPause={handleVideoPause}
+            onPlay={handleVideoPlay}
           >
             <track kind="captions" />
           </video>
@@ -132,6 +243,22 @@ export function SaveTheDate() {
               <span className="flex h-16 w-16 items-center justify-center rounded-full border border-lantern/60 bg-night/70 text-lantern shadow-[0_0_40px_rgba(244,196,68,0.35)] backdrop-blur-md sm:h-20 sm:w-20">
                 <Play className="h-7 w-7 translate-x-0.5 fill-current" />
               </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              void toggleFullscreen();
+            }}
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-lantern/45 bg-night/70 text-lantern backdrop-blur-md transition hover:border-lantern/70 hover:bg-night/85 sm:bottom-4 sm:right-4 sm:h-11 sm:w-11"
+          >
+            {fullscreen ? (
+              <Minimize2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <Maximize2 className="h-4 w-4 sm:h-5 sm:w-5" />
             )}
           </button>
         </div>

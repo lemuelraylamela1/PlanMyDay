@@ -148,16 +148,6 @@ export function PortraitHero() {
             : ""}
         </motion.p>
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: LUXURY, delay: 0.28 }}
-          className="mt-5 max-w-sm font-sans text-[11px] uppercase tracking-[0.2em] text-cream/65 sm:mt-6 sm:text-xs sm:tracking-[0.24em]"
-        >
-          Motif · {wedding.event.dressCode.guests}
-        </motion.p>
-
         <div className="mt-8 flex items-center gap-2" aria-hidden>
           {portraitHeroImages.map((image, index) => (
             <span
@@ -173,9 +163,12 @@ export function PortraitHero() {
 
       <a
         href="#quote"
-        aria-label="Continue"
-        className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 text-cream/80"
+        aria-label="Scroll down to continue"
+        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5 text-cream/80"
       >
+        <span className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-cream/70 sm:text-[10px] sm:tracking-[0.32em]">
+          Scroll down to continue
+        </span>
         <motion.span
           animate={isMobile || reduceMotion ? undefined : { y: [0, 7, 0] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}

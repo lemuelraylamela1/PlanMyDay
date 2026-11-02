@@ -62,14 +62,57 @@ export const weddingDefaults = {
     venue: {
       name: "Fernwood Gardens",
       city: "Tagaytay",
-      address: "Fernwood Gardens, Tagaytay, Philippines",
+      address: "Neogan, Tagaytay City, Cavite, Philippines",
       mapsQuery: "Fernwood Gardens Tagaytay",
+      mapsUrl:
+        "https://www.google.com/maps/search/?api=1&query=Fernwood%20Gardens%20Tagaytay",
+      imageSrc: "/venue/fernwood-gardens.jpg",
+      imageAlt: "The grand Fernwood Gardens entrance in Tagaytay",
+      parkingNote: "Lots of parking spaces available on site",
     },
     dressCode: {
-      title: "Dress Code",
-      guests: "All shades of pink and white",
-      principalSponsors: "Barong and Filipiniana for Ninongs and Ninangs",
+      title: "RSVP Attire Guide",
+      eyebrow: "Dress Code",
+      guests: "Any shades of pink · formal or semi-formal",
       note: "We would be honored to see our motif come to life through you.",
+      restriction: "Strictly no white",
+      roles: [
+        {
+          role: "Bridesmaids",
+          attire: "Light pink",
+          swatch: "#f5c0cf",
+          imageSrc: "/attire/bridesmaids.jpg",
+          imageAlt: "Bridesmaids in light pink gowns",
+        },
+        {
+          role: "Groomsmen",
+          attire: "Cream with a pink tie",
+          swatch: "#f4ead8",
+          imageSrc: "/attire/groomsmen.jpg",
+          imageAlt: "Groomsmen in cream suits with pink ties",
+        },
+        {
+          role: "Family",
+          attire: "Darker pink · barong for gentlemen",
+          swatch: "#c0607a",
+          imageSrc: "/attire/family-barong.jpg",
+          imageAlt: "Family in darker pink with gentlemen in barong",
+        },
+        {
+          role: "Sponsors",
+          attire: "Cream",
+          swatch: "#efe2c9",
+          imageSrc: "/attire/sponsors.jpg",
+          imageAlt: "Sponsors in cream formal wear",
+        },
+        {
+          role: "Guests",
+          attire: "Any shades of pink · formal or semi-formal",
+          swatch: "#e8829a",
+          imageSrc: "/attire/guests-v3.jpg",
+          imageAlt: "Guests in soft pink formal or semi-formal attire",
+        },
+      ],
     },
   },
 
@@ -172,22 +215,17 @@ export const weddingDefaults = {
       {
         question: "What is the dress code?",
         answer:
-          "We invite our guests to wear all shades of pink and white. Our Ninongs and Ninangs are requested to wear Barong and Filipiniana.",
+          "Bridesmaids wear light pink, groomsmen wear cream with a pink tie, family wears darker pink with gentlemen in barong, and sponsors wear cream. Guests may wear any shade of pink in formal or semi-formal attire. Strictly no white.",
       },
       {
-        question: "Can I bring a plus one?",
+        question: "Can I bring a plus one or children?",
         answer:
-          "Due to limited seating, we can only accommodate the guests named on your invitation. Thank you for understanding.",
+          "Strictly no plus ones and no children. We can only accommodate the guests named on your invitation. Thank you for understanding.",
       },
       {
         question: "Will the ceremony and reception be at the same venue?",
         answer:
           "Yes. Both the ceremony and reception will be held at Fernwood Gardens in Tagaytay.",
-      },
-      {
-        question: "Are children welcome?",
-        answer:
-          "We love your little ones dearly. Please reach out to us if you plan to bring children so we can prepare accordingly.",
       },
       {
         question: "Is there parking available?",

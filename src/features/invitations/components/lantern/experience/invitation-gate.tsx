@@ -59,7 +59,7 @@ function ScrollRod({ position }: { position: "top" | "bottom" }) {
 }
 
 export function InvitationGate() {
-  const { guestName, open, reducedMotion } = useExperience();
+  const { guestName, open, beginMusic, reducedMotion } = useExperience();
   const mounted = useMounted();
   const isMobile = useIsMobile();
   const wedding = useLanternContent();
@@ -73,13 +73,15 @@ export function InvitationGate() {
 
   const handleOpen = React.useCallback(() => {
     if (dissolving) return;
+    // Start "I See the Light" in the same user gesture as the click.
+    beginMusic();
     if (reducedMotion) {
       open();
       return;
     }
     setDissolving(true);
     window.setTimeout(open, 280);
-  }, [dissolving, reducedMotion, open]);
+  }, [dissolving, reducedMotion, open, beginMusic]);
 
   const contentActive = unrolled && !dissolving;
 

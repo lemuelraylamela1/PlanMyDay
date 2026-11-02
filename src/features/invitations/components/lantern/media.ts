@@ -45,6 +45,36 @@ export const galleryImages: GalleryImage[] = [
   { src: "/proposal-photos/hero-10.jpg", caption: "The journey" },
 ];
 
+/** Venue photo for wedding details. */
+export const VENUE_IMAGE = {
+  src: "/venue/fernwood-gardens.jpg",
+  alt: "The grand Fernwood Gardens entrance in Tagaytay",
+} as const;
+
+/** 3D attire guide illustrations by wedding party role. */
+export const attireGuideImages = {
+  bridesmaids: {
+    src: "/attire/bridesmaids.jpg",
+    alt: "Bridesmaids in light pink gowns",
+  },
+  groomsmen: {
+    src: "/attire/groomsmen.jpg",
+    alt: "Groomsmen in cream suits with pink ties",
+  },
+  family: {
+    src: "/attire/family-barong.jpg",
+    alt: "Family in darker pink with gentlemen in barong",
+  },
+  sponsors: {
+    src: "/attire/sponsors.jpg",
+    alt: "Sponsors in cream formal wear",
+  },
+  guests: {
+    src: "/attire/guests-v3.jpg",
+    alt: "Guests in soft pink formal or semi-formal attire",
+  },
+} as const;
+
 /** Ambient background music path. */
 export const AMBIENT_MUSIC_SRC = "/proposal-audio/i-see-the-light.mp3";
 

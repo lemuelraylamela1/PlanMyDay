@@ -7,72 +7,127 @@ import { useExperience } from "./experience-provider";
 import { AMBIENT_MUSIC_SRC } from "../media";
 
 const TARGET_VOLUME = 0.58;
-const FADE_MS = 5200;
+const FADE_IN_MS = 2200;
+const FADE_OUT_MS = 700;
 
 /**
  * Background music with gentle fade-in and a persistent mute control.
+ * Starts on Open Invitation; suspends while Save the Date plays.
  */
 export function MusicPlayer() {
-  const { musicEnabled, muted, toggleMuted } = useExperience();
+  const {
+    musicEnabled,
+    muted,
+    toggleMuted,
+    ambientSuspended,
+    registerMusicStarter,
+  } = useExperience();
   const audioRef = React.useRef<HTMLAudioElement>(null);
   const fadeRef = React.useRef<number | null>(null);
+  const startedRef = React.useRef(false);
   const [available, setAvailable] = React.useState(true);
 
-  const clearFade = () => {
+  const clearFade = React.useCallback(() => {
     if (fadeRef.current) {
       cancelAnimationFrame(fadeRef.current);
       fadeRef.current = null;
     }
-  };
-
-  const fadeTo = React.useCallback((target: number, duration: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    clearFade();
-    const start = audio.volume;
-    const startTime = performance.now();
-    const step = (now: number) => {
-      const t = Math.min(1, (now - startTime) / duration);
-      const raw = start + (target - start) * t;
-      const clamped = Math.max(0, Math.min(1, raw));
-      audio.volume = clamped;
-      if (t < 1) {
-        fadeRef.current = requestAnimationFrame(step);
-      } else {
-        audio.volume = Math.max(0, Math.min(1, target));
-        fadeRef.current = null;
-      }
-    };
-    fadeRef.current = requestAnimationFrame(step);
   }, []);
 
-  // Begin playback (muted-aware) once the guest opens the invitation.
-  React.useEffect(() => {
+  const fadeTo = React.useCallback(
+    (target: number, duration: number, onDone?: () => void) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      clearFade();
+      const start = audio.volume;
+      const startTime = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - startTime) / duration);
+        const raw = start + (target - start) * t;
+        audio.volume = Math.max(0, Math.min(1, raw));
+        if (t < 1) {
+          fadeRef.current = requestAnimationFrame(step);
+        } else {
+          audio.volume = Math.max(0, Math.min(1, target));
+          fadeRef.current = null;
+          onDone?.();
+        }
+      };
+      fadeRef.current = requestAnimationFrame(step);
+    },
+    [clearFade],
+  );
+
+  const startAmbient = React.useCallback(() => {
     const audio = audioRef.current;
-    if (!audio || !musicEnabled) return;
+    if (!audio) return;
 
     audio.muted = muted;
+    if (!startedRef.current) {
+      audio.currentTime = 0;
+      startedRef.current = true;
+    }
     audio.volume = 0;
+
     const playPromise = audio.play();
     if (playPromise && typeof playPromise.then === "function") {
       playPromise
-        .then(() => fadeTo(TARGET_VOLUME, FADE_MS))
+        .then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS))
         .catch(() => {
           const resume = () => {
             audio
               .play()
-              .then(() => fadeTo(TARGET_VOLUME, FADE_MS))
+              .then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS))
               .catch(() => setAvailable(false));
             window.removeEventListener("pointerdown", resume);
           };
           window.addEventListener("pointerdown", resume, { once: true });
         });
     }
-    return clearFade;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [musicEnabled]);
+  }, [fadeTo, muted]);
 
-  // React to mute toggles.
+  // Register starter so Open Invitation can unlock audio in the same gesture.
+  React.useEffect(() => {
+    registerMusicStarter(startAmbient);
+    return () => registerMusicStarter(null);
+  }, [registerMusicStarter, startAmbient]);
+
+  // Backup start if music becomes enabled without beginMusic (e.g. reduced path).
+  React.useEffect(() => {
+    if (!musicEnabled || startedRef.current || ambientSuspended) return;
+    startAmbient();
+  }, [musicEnabled, ambientSuspended, startAmbient]);
+
+  // Pause ambient while Save the Date (or similar) is playing; resume after.
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !musicEnabled) return;
+
+    if (ambientSuspended) {
+      fadeTo(0, FADE_OUT_MS, () => {
+        audio.pause();
+      });
+      return clearFade;
+    }
+
+    if (audio.paused && startedRef.current) {
+      audio.muted = muted;
+      audio.volume = 0;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise
+          .then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS))
+          .catch(() => {
+            /* ignore — next gesture may unlock */
+          });
+      }
+    } else if (!audio.paused) {
+      fadeTo(TARGET_VOLUME, FADE_IN_MS);
+    }
+
+    return clearFade;
+  }, [ambientSuspended, musicEnabled, muted, fadeTo, clearFade]);
+
   React.useEffect(() => {
     const audio = audioRef.current;
     if (audio) audio.muted = muted;
@@ -81,10 +136,12 @@ export function MusicPlayer() {
   return (
     <>
       <audio
+        id="lantern-ambient-audio"
         ref={audioRef}
         src={AMBIENT_MUSIC_SRC}
         loop
-        preload="none"
+        preload="auto"
+        playsInline
         onError={() => setAvailable(false)}
       />
       <AnimatePresence>
@@ -102,7 +159,7 @@ export function MusicPlayer() {
             aria-pressed={!muted}
             className="invite-fab-br fixed z-[120] flex h-12 w-12 items-center justify-center rounded-full border border-lantern/55 bg-night/75 text-lantern shadow-[0_0_34px_rgba(244,196,68,0.28)] backdrop-blur-md transition-colors hover:bg-dusk sm:h-14 sm:w-14"
           >
-            {!muted && (
+            {!muted && !ambientSuspended && (
               <motion.span
                 aria-hidden
                 className="absolute inset-0 rounded-full border border-champagne-gold/40"
@@ -120,9 +177,8 @@ export function MusicPlayer() {
           </motion.button>
         )}
       </AnimatePresence>
-      {/* tiny hint icon for the now-playing track */}
       <AnimatePresence>
-        {musicEnabled && available && !muted && (
+        {musicEnabled && available && !muted && !ambientSuspended && (
           <motion.div
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}

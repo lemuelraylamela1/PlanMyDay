@@ -5,16 +5,24 @@ import QRCode from "qrcode";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { generateToken, hashToken } from "@/lib/tokens";
+import { formatGuestDisplayName } from "@/features/guests/display-name";
+import { slugifyGuestName, WEDDING_INVITE_SLUG } from "@/features/invitations/invite-path";
 
-export function invitationUrl(token: string) {
-  // Guest invites live on PlanMyDay (`/invite/[token]`), not the separate
+export function invitationUrl(token: string, guestName?: string | null) {
+  // Guest invites live on PlanMyDay (`/invite/...`), not the separate
   // RSVP marketing site (which uses `/?token=` and has no /invite route).
   const base = (env.appUrl || env.rsvpAppUrl).replace(/\/+$/, "");
-  const encoded = encodeURIComponent(token);
+  const encodedToken = encodeURIComponent(token);
   if (!env.appUrl && env.isProd) {
     console.error("[PlanMyDay] NEXT_PUBLIC_APP_URL is missing; invite links may be wrong.");
   }
-  return `${base}/invite/${encoded}`;
+
+  if (guestName?.trim()) {
+    const guestSlug = slugifyGuestName(guestName);
+    return `${base}/invite/${WEDDING_INVITE_SLUG}/${guestSlug}/${encodedToken}`;
+  }
+
+  return `${base}/invite/${encodedToken}`;
 }
 
 /**
@@ -25,13 +33,24 @@ export async function issueInvitationToken(weddingId: string, guestId: string) {
   const rawToken = generateToken();
   const tokenHash = hashToken(rawToken);
 
+  const guest = await db.guest.findFirst({
+    where: { id: guestId, weddingId, deletedAt: null },
+    select: {
+      title: true,
+      firstName: true,
+      lastName: true,
+      preferredName: true,
+    },
+  });
+
   await db.invitationToken.upsert({
     where: { guestId },
     create: { weddingId, guestId, tokenHash },
     update: { tokenHash, revokedAt: null, openedAt: null },
   });
 
-  return { token: rawToken, url: invitationUrl(rawToken) };
+  const guestName = guest ? formatGuestDisplayName(guest) : null;
+  return { token: rawToken, url: invitationUrl(rawToken, guestName) };
 }
 
 export async function getInvitationQrDataUrl(url: string) {

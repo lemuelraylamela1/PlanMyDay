@@ -9,6 +9,7 @@ import { Quote } from "./sections/quote";
 import { SaveTheDate } from "./sections/save-the-date";
 import { OurStory } from "./sections/our-story";
 import { EventDetails } from "./sections/event-details";
+import { Attire } from "./sections/attire";
 import { Gallery } from "./sections/gallery";
 import { Countdown } from "./sections/countdown";
 import { Travel } from "./sections/travel";
@@ -45,9 +46,10 @@ export function LanternInvitationExperience({
           <PortraitHero />
           <Quote />
           <SaveTheDate />
+          <Gallery />
           <OurStory />
           <EventDetails />
-          <Gallery />
+          <Attire />
           <Countdown />
           <Travel />
           <Faq />

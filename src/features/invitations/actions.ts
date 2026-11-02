@@ -100,5 +100,6 @@ export async function submitInvitationRsvpAction(
   });
   if (!result.ok) return fail(result.error);
   revalidatePath(`/invite/${token}`);
+  revalidatePath("/invite", "layout");
   return ok(undefined, result.message);
 }

@@ -1,12 +1,8 @@
-import type { Metadata } from "next";
-
 import { db } from "@/lib/db";
 import { resolveInvitation, markInvitationOpened } from "@/features/invitations/service";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
 import { LanternInvitationExperience } from "@/features/invitations/components/lantern/lantern-invitation-experience";
 import { InvitationNotFound } from "@/features/invitations/components/lantern/invitation-not-found";
-
-export const metadata: Metadata = { title: "You're Invited" };
 
 function formatInZone(date: Date, timeZone: string, options: Intl.DateTimeFormatOptions) {
   const zone = timeZone === "GMT" ? "UTC" : timeZone;
@@ -19,8 +15,7 @@ function formatInZone(date: Date, timeZone: string, options: Intl.DateTimeFormat
 
 const timeOptions: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
 
-export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+export async function renderInviteByToken(token: string) {
   const invitation = await resolveInvitation(token);
 
   if (!invitation) return <InvitationNotFound />;
