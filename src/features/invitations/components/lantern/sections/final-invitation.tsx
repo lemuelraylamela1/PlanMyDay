@@ -64,7 +64,7 @@ export function FinalInvitation() {
 
           <GoldShimmer
             as="p"
-            className="mt-8 font-display text-[2.4rem] font-bold leading-none sm:mt-10 sm:text-6xl"
+            className="mt-8 font-display text-[2.4rem] font-light leading-none tracking-[-0.02em] sm:mt-10 sm:text-6xl"
           >
             {coupleNames(wedding, "\u2661")}
           </GoldShimmer>

@@ -216,7 +216,7 @@ export function OpeningSequence() {
           <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.32em] text-lantern-rose/90 sm:text-[10px] sm:tracking-[0.42em]">
             {wedding.invitation.eyebrow}
           </p>
-          <p className="mt-2 text-gold-foil font-display text-[1.85rem] font-bold leading-tight sm:mt-4 sm:text-5xl">
+          <p className="mt-2 text-gold-foil font-display text-[1.85rem] font-light leading-tight tracking-[-0.02em] sm:mt-4 sm:text-5xl">
             {coupleNames(wedding, "&")}
           </p>
           <p className="mt-3 font-serif text-base italic text-lantern-soft">

@@ -56,7 +56,7 @@ export function InvitationNotFound() {
           Invitation Not Found
         </p>
 
-        <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-cream sm:text-5xl">
+        <h1 className="mt-4 font-display text-4xl font-light leading-tight tracking-[-0.02em] text-cream sm:text-5xl">
           The lantern flew away
         </h1>
 

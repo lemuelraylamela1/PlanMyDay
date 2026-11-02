@@ -26,10 +26,11 @@
   --color-champagne-gold-deep: #d4a840;
   --color-deep-rose: #c0607a;
 
-  --font-display: var(--font-playfair), Georgia, serif;
-  --font-cinzel: var(--font-cinzel-var), "Trajan Pro", Georgia, serif;
-  --font-serif: var(--font-lora), Georgia, serif;
-  --font-sans: var(--font-dm), system-ui, sans-serif;
+  /* Original PlanMyDay invite fonts (pre my-wedding-rsvp port) */
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-cinzel: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
 
   --ease-luxury: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -98,6 +99,10 @@
 }
 .invite-root .font-cinzel {
   font-family: var(--font-cinzel);
+}
+.invite-root .font-script {
+  /* next/font sets --font-script on the invite-root class list */
+  font-family: var(--font-script), "Pinyon Script", cursive;
 }
 
 @keyframes lantern-shimmer {

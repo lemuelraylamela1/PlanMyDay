@@ -1,37 +1,19 @@
-import { Playfair_Display, Cinzel, Lora, DM_Sans } from "next/font/google";
+import { Cormorant_Garamond, Pinyon_Script } from "next/font/google";
 
-export const invitePlayfair = Playfair_Display({
-  variable: "--font-playfair",
+/** Pre-lantern PlanMyDay invite typography (Cormorant + Pinyon). */
+export const inviteDisplay = Cormorant_Garamond({
   subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
-
-export const inviteCinzel = Cinzel({
-  variable: "--font-cinzel-var",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "600", "700"],
-});
-
-export const inviteLora = Lora({
-  variable: "--font-lora",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-});
-
-export const inviteDm = DM_Sans({
-  variable: "--font-dm",
-  subsets: ["latin"],
-  display: "swap",
   weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
+  display: "swap",
 });
 
-export const inviteFontVariables = [
-  invitePlayfair.variable,
-  inviteCinzel.variable,
-  inviteLora.variable,
-  inviteDm.variable,
-].join(" ");
+export const inviteScript = Pinyon_Script({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-script",
+  display: "swap",
+});
+
+export const inviteFontVariables = `${inviteDisplay.variable} ${inviteScript.variable}`;

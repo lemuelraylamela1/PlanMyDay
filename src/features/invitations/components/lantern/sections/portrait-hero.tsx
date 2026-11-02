@@ -112,7 +112,7 @@ export function PortraitHero() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.9, ease: LUXURY, delay: 0.08 }}
-          className="mt-4 font-display text-[2.35rem] font-bold leading-[1.05] tracking-[-0.03em] text-cream drop-shadow-[0_10px_40px_rgba(0,0,0,0.55)] min-[380px]:text-[2.75rem] sm:mt-5 sm:text-6xl lg:text-7xl"
+          className="mt-4 font-display text-[2.35rem] font-light leading-[1.05] tracking-[-0.02em] text-cream drop-shadow-[0_10px_40px_rgba(0,0,0,0.55)] min-[380px]:text-[2.75rem] sm:mt-5 sm:text-6xl lg:text-7xl"
         >
           {wedding.event.venue.name}
         </motion.h2>
@@ -135,31 +135,18 @@ export function PortraitHero() {
           {dateLine}
         </motion.p>
 
-        <motion.div
+        <motion.p
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: LUXURY, delay: 0.22 }}
-          className="mt-5 flex w-full max-w-md flex-col gap-3 sm:mt-6 sm:flex-row sm:justify-center sm:gap-10"
+          className="mt-4 font-serif text-base text-cream/90 sm:mt-5 sm:text-lg"
         >
-          <div>
-            <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-lantern/90">
-              Ceremony
-            </p>
-            <p className="mt-1 font-serif text-base text-cream/90 sm:text-lg">
-              {wedding.event.ceremony.time}
-            </p>
-          </div>
-          <div className="mx-auto hidden h-10 w-px bg-cream/25 sm:block" aria-hidden />
-          <div>
-            <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-lantern/90">
-              Reception
-            </p>
-            <p className="mt-1 font-serif text-base text-cream/90 sm:text-lg">
-              {wedding.event.reception.time}
-            </p>
-          </div>
-        </motion.div>
+          {wedding.event.ceremony.time}
+          {wedding.event.ceremony.timezoneNote
+            ? ` · ${wedding.event.ceremony.timezoneNote}`
+            : ""}
+        </motion.p>
 
         <motion.p
           initial={{ opacity: 0, y: 12 }}

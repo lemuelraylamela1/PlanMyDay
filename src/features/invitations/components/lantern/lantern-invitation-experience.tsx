@@ -6,6 +6,7 @@ import { Experience } from "./experience/experience";
 import { Hero } from "./sections/hero";
 import { PortraitHero } from "./sections/portrait-hero";
 import { Quote } from "./sections/quote";
+import { SaveTheDate } from "./sections/save-the-date";
 import { OurStory } from "./sections/our-story";
 import { EventDetails } from "./sections/event-details";
 import { Gallery } from "./sections/gallery";
@@ -43,6 +44,7 @@ export function LanternInvitationExperience({
           <Hero />
           <PortraitHero />
           <Quote />
+          <SaveTheDate />
           <OurStory />
           <EventDetails />
           <Gallery />

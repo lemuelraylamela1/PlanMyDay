@@ -72,8 +72,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-display)", "Georgia", "serif"],
-        cinzel: ["var(--font-cinzel)", "Georgia", "serif"],
+        display: ["var(--font-display)", "Cormorant Garamond", "Georgia", "serif"],
+        cinzel: ["var(--font-cinzel)", "Cormorant Garamond", "Georgia", "serif"],
+        script: ["var(--font-script)", "Pinyon Script", "cursive"],
       },
       borderRadius: {
         lg: "var(--radius)",

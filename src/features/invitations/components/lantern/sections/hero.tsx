@@ -157,7 +157,7 @@ export function Hero() {
           initial={false}
           animate={mounted ? { opacity: 1, y: 0 } : false}
           transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
-          className="mt-4 text-gold-foil font-display text-[2.55rem] font-bold leading-[0.98] tracking-[-0.03em] min-[380px]:text-[3rem] sm:mt-6 sm:text-7xl lg:text-8xl"
+          className="mt-4 text-gold-foil font-display text-[2.55rem] font-light leading-[0.98] tracking-[-0.02em] min-[380px]:text-[3rem] sm:mt-6 sm:text-7xl lg:text-8xl"
           style={{ textShadow: "0 16px 54px rgba(0,0,0,0.42)" }}
         >
           {coupleNames(wedding, "\u2661")}

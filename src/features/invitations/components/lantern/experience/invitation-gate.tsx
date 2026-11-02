@@ -205,7 +205,7 @@ export function InvitationGate() {
 
                 <motion.h1
                   variants={item}
-                  className="mt-3 font-display text-[1.85rem] font-bold leading-tight text-[#3a2410] min-[380px]:text-4xl sm:mt-4 sm:text-5xl"
+                  className="mt-3 font-display text-[1.85rem] font-light leading-tight tracking-[-0.02em] text-[#3a2410] min-[380px]:text-4xl sm:mt-4 sm:text-5xl"
                 >
                   {coupleNames(wedding, "&")}
                 </motion.h1>
@@ -227,7 +227,7 @@ export function InvitationGate() {
 
                 <motion.p
                   variants={item}
-                  className="mt-4 font-display text-xl font-semibold text-[#3a2410] sm:mt-5 sm:text-2xl"
+                  className="mt-4 font-script text-[1.85rem] leading-none text-[#3a2410] sm:mt-5 sm:text-[2.35rem]"
                 >
                   {guestName}
                 </motion.p>
