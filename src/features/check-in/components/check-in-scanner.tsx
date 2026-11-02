@@ -5,6 +5,12 @@ import { Camera, CheckCircle2, AlertTriangle, Loader2, RotateCcw, Upload } from 
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  cameraSupportMessage,
+  decodeQrFromFile,
+  decodeQrFromVideo,
+  requestCameraStream,
+} from "@/features/check-in/lib/decode-qr";
 
 type ScanSuccess = {
   fullName: string;
@@ -26,25 +32,20 @@ interface Props {
   weddingTitle: string;
 }
 
-declare global {
-  interface Window {
-    BarcodeDetector?: new (options?: { formats?: string[] }) => {
-      detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
-    };
-  }
-}
-
 export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Props) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
   const rafRef = React.useRef<number | null>(null);
   const lastCodeRef = React.useRef<string | null>(null);
+  const scanningRef = React.useRef(false);
 
   const [state, setState] = React.useState<ScanState>({ kind: "idle" });
   const [cameraError, setCameraError] = React.useState<string | null>(null);
 
   const stopCamera = React.useCallback(() => {
+    scanningRef.current = false;
     if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -59,6 +60,7 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
   async function submitCode(guestCode: string) {
     if (!guestCode || lastCodeRef.current === guestCode) return;
     lastCodeRef.current = guestCode;
+    scanningRef.current = false;
     setState({ kind: "pending" });
     stopCamera();
 
@@ -104,48 +106,61 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
   async function startCamera() {
     setCameraError(null);
     lastCodeRef.current = null;
-    setState({ kind: "scanning" });
 
-    if (!window.BarcodeDetector) {
-      setCameraError("This browser cannot scan from the camera. Use Upload QR image instead.");
+    const blocked = cameraSupportMessage();
+    if (blocked) {
+      setCameraError(blocked);
       setState({ kind: "idle" });
       return;
     }
 
+    setState({ kind: "scanning" });
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
+      const stream = await requestCameraStream();
       streamRef.current = stream;
       const video = videoRef.current;
-      if (!video) return;
+      const canvas = canvasRef.current;
+      if (!video || !canvas) {
+        throw new Error("Camera preview failed to load. Refresh and try again.");
+      }
+
       video.srcObject = stream;
+      video.setAttribute("playsinline", "true");
+      video.muted = true;
       await video.play();
 
-      const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      scanningRef.current = true;
+      let lastScanAt = 0;
 
       const tick = async () => {
-        if (!videoRef.current || videoRef.current.readyState < 2) {
-          rafRef.current = requestAnimationFrame(() => void tick());
-          return;
-        }
-        try {
-          const codes = await detector.detect(videoRef.current);
-          const value = codes[0]?.rawValue;
-          if (value) {
-            await submitCode(value);
-            return;
+        if (!scanningRef.current) return;
+        const now = performance.now();
+        // Throttle jsQR work on slower phones.
+        if (now - lastScanAt > 180 && videoRef.current && canvasRef.current) {
+          lastScanAt = now;
+          if (videoRef.current.readyState >= 2) {
+            try {
+              const value = await decodeQrFromVideo(videoRef.current, canvasRef.current);
+              if (value) {
+                await submitCode(value);
+                return;
+              }
+            } catch {
+              // keep scanning
+            }
           }
-        } catch {
-          // keep scanning
         }
         rafRef.current = requestAnimationFrame(() => void tick());
       };
 
       rafRef.current = requestAnimationFrame(() => void tick());
-    } catch {
-      setCameraError("Camera permission denied or unavailable. Use Upload QR image instead.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not start the camera. Try Chrome/Edge, or upload a QR image.";
+      setCameraError(message);
       setState({ kind: "idle" });
       stopCamera();
     }
@@ -155,21 +170,10 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
     if (!file) return;
     lastCodeRef.current = null;
     setState({ kind: "pending" });
-
-    if (!window.BarcodeDetector) {
-      setState({
-        kind: "error",
-        message: "This browser cannot read QR images. Try Chrome or Edge on mobile.",
-      });
-      return;
-    }
+    stopCamera();
 
     try {
-      const bitmap = await createImageBitmap(file);
-      const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-      const codes = await detector.detect(bitmap);
-      bitmap.close();
-      const value = codes[0]?.rawValue;
+      const value = await decodeQrFromFile(file);
       if (!value) {
         setState({ kind: "error", message: "No QR code found in that image." });
         return;
@@ -177,6 +181,8 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
       await submitCode(value);
     } catch {
       setState({ kind: "error", message: "Could not read that image." });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -247,7 +253,7 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
 
       {state.kind === "idle" || state.kind === "scanning" ? (
         <div className="space-y-4">
-          <div className="relative overflow-hidden rounded-2xl border bg-black aspect-[3/4]">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border bg-black">
             <video
               ref={videoRef}
               className={cn(
@@ -256,13 +262,17 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
               )}
               playsInline
               muted
+              autoPlay
             />
+            <canvas ref={canvasRef} className="hidden" aria-hidden />
             {state.kind !== "scanning" ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40 p-6 text-center">
                 <Camera className="h-10 w-10 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Camera preview will appear here</p>
               </div>
-            ) : null}
+            ) : (
+              <div className="pointer-events-none absolute inset-x-8 top-1/2 h-48 -translate-y-1/2 rounded-xl border-2 border-white/70" />
+            )}
           </div>
 
           {cameraError ? <p className="text-center text-sm text-amber-700">{cameraError}</p> : null}
@@ -289,10 +299,12 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={(e) => void onFileSelected(e.target.files?.[0] ?? null)}
           />
+          <p className="text-center text-xs text-muted-foreground">
+            Tip: on phones, allow camera when prompted. If camera still fails, upload a photo of the QR.
+          </p>
         </div>
       ) : null}
     </div>

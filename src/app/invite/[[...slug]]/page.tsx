@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { isWeddingInviteSlug } from "@/features/invitations/invite-path";
 import { renderInviteByToken } from "@/features/invitations/invite-page";
 
-export const metadata: Metadata = { title: "You're Invited" };
+export const metadata: Metadata = {
+  title: { absolute: "You're Invited in Lemuel and Grazielle Wedding" },
+};
 
 /**
  * Invite routes:
