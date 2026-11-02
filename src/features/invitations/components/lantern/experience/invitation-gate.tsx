@@ -227,38 +227,19 @@ export function InvitationGate() {
 
                 <motion.p
                   variants={item}
-                  className="font-serif text-[0.92rem] leading-[1.7] text-[#4a3218]/90 sm:text-[1.02rem] sm:leading-[1.85]"
-                >
-                  {wedding.invitation.body}
-                </motion.p>
-
-                <motion.p
-                  variants={item}
-                  className="mt-4 font-display text-lg font-semibold text-[#3a2410] sm:mt-5 sm:text-xl"
+                  className="mt-4 font-display text-xl font-semibold text-[#3a2410] sm:mt-5 sm:text-2xl"
                 >
                   {guestName}
                 </motion.p>
 
-                <motion.div
+                <motion.p
                   variants={item}
-                  className="mx-auto mt-4 max-w-xs border-y border-[#b8860b]/25 py-3 font-serif text-[#4a3218]/85 sm:mt-6 sm:py-4"
+                  className="mt-3 font-serif text-[0.92rem] leading-[1.7] text-[#4a3218]/90 sm:mt-4 sm:text-[1.02rem] sm:leading-[1.85]"
                 >
-                  <p className="text-[0.65rem] uppercase tracking-[0.24em] text-[#9c6b1a] sm:text-[0.7rem] sm:tracking-[0.28em]">
-                    {wedding.event.dayOfWeek}
-                  </p>
-                  <p className="mt-1 font-display text-base font-semibold text-[#3a2410] sm:text-lg">
-                    {wedding.event.dateLong}
-                  </p>
-                  <p className="mt-1 text-xs italic sm:text-sm">
-                    {wedding.event.ceremony.time} &middot;{" "}
-                    {wedding.event.ceremony.timezoneNote}
-                  </p>
-                  <p className="mt-1.5 text-xs sm:mt-2 sm:text-sm">
-                    {wedding.event.venue.name}, {wedding.event.venue.city}
-                  </p>
-                </motion.div>
+                  {wedding.invitation.body}
+                </motion.p>
 
-                <motion.div variants={item} className="mt-6 sm:mt-8">
+                <motion.div variants={item} className="mt-7 sm:mt-9">
                   <GoldButton
                     size="lg"
                     onClick={handleOpen}
