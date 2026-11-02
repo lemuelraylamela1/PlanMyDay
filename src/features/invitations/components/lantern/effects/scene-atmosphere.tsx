@@ -3,6 +3,10 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import {
+  useLanternPerf,
+  useMainEffectsActive,
+} from "../performance/lantern-perf-provider";
 
 export function SceneAtmosphere({
   tone = "warm",
@@ -12,6 +16,10 @@ export function SceneAtmosphere({
   className?: string;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
+  const { profile } = useLanternPerf();
+  const active = useMainEffectsActive();
+  const motionOn = profile.atmosphereMotion && active;
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
@@ -26,25 +34,34 @@ export function SceneAtmosphere({
         ? "radial-gradient(ellipse at 50% 40%, rgba(232,130,154,0.18), rgba(244,196,68,0.1) 48%, transparent 72%)"
         : "radial-gradient(ellipse at 50% 50%, rgba(244,196,68,0.16), rgba(255,247,210,0.12) 44%, transparent 72%)";
 
+  if (!active) return null;
+
   return (
     <motion.div
       ref={ref}
       aria-hidden
       className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
-      style={{ opacity }}
+      style={motionOn ? { opacity } : { opacity: 0.42 }}
     >
-      <motion.div
-        className="absolute left-1/2 top-1/2 h-[42rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-        style={{ y, background: glow }}
-      />
-      <motion.div
+      {motionOn ? (
+        <motion.div
+          className="absolute left-1/2 top-1/2 h-[42rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          style={{ y, background: glow }}
+        />
+      ) : (
+        <div
+          className="absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl"
+          style={{ background: glow }}
+        />
+      )}
+      <div
         className="absolute inset-x-0 top-0 h-px"
         style={{
           background:
             "linear-gradient(90deg, transparent, rgba(244,196,68,0.5), transparent)",
         }}
       />
-      <motion.div
+      <div
         className="absolute inset-x-0 bottom-0 h-px"
         style={{
           background:

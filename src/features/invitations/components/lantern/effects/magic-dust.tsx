@@ -4,6 +4,11 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useMounted } from "../hooks/use-mounted";
+import {
+  useLanternPerf,
+  useMainEffectsActive,
+} from "../performance/lantern-perf-provider";
+import { scaleEffectCount } from "../performance/profiles";
 
 type Dust = {
   left: number;
@@ -24,13 +29,21 @@ export function MagicDust({
   count = 24,
   className,
   intensity = "normal",
+  active: activeProp,
 }: {
   count?: number;
   className?: string;
   intensity?: "soft" | "normal" | "bright";
+  active?: boolean;
 }) {
   const mounted = useMounted();
-  const safeCount = Math.min(count, 30);
+  const { profile, compact } = useLanternPerf();
+  const mainActive = useMainEffectsActive();
+  const active = activeProp ?? mainActive;
+  const safeCount = Math.min(
+    scaleEffectCount(count, profile.dustScale, compact, 4),
+    30,
+  );
   const dust = React.useMemo<Dust[]>(
     () =>
       Array.from({ length: safeCount }, (_, i) => ({
@@ -44,6 +57,8 @@ export function MagicDust({
       })),
     [safeCount],
   );
+
+  if (!active) return null;
 
   const opacity =
     intensity === "bright" ? [0, 0.95, 0.25, 0.8, 0] : intensity === "soft" ? [0, 0.45, 0.1, 0.35, 0] : [0, 0.7, 0.18, 0.55, 0];

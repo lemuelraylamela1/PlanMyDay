@@ -2,6 +2,11 @@
 
 import * as React from "react";
 import { useMounted } from "../hooks/use-mounted";
+import {
+  useLanternPerf,
+  useMainEffectsActive,
+} from "../performance/lantern-perf-provider";
+import { scaleEffectCount } from "../performance/profiles";
 
 type Lantern = {
   left: number;
@@ -109,16 +114,24 @@ export function FloatingLanterns({
   count = 12,
   className,
   intensity = "ambient",
+  active: activeProp,
 }: {
   count?: number;
   className?: string;
   intensity?: "ambient" | "festival";
+  active?: boolean;
 }) {
   const mounted = useMounted();
   const instanceId = React.useId();
+  const { profile, compact } = useLanternPerf();
+  const mainActive = useMainEffectsActive();
+  const active = activeProp ?? mainActive;
 
   const maxCount = intensity === "festival" ? 20 : 12;
-  const safeCount = Math.min(count, maxCount);
+  const safeCount = Math.min(
+    scaleEffectCount(count, profile.lanternScale, compact, 3),
+    maxCount,
+  );
 
   const lanterns = React.useMemo<Lantern[]>(
     () =>
@@ -140,7 +153,7 @@ export function FloatingLanterns({
     [safeCount, intensity],
   );
 
-  if (!mounted) return null;
+  if (!mounted || !active) return null;
 
   return (
     <div

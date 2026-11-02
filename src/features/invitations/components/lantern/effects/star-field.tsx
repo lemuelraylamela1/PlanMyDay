@@ -1,6 +1,11 @@
 "use client";
 
 import * as React from "react";
+import {
+  useLanternPerf,
+  useMainEffectsActive,
+} from "../performance/lantern-perf-provider";
+import { scaleEffectCount } from "../performance/profiles";
 
 type Star = {
   x: number;
@@ -22,13 +27,23 @@ export function StarField({
   count = 280,
   parallaxFactor = 0.08,
   className,
+  /** When false, RAF stops (used while main content is hidden under the gate). */
+  active: activeProp,
 }: {
   count?: number;
   parallaxFactor?: number;
   className?: string;
+  active?: boolean;
 }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const scrollRef = React.useRef(0);
+  const { profile, compact } = useLanternPerf();
+  const mainActive = useMainEffectsActive();
+  const active = activeProp ?? mainActive;
+  const effectiveCount = scaleEffectCount(count, profile.starScale, compact, 40);
+  const glow = profile.starGlow;
+  const maxDpr = profile.maxDpr;
+  const parallax = parallaxFactor * profile.parallax;
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,7 +52,7 @@ export function StarField({
     if (!ctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     let w = 0;
     let h = 0;
     let stars: Star[] = [];
@@ -51,7 +66,7 @@ export function StarField({
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const n = Math.min(500, Math.max(60, count));
+      const n = Math.min(500, Math.max(40, effectiveCount));
       stars = Array.from({ length: n }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
@@ -65,7 +80,7 @@ export function StarField({
 
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
-      const scrollOffset = scrollRef.current * parallaxFactor;
+      const scrollOffset = scrollRef.current * parallax;
 
       for (const s of stars) {
         if (!reduce) s.phase += s.speed;
@@ -76,14 +91,16 @@ export function StarField({
         ctx.arc(s.x, y, s.r, 0, Math.PI * 2);
         ctx.fillStyle = s.color;
         ctx.globalAlpha = alpha;
-        ctx.shadowBlur = s.r * 5;
-        ctx.shadowColor = "#ffdf70";
+        if (glow) {
+          ctx.shadowBlur = s.r * 5;
+          ctx.shadowColor = "#ffdf70";
+        }
         ctx.fill();
       }
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
 
-      if (!reduce && visible) raf = requestAnimationFrame(draw);
+      if (!reduce && visible && active) raf = requestAnimationFrame(draw);
       else raf = 0;
     };
 
@@ -95,16 +112,23 @@ export function StarField({
       cancelAnimationFrame(raf);
       raf = 0;
       build();
-      if (visible) draw();
+      if (visible && active) draw();
+      else if (visible) draw();
     };
 
     build();
-    draw();
+    if (active) draw();
+    else {
+      // Static first frame so the canvas isn't blank when briefly shown.
+      draw();
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
 
     const io = new IntersectionObserver(
       ([entry]) => {
         visible = entry?.isIntersecting ?? false;
-        if (visible) {
+        if (visible && active) {
           if (!raf && !reduce) draw();
         } else if (raf) {
           cancelAnimationFrame(raf);
@@ -124,7 +148,7 @@ export function StarField({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
-  }, [count, parallaxFactor]);
+  }, [effectiveCount, parallax, glow, maxDpr, active]);
 
   return (
     <canvas

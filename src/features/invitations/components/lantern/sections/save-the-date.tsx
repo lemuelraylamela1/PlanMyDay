@@ -7,6 +7,7 @@ import { Maximize2, Minimize2, Play } from "lucide-react";
 import { SAVE_THE_DATE_VIDEO } from "../media";
 import { MagicDust } from "../effects/magic-dust";
 import { useExperience } from "../experience/experience-provider";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
@@ -28,6 +29,16 @@ function getFullscreenElement() {
 export function SaveTheDate() {
   const reduceMotion = useReducedMotion();
   const { setAmbientSuspended } = useExperience();
+  const { compact } = useLanternPerf();
+  const videoSrc = compact
+    ? SAVE_THE_DATE_VIDEO.mobileSrc
+    : SAVE_THE_DATE_VIDEO.src;
+  const videoWidth = compact
+    ? SAVE_THE_DATE_VIDEO.mobileWidth
+    : SAVE_THE_DATE_VIDEO.width;
+  const videoHeight = compact
+    ? SAVE_THE_DATE_VIDEO.mobileHeight
+    : SAVE_THE_DATE_VIDEO.height;
   const sectionRef = React.useRef<HTMLElement>(null);
   const stageRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
@@ -213,12 +224,12 @@ export function SaveTheDate() {
           <video
             ref={videoRef}
             className="absolute inset-0 h-full w-full object-contain object-center"
-            src={SAVE_THE_DATE_VIDEO.src}
+            src={videoSrc}
             playsInline
             preload="metadata"
             controls={false}
-            width={SAVE_THE_DATE_VIDEO.width}
-            height={SAVE_THE_DATE_VIDEO.height}
+            width={videoWidth}
+            height={videoHeight}
             onEnded={handleVideoEnded}
             onPause={handleVideoPause}
             onPlay={handleVideoPlay}

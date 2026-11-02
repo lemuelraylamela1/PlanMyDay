@@ -69,8 +69,8 @@ export function EventDetails() {
             src={venue.imageSrc ?? VENUE_IMAGE.src}
             alt={venue.imageAlt ?? VENUE_IMAGE.alt}
             fill
-            sizes="100vw"
-            quality={85}
+            sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1600px"
+            quality={78}
             className="object-cover object-[50%_42%]"
             priority={false}
           />

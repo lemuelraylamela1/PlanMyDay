@@ -11,15 +11,15 @@ import { GoldButton } from "../ui/gold-button";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { useMounted } from "../hooks/use-mounted";
-import { useIsMobile } from "../hooks/use-is-mobile";
 import { useExperience } from "../experience/experience-provider";
 import { useLanternContent } from "../content-context";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 import { coupleNames } from "../config/wedding-defaults";
 
 export function Hero() {
   const mounted = useMounted();
-  const isMobile = useIsMobile();
   const { phase } = useExperience();
+  const { profile, compact } = useLanternPerf();
   const revealed = phase === "revealed";
   const wedding = useLanternContent();
   const ref = React.useRef<HTMLElement>(null);
@@ -28,13 +28,14 @@ export function Hero() {
     offset: ["start start", "end start"],
   });
 
-  const skyY       = useTransform(scrollYProgress, [0, 1], ["0%",   isMobile ? "18%" : "30%"]);
-  const hillsY     = useTransform(scrollYProgress, [0, 1], ["0%",   isMobile ? "8%" : "15%"]);
-  const castleY    = useTransform(scrollYProgress, [0, 1], ["0%",   isMobile ? "6%" : "12%"]);
-  const lanternsY  = useTransform(scrollYProgress, [0, 1], ["0%",    isMobile ? "5%" : "10%"]);
-  const reflectionY = useTransform(scrollYProgress, [0, 1], ["0%",   isMobile ? "10%" : "18%"]);
-  const contentY   = useTransform(scrollYProgress, [0, 1], ["0%",  isMobile ? "-12%" : "-22%"]);
-  const contentOp  = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
+  const p = profile.parallax;
+  const skyY = useTransform(scrollYProgress, [0, 1], ["0%", `${30 * p}%`]);
+  const hillsY = useTransform(scrollYProgress, [0, 1], ["0%", `${15 * p}%`]);
+  const castleY = useTransform(scrollYProgress, [0, 1], ["0%", `${12 * p}%`]);
+  const lanternsY = useTransform(scrollYProgress, [0, 1], ["0%", `${10 * p}%`]);
+  const reflectionY = useTransform(scrollYProgress, [0, 1], ["0%", `${18 * p}%`]);
+  const contentY = useTransform(scrollYProgress, [0, 1], ["0%", `${-22 * p}%`]);
+  const contentOp = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
 
   return (
     <section
@@ -44,10 +45,10 @@ export function Hero() {
     >
       <StarField
         className="absolute inset-0 z-0"
-        count={isMobile ? 120 : 340}
-        parallaxFactor={isMobile ? 0.04 : 0.12}
+        count={340}
+        parallaxFactor={0.12}
       />
-      <MagicDust count={isMobile ? 12 : 30} intensity="soft" className="z-[1] opacity-60" />
+      <MagicDust count={30} intensity="soft" className="z-[1] opacity-60" />
 
       <motion.div
         style={{ y: skyY }}
@@ -76,7 +77,9 @@ export function Hero() {
           }}
         />
         <div
-          className="absolute left-1/2 top-[44%] h-[52vh] w-[52vh] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-45 blur-3xl"
+          className={`absolute left-1/2 top-[44%] h-[52vh] w-[52vh] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-45 ${
+            profile.richFilters || !compact ? "blur-3xl" : "blur-xl"
+          }`}
           style={{
             background:
               "radial-gradient(circle, rgba(255,223,112,0.28), rgba(232,130,154,0.16) 42%, transparent 70%)",
@@ -93,7 +96,7 @@ export function Hero() {
       </motion.div>
 
       <motion.div style={{ y: lanternsY }} className="pointer-events-none absolute inset-0 z-[4]" aria-hidden>
-        <FloatingLanterns count={isMobile ? 8 : 22} intensity="festival" />
+        <FloatingLanterns count={22} intensity="festival" />
       </motion.div>
 
       <motion.div style={{ y: reflectionY }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]" aria-hidden>

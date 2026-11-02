@@ -11,7 +11,7 @@ import { HillSilhouette } from "../effects/hill-silhouette";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { useLanternContent } from "../content-context";
-import { useIsMobile } from "../hooks/use-is-mobile";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 import { coupleNames } from "../config/wedding-defaults";
 
 const CONSTELLATION_STARS = [
@@ -32,8 +32,9 @@ const CONSTELLATION_STARS = [
 export function OpeningSequence() {
   const { reveal, reducedMotion } = useExperience();
   const wedding = useLanternContent();
-  const isMobile = useIsMobile();
+  const { profile } = useLanternPerf();
   const root = React.useRef<HTMLDivElement>(null);
+  const stageScale = profile.openingStageScale;
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -177,7 +178,7 @@ export function OpeningSequence() {
       tl.add("pushReveal", 5.85);
       tl.to(
         ".seq-stage",
-        { scale: 1.18, duration: 1.05, ease: "power2.inOut" },
+        { scale: stageScale, duration: 1.05, ease: "power2.inOut" },
         "pushReveal"
       );
 
@@ -191,7 +192,7 @@ export function OpeningSequence() {
     }, root);
 
     return () => ctx.revert();
-  }, [reducedMotion, reveal]);
+  }, [reducedMotion, reveal, stageScale]);
 
   return (
     <motion.div
@@ -202,13 +203,13 @@ export function OpeningSequence() {
     >
       <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #070314 0%, #0d0720 38%, #1e0f3a 70%, #39205f 100%)" }} />
       <div className="seq-moon-glow pointer-events-none absolute left-1/2 top-[42%] h-[78vh] w-[78vh] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,223,112,0.55), rgba(232,130,154,0.24) 42%, transparent 70%)" }} />
-      <MagicDust count={isMobile ? 10 : 22} intensity="bright" className="opacity-70" />
+      <MagicDust count={22} intensity="bright" className="opacity-70" active />
 
       <div className="seq-lanterns absolute inset-0 opacity-0">
-        <FloatingLanterns count={isMobile ? 7 : 16} intensity="festival" />
+        <FloatingLanterns count={16} intensity="festival" active />
       </div>
       <div className="seq-sparkles absolute inset-0 opacity-0">
-        <ParticleField density={isMobile ? 0.00012 : 0.0003} />
+        <ParticleField density={0.0003} />
       </div>
 
       <div className="seq-stage relative z-10 h-full w-full will-change-transform">
@@ -275,7 +276,7 @@ export function OpeningSequence() {
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-night via-night/45 to-transparent" />
         </div>
         <div className="seq-reflection absolute inset-x-0 bottom-0 opacity-0">
-          <LanternReflection />
+          <LanternReflection active />
         </div>
       </div>
 

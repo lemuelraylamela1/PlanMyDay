@@ -7,6 +7,10 @@ import { ExperienceProvider, useExperience } from "./experience-provider";
 import { InvitationGate } from "./invitation-gate";
 import { MusicPlayer } from "./music-player";
 import { BackToTop } from "../ui/back-to-top";
+import {
+  LanternPerfProvider,
+  MainEffectsProvider,
+} from "../performance/lantern-perf-provider";
 
 function OpeningFallback() {
   return (
@@ -36,6 +40,7 @@ const SmoothScroll = dynamic(
 function ExperienceShell({ children }: { children: React.ReactNode }) {
   const { phase } = useExperience();
   const revealed = phase === "revealed";
+  const transitionActive = phase === "opening";
 
   // Warm the opening-sequence chunk in the background while the guest
   // is still on the invitation gate.
@@ -46,28 +51,30 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
   }, [phase]);
 
   return (
-    <>
+    <LanternPerfProvider transitionActive={transitionActive}>
       <MusicPlayer />
       <BackToTop />
       <SmoothScroll />
 
-      {/* The full site lives in the DOM for SEO; hidden until revealed. */}
-      <div
-        aria-hidden={!revealed}
-        className={
-          revealed
-            ? "opacity-100 transition-opacity duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            : "pointer-events-none select-none opacity-0"
-        }
-      >
-        {children}
-      </div>
+      {/* Full site stays in the DOM for SEO; effects pause until revealed. */}
+      <MainEffectsProvider active={revealed}>
+        <div
+          aria-hidden={!revealed}
+          className={
+            revealed
+              ? "opacity-100 transition-opacity duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              : "pointer-events-none select-none opacity-0"
+          }
+        >
+          {children}
+        </div>
+      </MainEffectsProvider>
 
       <AnimatePresence>
         {phase === "invitation" && <InvitationGate key="gate" />}
         {phase === "opening" && <OpeningSequence key="sequence" />}
       </AnimatePresence>
-    </>
+    </LanternPerfProvider>
   );
 }
 

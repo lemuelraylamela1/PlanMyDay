@@ -3,13 +3,16 @@
 import * as React from "react";
 import Lenis from "lenis";
 import { useExperience } from "./experience-provider";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 
-/** Enables Lenis smooth scrolling once the site is revealed. */
+/** Enables Lenis smooth scrolling once the site is revealed (desktop high tier only). */
 export function SmoothScroll() {
   const { phase, reducedMotion } = useExperience();
+  const { profile, compact } = useLanternPerf();
 
   React.useEffect(() => {
     if (phase !== "revealed" || reducedMotion) return;
+    if (!profile.smoothScroll || compact) return;
 
     const lenis = new Lenis({
       duration: 1.15,
@@ -29,7 +32,7 @@ export function SmoothScroll() {
     // Full-viewport sections (#hero, #portrait, …) must land flush — no header offset.
     const onAnchorClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest(
-        'a[href^="#"]'
+        'a[href^="#"]',
       ) as HTMLAnchorElement | null;
       if (!target) return;
       const id = target.getAttribute("href");
@@ -51,7 +54,7 @@ export function SmoothScroll() {
       document.removeEventListener("click", onAnchorClick);
       lenis.destroy();
     };
-  }, [phase, reducedMotion]);
+  }, [phase, reducedMotion, profile.smoothScroll, compact]);
 
   return null;
 }

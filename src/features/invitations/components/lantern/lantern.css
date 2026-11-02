@@ -472,6 +472,42 @@ body.experience-locked {
   background: #f5c0cf;
 }
 
+/* Cheaper filter/compositor work on phones (balanced) and weak devices (low). */
+html[data-lantern-perf="balanced"] .invite-root .text-gold-foil,
+html[data-lantern-perf="balanced"] .invite-root .text-rose-shimmer,
+html[data-lantern-perf="low"] .invite-root .text-gold-foil,
+html[data-lantern-perf="low"] .invite-root .text-rose-shimmer {
+  animation: none;
+  background-position: 40% center;
+}
+
+html[data-lantern-perf="balanced"] .invite-root .lantern-glow,
+html[data-lantern-perf="low"] .invite-root .lantern-glow {
+  animation: none;
+}
+
+html[data-lantern-perf="balanced"] .invite-root .aurora-glow,
+html[data-lantern-perf="low"] .invite-root .aurora-glow {
+  animation: none;
+  filter: blur(16px);
+}
+
+html[data-lantern-perf="balanced"] .invite-root .dark-glass,
+html[data-lantern-perf="low"] .invite-root .dark-glass {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html[data-lantern-perf="low"] .invite-root .dark-glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(30, 15, 58, 0.88);
+}
+
+html[data-lantern-perf="low"] .invite-root .storybook-panel {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .invite-root *,
   .invite-root *::before,

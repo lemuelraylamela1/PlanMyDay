@@ -78,10 +78,13 @@ export const attireGuideImages = {
 /** Ambient background music path. */
 export const AMBIENT_MUSIC_SRC = "/proposal-audio/i-see-the-light.mp3";
 
-/** Save-the-date film (2K / 16:9, GitHub-safe encode). */
+/** Save-the-date film (2K desktop / 720p phones). */
 export const SAVE_THE_DATE_VIDEO = {
   src: "/proposal-video/save-the-date.mp4",
+  mobileSrc: "/proposal-video/save-the-date-720.mp4",
   title: "Save the Date",
   width: 2560,
   height: 1440,
+  mobileWidth: 1280,
+  mobileHeight: 720,
 } as const;

@@ -8,13 +8,11 @@ import { GoldShimmer } from "../ui/gold-shimmer";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
-import { useIsMobile } from "../hooks/use-is-mobile";
 import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
 
 export function FinalInvitation() {
   const wedding = useLanternContent();
-  const isMobile = useIsMobile();
 
   return (
     <section
@@ -25,9 +23,9 @@ export function FinalInvitation() {
           "linear-gradient(180deg, #1e0f3a 0%, #0d0720 40%, #1a0830 80%, #2d1b5e 100%)",
       }}
     >
-      <StarField className="absolute inset-0" count={isMobile ? 140 : 380} parallaxFactor={0.05} />
-      <MagicDust count={isMobile ? 14 : 38} intensity="bright" className="opacity-75" />
-      <FloatingLanterns count={isMobile ? 10 : 28} intensity="festival" />
+      <StarField className="absolute inset-0" count={380} parallaxFactor={0.05} />
+      <MagicDust count={38} intensity="bright" className="opacity-75" />
+      <FloatingLanterns count={28} intensity="festival" />
       <LanternReflection className="opacity-70" />
       <SceneAtmosphere tone="night" className="opacity-80" />
 

@@ -11,7 +11,6 @@ import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { Fireflies } from "../effects/fireflies";
 import { useMounted } from "../hooks/use-mounted";
-import { useIsMobile } from "../hooks/use-is-mobile";
 import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
 
@@ -61,7 +60,6 @@ function ScrollRod({ position }: { position: "top" | "bottom" }) {
 export function InvitationGate() {
   const { guestName, open, beginMusic, reducedMotion } = useExperience();
   const mounted = useMounted();
-  const isMobile = useIsMobile();
   const wedding = useLanternContent();
 
   const [unrolled, setUnrolled] = React.useState(false);
@@ -102,10 +100,11 @@ export function InvitationGate() {
       <div aria-hidden className="pointer-events-none fixed inset-0">
         <StarField
           className="absolute inset-0"
-          count={isMobile ? 90 : 220}
+          count={220}
           parallaxFactor={0}
+          active
         />
-        <MagicDust count={isMobile ? 8 : 14} intensity="soft" className="opacity-60" />
+        <MagicDust count={14} intensity="soft" className="opacity-60" active />
 
         <div className="lantern-glow absolute left-1/3 top-1/4 h-[40vh] w-[40vh] -translate-x-1/2 -translate-y-1/2 opacity-50" />
         <div className="lantern-glow absolute right-1/4 top-2/3 h-[26vh] w-[26vh] opacity-35" />
@@ -117,9 +116,9 @@ export function InvitationGate() {
           }}
         />
 
-        <FloatingLanterns count={isMobile ? 5 : 10} className="opacity-65" />
-        <Fireflies count={isMobile ? 6 : 12} className="opacity-85" />
-        <LanternReflection className="opacity-60" />
+        <FloatingLanterns count={10} className="opacity-65" active />
+        <Fireflies count={12} className="opacity-85" active />
+        <LanternReflection className="opacity-60" active />
         <CastleSilhouette className="absolute bottom-0 left-1/2 w-[180%] max-w-none -translate-x-1/2 opacity-28 sm:w-[140%]" />
         <div className="scroll-vignette absolute inset-0" />
       </div>

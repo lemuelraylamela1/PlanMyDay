@@ -78,8 +78,8 @@ export function PortraitHero() {
                 alt={image.alt}
                 fill
                 priority={index === 0}
-                sizes="100vw"
-                quality={82}
+                sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1440px"
+                quality={isMobile ? 72 : 82}
                 className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
               />
             </motion.div>

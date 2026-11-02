@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
+import { scaleParticleDensity } from "../performance/profiles";
 
 type Particle = {
   x: number;
@@ -30,6 +32,10 @@ export function ParticleField({
   interactive?: boolean;
 }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const { profile } = useLanternPerf();
+  const effectiveDensity = scaleParticleDensity(density, profile.particleDensityScale);
+  const glow = profile.starGlow;
+  const maxDpr = profile.maxDpr;
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,7 +50,7 @@ export function ParticleField({
     let particles: Particle[] = [];
     let raf = 0;
     let visible = true;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     const mouse = { x: -9999, y: -9999 };
 
     const build = () => {
@@ -54,7 +60,10 @@ export function ParticleField({
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const count = Math.min(160, Math.max(28, Math.floor(width * height * density)));
+      const count = Math.min(
+        160,
+        Math.max(16, Math.floor(width * height * effectiveDensity)),
+      );
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -102,8 +111,10 @@ export function ParticleField({
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.globalAlpha = alpha;
-        ctx.shadowBlur = p.r * 4;
-        ctx.shadowColor = p.color;
+        if (glow) {
+          ctx.shadowBlur = p.r * 4;
+          ctx.shadowColor = p.color;
+        }
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -151,7 +162,7 @@ export function ParticleField({
       window.removeEventListener("resize", onResize);
       if (interactive) window.removeEventListener("mousemove", onMove);
     };
-  }, [density, interactive]);
+  }, [effectiveDensity, interactive, glow, maxDpr]);
 
   return (
     <canvas
