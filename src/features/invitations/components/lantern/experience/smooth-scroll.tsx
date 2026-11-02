@@ -26,6 +26,7 @@ export function SmoothScroll() {
     raf = requestAnimationFrame(loop);
 
     // Smoothly scroll for in-page anchor links.
+    // Full-viewport sections (#hero, #portrait, …) must land flush — no header offset.
     const onAnchorClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest(
         'a[href^="#"]'
@@ -36,7 +37,11 @@ export function SmoothScroll() {
       const el = document.querySelector(id);
       if (el) {
         e.preventDefault();
-        lenis.scrollTo(el as HTMLElement, { offset: -80 });
+        lenis.scrollTo(el as HTMLElement, {
+          offset: 0,
+          immediate: false,
+          lock: true,
+        });
       }
     };
     document.addEventListener("click", onAnchorClick);

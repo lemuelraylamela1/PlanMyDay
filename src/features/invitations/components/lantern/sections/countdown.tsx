@@ -128,7 +128,9 @@ export function Countdown() {
         </div>
 
         <p className="mt-10 text-center font-serif text-lg italic text-lantern-soft">
-          {wedding.event.dayOfWeek}, {wedding.event.dateLong}
+          {wedding.event.dateLong.toLowerCase().startsWith(wedding.event.dayOfWeek.toLowerCase())
+            ? wedding.event.dateLong
+            : `${wedding.event.dayOfWeek}, ${wedding.event.dateLong}`}
         </p>
       </div>
     </section>

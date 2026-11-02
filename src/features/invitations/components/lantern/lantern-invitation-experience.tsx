@@ -4,6 +4,7 @@ import * as React from "react";
 import { LanternContentProvider } from "./content-context";
 import { Experience } from "./experience/experience";
 import { Hero } from "./sections/hero";
+import { PortraitHero } from "./sections/portrait-hero";
 import { Quote } from "./sections/quote";
 import { OurStory } from "./sections/our-story";
 import { EventDetails } from "./sections/event-details";
@@ -40,6 +41,7 @@ export function LanternInvitationExperience({
       <Experience token={token} guestName={guest?.name}>
         <main>
           <Hero />
+          <PortraitHero />
           <Quote />
           <OurStory />
           <EventDetails />

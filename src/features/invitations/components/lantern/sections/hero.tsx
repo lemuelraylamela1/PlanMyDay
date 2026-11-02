@@ -40,7 +40,7 @@ export function Hero() {
     <section
       ref={ref}
       id="hero"
-      className="relative flex min-h-[100svh] min-h-[100dvh] items-center justify-center overflow-hidden px-0 pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]"
+      className="relative flex h-[100vh] h-[100svh] h-[100dvh] w-full shrink-0 items-center justify-center overflow-hidden px-0 pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]"
     >
       <StarField
         className="absolute inset-0 z-0"
@@ -176,7 +176,9 @@ export function Hero() {
           transition={{ duration: 1, delay: 0.8 }}
           className="font-serif text-lg italic text-blush/95 sm:text-2xl"
         >
-          {wedding.event.dayOfWeek}, {wedding.event.dateLong}
+          {wedding.event.dateLong.toLowerCase().startsWith(wedding.event.dayOfWeek.toLowerCase())
+            ? wedding.event.dateLong
+            : `${wedding.event.dayOfWeek}, ${wedding.event.dateLong}`}
         </motion.p>
 
         <motion.p
@@ -203,7 +205,7 @@ export function Hero() {
           transition={{ duration: 1, delay: 1.05 }}
           className="mt-7 sm:mt-9"
         >
-          <a href="#story">
+          <a href="#portrait">
             <GoldButton size="lg" className="min-h-12 w-full max-w-xs sm:w-auto">
               Enter Our Story
             </GoldButton>
@@ -213,8 +215,8 @@ export function Hero() {
 
       {/* scroll cue */}
       <motion.a
-        href="#story"
-        aria-label="Scroll to our story"
+        href="#portrait"
+        aria-label="Scroll to our portrait"
         initial={false}
         animate={mounted ? { opacity: 1 } : false}
         transition={{ delay: 1.6 }}
