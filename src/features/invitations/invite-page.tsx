@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { resolveInvitation, markInvitationOpened } from "@/features/invitations/service";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
+import { getAcceptedGuestCheckIn } from "@/features/invitations/rsvp-service";
 import { LanternInvitationExperience } from "@/features/invitations/components/lantern/lantern-invitation-experience";
 import { InvitationNotFound } from "@/features/invitations/components/lantern/invitation-not-found";
 
@@ -35,6 +36,8 @@ export async function renderInviteByToken(token: string) {
   const initials = (partnerNames.length > 0 ? partnerNames : [wedding.title])
     .map((name) => name.trim().charAt(0).toUpperCase())
     .filter(Boolean);
+  const checkIn =
+    guest.rsvpStatus === "ACCEPTED" ? await getAcceptedGuestCheckIn(guest.id) : null;
 
   return (
     <LanternInvitationExperience
@@ -43,6 +46,7 @@ export async function renderInviteByToken(token: string) {
         name: formatGuestDisplayName(guest),
         plusOneAllowed: guest.plusOneAllowed,
         rsvpStatus: guest.rsvpStatus,
+        checkIn,
       }}
       response={
         latestResponse

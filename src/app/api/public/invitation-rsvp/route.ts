@@ -129,5 +129,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 400, headers: cors });
   }
 
-  return NextResponse.json({ success: true, message: result.message }, { headers: cors });
+  return NextResponse.json(
+    { success: true, message: result.message, checkIn: result.checkIn },
+    { headers: cors },
+  );
 }

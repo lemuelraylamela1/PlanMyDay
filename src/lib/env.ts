@@ -15,18 +15,36 @@ function parseOrigins(value: string): string[] {
 
 const isProd = process.env.NODE_ENV === "production";
 
-const appUrl = readEnv("NEXT_PUBLIC_APP_URL") || (isProd ? "" : "http://localhost:3000");
-const rsvpAppUrl = readEnv("NEXT_PUBLIC_RSVP_APP_URL") || appUrl;
+/** Public invite host for Lemuel & Grazielle. */
+const DEFAULT_INVITE_APP_URL = "https://lemuelandgrazielle-wedding.vercel.app";
+
+const appUrl = readEnv("NEXT_PUBLIC_APP_URL") || (isProd ? DEFAULT_INVITE_APP_URL : "http://localhost:3000");
+const inviteAppUrl =
+  readEnv("NEXT_PUBLIC_INVITE_APP_URL") ||
+  (isProd ? DEFAULT_INVITE_APP_URL : appUrl);
+const rsvpAppUrl = readEnv("NEXT_PUBLIC_RSVP_APP_URL") || inviteAppUrl || appUrl;
 const rsvpAllowedOriginRaw =
-  readEnv("RSVP_ALLOWED_ORIGIN") || readEnv("NEXT_PUBLIC_RSVP_APP_URL") || appUrl;
+  readEnv("RSVP_ALLOWED_ORIGIN") ||
+  readEnv("NEXT_PUBLIC_RSVP_APP_URL") ||
+  inviteAppUrl ||
+  appUrl;
 
 /** Centralized, typed access to runtime environment values. */
 export const env = {
   appUrl,
+  /** Base URL used when generating guest invite / share links. */
+  inviteAppUrl,
   rsvpAppUrl,
   rsvpAllowedOrigin: normalizeOrigin(rsvpAllowedOriginRaw.split(",")[0]?.trim() || rsvpAllowedOriginRaw),
   rsvpAllowedOrigins: Array.from(
-    new Set([...parseOrigins(rsvpAllowedOriginRaw), ...parseOrigins(rsvpAppUrl)].filter(Boolean)),
+    new Set(
+      [
+        ...parseOrigins(rsvpAllowedOriginRaw),
+        ...parseOrigins(rsvpAppUrl),
+        ...parseOrigins(inviteAppUrl),
+        DEFAULT_INVITE_APP_URL,
+      ].filter(Boolean),
+    ),
   ),
   rsvpNotificationEmail: readEnv("RSVP_NOTIFICATION_EMAIL") || "lemuelraylameladev@gmail.com",
   authSecret: readEnv("AUTH_SECRET"),

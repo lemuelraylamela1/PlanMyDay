@@ -64,6 +64,8 @@ import {
 } from "@/features/guests/actions";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
 import { generateInviteAction } from "@/features/invitations/actions";
+import { getGuestCheckInQrAction } from "@/features/check-in/actions";
+import { downloadQrPng } from "@/features/check-in/components/guest-check-in-qr-card";
 
 export interface GuestRow {
   id: string;
@@ -117,6 +119,9 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
   const [rsvpLink, setRsvpLink] = React.useState<{ name: string; url: string; qr: string } | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [weddingIdQr, setWeddingIdQr] = React.useState<{ fullName: string; qrDataUrl: string } | null>(
+    null,
+  );
 
   function updateParams(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -217,6 +222,21 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
     await navigator.clipboard.writeText(rsvpLink.url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function onOpenWeddingIdQr(g: GuestRow) {
+    if (g.rsvpStatus !== "ACCEPTED") {
+      toast.error("Wedding ID QR is only available after the guest accepts.");
+      return;
+    }
+    setLinkLoadingId(g.id);
+    const res = await getGuestCheckInQrAction(g.id);
+    setLinkLoadingId(null);
+    if (res.success && res.data) {
+      setWeddingIdQr(res.data);
+    } else if (!res.success) {
+      toast.error(res.error);
+    }
   }
 
   return (
@@ -372,6 +392,11 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                         <DropdownMenuItem onClick={() => openEdit(g)}>
                           <Pencil className="h-4 w-4" /> Edit
                         </DropdownMenuItem>
+                        {g.rsvpStatus === "ACCEPTED" ? (
+                          <DropdownMenuItem onClick={() => void onOpenWeddingIdQr(g)}>
+                            <QrCode className="h-4 w-4" /> Wedding ID QR
+                          </DropdownMenuItem>
+                        ) : null}
                         <DropdownMenuItem onClick={() => { setSelected(new Set([g.id])); onBulkInvite(); }}>
                           <Mail className="h-4 w-4" /> Send invite
                         </DropdownMenuItem>
@@ -475,6 +500,34 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(weddingIdQr)} onOpenChange={(open) => !open && setWeddingIdQr(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Wedding ID for {weddingIdQr?.fullName}</DialogTitle>
+            <DialogDescription>
+              Spare check-in QR for the entrance. Only accepted guests with this code can be verified.
+            </DialogDescription>
+          </DialogHeader>
+          {weddingIdQr ? (
+            <div className="flex flex-col items-center gap-3 py-2">
+              <Image
+                src={weddingIdQr.qrDataUrl}
+                alt={`Wedding ID for ${weddingIdQr.fullName}`}
+                width={240}
+                height={240}
+                className="rounded-lg border"
+                unoptimized
+              />
+              <p className="font-medium">{weddingIdQr.fullName}</p>
+              <Button onClick={() => downloadQrPng(weddingIdQr.qrDataUrl, weddingIdQr.fullName)}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PNG
+              </Button>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

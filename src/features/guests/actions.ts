@@ -9,6 +9,7 @@ import { ActionResult, fail, ok } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { sendEmail, baseEmailTemplate } from "@/lib/email";
 import { issueInvitationToken } from "@/features/invitations/service";
+import { ensureGuestCheckInCredential } from "@/features/check-in/service";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
 import { guestSchema } from "@/features/guests/schemas";
 
@@ -24,7 +25,7 @@ export async function createGuestAction(input: unknown): Promise<ActionResult> {
   }
   const d = parsed.data;
 
-  await db.guest.create({
+  const created = await db.guest.create({
     data: {
       weddingId: wedding.id,
       title: clean(d.title),
@@ -45,6 +46,10 @@ export async function createGuestAction(input: unknown): Promise<ActionResult> {
     },
   });
 
+  if (d.rsvpStatus === "ACCEPTED") {
+    await ensureGuestCheckInCredential(created.id);
+  }
+
   await logActivity({
     weddingId: wedding.id,
     userId: user.id,
@@ -54,6 +59,7 @@ export async function createGuestAction(input: unknown): Promise<ActionResult> {
   });
 
   revalidatePath("/guests");
+  revalidatePath("/check-in");
   return ok(undefined, "Guest added.");
 }
 
@@ -83,9 +89,14 @@ export async function updateGuestAction(id: string, input: unknown): Promise<Act
       plusOneName: clean(d.plusOneName),
       groupId: d.groupId ? d.groupId : null,
       notes: clean(d.notes),
+      ...(d.rsvpStatus === "ACCEPTED" ? {} : { checkedInAt: null }),
     },
   });
   if (result.count === 0) return fail("Guest not found.");
+
+  if (d.rsvpStatus === "ACCEPTED") {
+    await ensureGuestCheckInCredential(id);
+  }
 
   await logActivity({
     weddingId: wedding.id,
@@ -97,6 +108,7 @@ export async function updateGuestAction(id: string, input: unknown): Promise<Act
   });
 
   revalidatePath("/guests");
+  revalidatePath("/check-in");
   return ok(undefined, "Guest updated.");
 }
 
@@ -255,8 +267,14 @@ export async function updateRsvpStatusAction(
   const { wedding, user } = await getCurrentWedding();
   await db.guest.updateMany({
     where: { id, weddingId: wedding.id, deletedAt: null },
-    data: { rsvpStatus: status },
+    data: {
+      rsvpStatus: status,
+      ...(status === "ACCEPTED" ? {} : { checkedInAt: null }),
+    },
   });
+  if (status === "ACCEPTED") {
+    await ensureGuestCheckInCredential(id);
+  }
   await logActivity({
     weddingId: wedding.id,
     userId: user.id,
@@ -266,6 +284,7 @@ export async function updateRsvpStatusAction(
     summary: `Set RSVP to ${status}`,
   });
   revalidatePath("/guests");
+  revalidatePath("/check-in");
   return ok();
 }
 

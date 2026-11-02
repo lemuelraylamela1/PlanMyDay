@@ -9,12 +9,11 @@ import { formatGuestDisplayName } from "@/features/guests/display-name";
 import { slugifyGuestName, WEDDING_INVITE_SLUG } from "@/features/invitations/invite-path";
 
 export function invitationUrl(token: string, guestName?: string | null) {
-  // Guest invites live on PlanMyDay (`/invite/...`), not the separate
-  // RSVP marketing site (which uses `/?token=` and has no /invite route).
-  const base = (env.appUrl || env.rsvpAppUrl).replace(/\/+$/, "");
+  // Guest invites use the wedding public host (`/invite/...`).
+  const base = (env.inviteAppUrl || env.appUrl || env.rsvpAppUrl).replace(/\/+$/, "");
   const encodedToken = encodeURIComponent(token);
-  if (!env.appUrl && env.isProd) {
-    console.error("[PlanMyDay] NEXT_PUBLIC_APP_URL is missing; invite links may be wrong.");
+  if (!base && env.isProd) {
+    console.error("[PlanMyDay] Invite base URL is missing; invite links may be wrong.");
   }
 
   if (guestName?.trim()) {

@@ -7,6 +7,12 @@ import { baseEmailTemplate, sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { logActivity } from "@/lib/activity";
 import { createNotification } from "@/features/notifications/service";
+import { ensureGuestCheckInCredential, getGuestCheckInPayload } from "@/features/check-in/service";
+
+export type RsvpCheckInPayload = {
+  qrDataUrl: string;
+  fullName: string;
+};
 
 type SubmitRsvpInput = {
   weddingId: string;
@@ -26,7 +32,15 @@ function normalizeOptional(value?: string): string | null {
   return trimmed ? trimmed : null;
 }
 
-export async function submitRsvpForGuest(input: SubmitRsvpInput): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
+export async function getAcceptedGuestCheckIn(guestId: string): Promise<RsvpCheckInPayload | null> {
+  const payload = await getGuestCheckInPayload(guestId);
+  if (!payload) return null;
+  return { qrDataUrl: payload.qrDataUrl, fullName: payload.fullName };
+}
+
+export async function submitRsvpForGuest(
+  input: SubmitRsvpInput,
+): Promise<{ ok: true; message: string; checkIn?: RsvpCheckInPayload } | { ok: false; error: string }> {
   const guest = await db.guest.findFirst({
     where: { id: input.guestId, weddingId: input.weddingId, deletedAt: null },
     include: { wedding: true },
@@ -34,7 +48,9 @@ export async function submitRsvpForGuest(input: SubmitRsvpInput): Promise<{ ok: 
   if (!guest) return { ok: false, error: "Invitation not found." };
 
   const status = input.attending ? "ACCEPTED" : "DECLINED";
-  const partySize = Math.max(1, input.partySize);
+  // Anti plus-one: only allow party of 2 when the guest is explicitly allowed a plus-one.
+  const maxParty = guest.plusOneAllowed ? 2 : 1;
+  const partySize = Math.min(maxParty, Math.max(1, input.partySize));
   const mealPreference = normalizeOptional(input.mealPreference);
   const dietaryRestrictions = normalizeOptional(input.dietaryRestrictions);
   const plusOneName = normalizeOptional(input.plusOneName);
@@ -120,6 +136,15 @@ export async function submitRsvpForGuest(input: SubmitRsvpInput): Promise<{ ok: 
   revalidatePath("/guests");
   revalidatePath("/invitations");
   revalidatePath("/seating");
+  revalidatePath("/check-in");
 
-  return { ok: true, message: "Thank you! Your RSVP has been recorded." };
+  let checkIn: RsvpCheckInPayload | undefined;
+  if (input.attending) {
+    const credential = await ensureGuestCheckInCredential(input.guestId);
+    if (credential) {
+      checkIn = { qrDataUrl: credential.qrDataUrl, fullName: credential.fullName };
+    }
+  }
+
+  return { ok: true, message: "Thank you! Your RSVP has been recorded.", checkIn };
 }

@@ -5,7 +5,7 @@ import { hashToken } from "@/lib/tokens";
 import { rateLimit } from "@/lib/rate-limit";
 import { resolveInvitation } from "@/features/invitations/service";
 import { publicRsvpLookupSchema, publicRsvpSubmitSchema } from "@/features/invitations/schemas";
-import { submitRsvpForGuest } from "@/features/invitations/rsvp-service";
+import { getAcceptedGuestCheckIn, submitRsvpForGuest } from "@/features/invitations/rsvp-service";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
 
 assertProductionEnv();
@@ -75,6 +75,8 @@ export async function GET(request: Request) {
   const { guest, wedding } = invitation;
   const guestDisplayName = formatGuestDisplayName(guest);
   const coupleNames = [wedding.partner1Name, wedding.partner2Name].filter(Boolean).join(" & ") || wedding.title;
+  const checkIn =
+    guest.rsvpStatus === "ACCEPTED" ? await getAcceptedGuestCheckIn(guest.id) : null;
 
   return NextResponse.json(
     {
@@ -91,6 +93,7 @@ export async function GET(request: Request) {
         invitationStatus: guest.invitationStatus === "NOT_SENT" ? "NOT_SENT" : "SENT",
         rsvpStatus: guest.rsvpStatus,
       },
+      checkIn: checkIn ?? undefined,
     },
     { headers: cors },
   );
@@ -122,11 +125,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invitation not found." }, { status: 404, headers: cors });
   }
 
+  const attending = parsed.data.attending === "yes";
+  const maxParty = invitation.guest.plusOneAllowed ? 2 : 1;
   const result = await submitRsvpForGuest({
     weddingId: invitation.wedding.id,
     guestId: invitation.guest.id,
-    attending: parsed.data.attending === "yes",
-    partySize: parsed.data.guestCount,
+    attending,
+    partySize: Math.min(maxParty, parsed.data.guestCount),
     mealPreference: parsed.data.meal,
     message: parsed.data.message,
     guestEmail: parsed.data.email,
@@ -136,5 +141,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 400, headers: cors });
   }
 
-  return NextResponse.json({ success: true, message: result.message }, { headers: cors });
+  return NextResponse.json(
+    { success: true, message: result.message, checkIn: result.checkIn },
+    { headers: cors },
+  );
 }

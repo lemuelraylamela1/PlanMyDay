@@ -288,6 +288,7 @@ model Wedding {
   sponsorProposals   SponsorProposal[]
   guestUploadToken   GuestUploadToken?
   guestMediaUploads  GuestMediaUpload[]
+  checkInSessionToken CheckInSessionToken?
   notifications      Notification[]
   activityLogs       ActivityLog[]
 
@@ -404,6 +405,9 @@ model Guest {
   plusOneAllowed      Boolean          @default(false)
   plusOneName         String?
   notes               String?
+  checkInToken        String?          @unique
+  checkInTokenHash    String?          @unique
+  checkedInAt         DateTime?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   deletedAt           DateTime?
@@ -418,7 +422,9 @@ model Guest {
   @@index([weddingId, invitationStatus])
   @@index([weddingId, side])
   @@index([weddingId, deletedAt])
+  @@index([weddingId, checkedInAt])
   @@index([groupId])
+  @@index([checkInTokenHash])
 }
 
 // ---------------------------------------------------------------------------
@@ -825,6 +831,21 @@ model SponsorProposal {
 // ---------------------------------------------------------------------------
 
 model GuestUploadToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  weddingId String    @unique @db.Uuid
+  rawToken  String    @unique
+  tokenHash String    @unique
+  isEnabled Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+}
+
+model CheckInSessionToken {
   id        String    @id @default(uuid()) @db.Uuid
   weddingId String    @unique @db.Uuid
   rawToken  String    @unique

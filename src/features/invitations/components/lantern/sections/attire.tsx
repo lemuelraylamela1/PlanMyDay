@@ -18,7 +18,9 @@ export function Attire() {
   const wedding = useLanternContent();
   const reduceMotion = useReducedMotion();
   const { dressCode } = wedding.event;
-  const [activeRole, setActiveRole] = React.useState(dressCode.roles[0]?.role ?? "");
+  const [activeRole, setActiveRole] = React.useState<string>(
+    dressCode.roles[0]?.role ?? "",
+  );
 
   const roles = dressCode.roles;
   const activeIndex = Math.max(

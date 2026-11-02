@@ -1,9 +1,15 @@
 export type RsvpStatusValue = "PENDING" | "ACCEPTED" | "DECLINED" | "TENTATIVE";
 
+export interface InvitationCheckIn {
+  qrDataUrl: string;
+  fullName: string;
+}
+
 export interface InvitationGuest {
   name: string;
   plusOneAllowed: boolean;
   rsvpStatus: RsvpStatusValue;
+  checkIn?: InvitationCheckIn | null;
 }
 
 export interface InvitationResponse {

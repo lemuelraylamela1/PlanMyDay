@@ -12,6 +12,7 @@ import {
   Globe,
   Image,
   Camera,
+  ScanLine,
   Bell,
   ScrollText,
   Settings,
@@ -50,6 +51,7 @@ export const navGroups: NavGroup[] = [
     label: "Guests & Web",
     items: [
       { label: "Invitations & RSVP", href: "/invitations", icon: MailOpen },
+      { label: "Check-in", href: "/check-in", icon: ScanLine },
       { label: "Entourage", href: "/sponsor-proposals", icon: HandHeart },
       { label: "Website", href: "/website", icon: Globe },
       // { label: "Media Library", href: "/media", icon: Image },

@@ -13,7 +13,8 @@ import { SparkleBurst } from "../effects/sparkle-burst";
 import { FloatingLanterns } from "../effects/floating-lanterns";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { GoldButton } from "../ui/gold-button";
-import type { InvitationGuest, InvitationResponse, RsvpStatusValue } from "../types";
+import type { InvitationCheckIn, InvitationGuest, InvitationResponse, RsvpStatusValue } from "../types";
+import { GuestCheckInQrCard } from "@/features/check-in/components/guest-check-in-qr-card";
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
@@ -83,6 +84,7 @@ export function Rsvp({ token, guest, response }: Props) {
   );
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [checkIn, setCheckIn] = React.useState<InvitationCheckIn | null>(guest?.checkIn ?? null);
 
   function loadResponse(next: InvitationResponse | null) {
     const parts = splitMessage(next?.message);
@@ -149,7 +151,12 @@ export function Rsvp({ token, guest, response }: Props) {
       });
 
       const payload = (await res.json().catch(() => null)) as
-        | { success?: boolean; message?: string; error?: string }
+        | {
+            success?: boolean;
+            message?: string;
+            error?: string;
+            checkIn?: InvitationCheckIn;
+          }
         | null;
 
       if (!res.ok || !payload?.success) {
@@ -165,6 +172,7 @@ export function Rsvp({ token, guest, response }: Props) {
 
       setStatus(reply.attending ? "ACCEPTED" : "DECLINED");
       setSavedResponse(reply);
+      setCheckIn(reply.attending ? payload.checkIn ?? null : null);
       setJustSubmitted(true);
       setEditing(false);
     } catch {
@@ -287,6 +295,13 @@ export function Rsvp({ token, guest, response }: Props) {
                         {savedResponse.plusOneName ? `, with ${savedResponse.plusOneName}` : ""}
                       </p>
                     )}
+                    {status === "ACCEPTED" && checkIn ? (
+                      <GuestCheckInQrCard
+                        qrDataUrl={checkIn.qrDataUrl}
+                        fullName={checkIn.fullName}
+                        variant="invite"
+                      />
+                    ) : null}
                     <div className="mt-6 flex items-center gap-2 font-serif italic text-lantern-rose">
                       <Heart className="h-4 w-4" />
                       {wedding.meta.hashtag}
