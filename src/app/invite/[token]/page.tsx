@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { resolveInvitation, markInvitationOpened } from "@/features/invitations/service";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
-import { InvitationExperience } from "@/features/invitations/components/fairytale/invitation-experience";
-import { InvitationNotFound } from "@/features/invitations/components/fairytale/invitation-not-found";
+import { LanternInvitationExperience } from "@/features/invitations/components/lantern/lantern-invitation-experience";
+import { InvitationNotFound } from "@/features/invitations/components/lantern/invitation-not-found";
 
 export const metadata: Metadata = { title: "You're Invited" };
 
@@ -42,7 +42,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     .filter(Boolean);
 
   return (
-    <InvitationExperience
+    <LanternInvitationExperience
       token={token}
       guest={{
         name: formatGuestDisplayName(guest),

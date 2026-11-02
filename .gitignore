@@ -40,3 +40,8 @@ next-env.d.ts
 
 # uploads (local dev)
 /public/uploads
+
+# Local-only oversized media (GitHub rejects files >100MB — compress before committing)
+*.local.mp4
+*.local.mov
+*.local.webm
