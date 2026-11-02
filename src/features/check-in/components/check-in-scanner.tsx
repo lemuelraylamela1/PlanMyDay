@@ -1,13 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Camera, CheckCircle2, AlertTriangle, Loader2, RotateCcw, Upload } from "lucide-react";
+import { Camera, CheckCircle2, AlertTriangle, Loader2, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   cameraSupportMessage,
-  decodeQrFromFile,
   decodeQrFromVideo,
   requestCameraStream,
 } from "@/features/check-in/lib/decode-qr";
@@ -35,7 +34,6 @@ interface Props {
 export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Props) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
   const rafRef = React.useRef<number | null>(null);
   const lastCodeRef = React.useRef<string | null>(null);
@@ -136,7 +134,6 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
       const tick = async () => {
         if (!scanningRef.current) return;
         const now = performance.now();
-        // Throttle jsQR work on slower phones.
         if (now - lastScanAt > 180 && videoRef.current && canvasRef.current) {
           lastScanAt = now;
           if (videoRef.current.readyState >= 2) {
@@ -159,30 +156,10 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
       const message =
         error instanceof Error
           ? error.message
-          : "Could not start the camera. Try Chrome/Edge, or upload a QR image.";
+          : "Could not start the camera. Open this page in Chrome or Safari and allow camera access.";
       setCameraError(message);
       setState({ kind: "idle" });
       stopCamera();
-    }
-  }
-
-  async function onFileSelected(file: File | null) {
-    if (!file) return;
-    lastCodeRef.current = null;
-    setState({ kind: "pending" });
-    stopCamera();
-
-    try {
-      const value = await decodeQrFromFile(file);
-      if (!value) {
-        setState({ kind: "error", message: "No QR code found in that image." });
-        return;
-      }
-      await submitCode(value);
-    } catch {
-      setState({ kind: "error", message: "Could not read that image." });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -277,34 +254,15 @@ export function CheckInScanner({ sessionToken, coupleNames, weddingTitle }: Prop
 
           {cameraError ? <p className="text-center text-sm text-amber-700">{cameraError}</p> : null}
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Button
-              onClick={() => void startCamera()}
-              disabled={state.kind === "scanning"}
-              className="w-full"
-            >
-              <Camera className="mr-2 h-4 w-4" />
-              {state.kind === "scanning" ? "Scanning…" : "Start camera"}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload QR image
-            </Button>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => void onFileSelected(e.target.files?.[0] ?? null)}
-          />
-          <p className="text-center text-xs text-muted-foreground">
-            Tip: on phones, allow camera when prompted. If camera still fails, upload a photo of the QR.
-          </p>
+          <Button
+            onClick={() => void startCamera()}
+            disabled={state.kind === "scanning"}
+            className="w-full"
+            size="lg"
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            {state.kind === "scanning" ? "Scanning…" : "Start camera"}
+          </Button>
         </div>
       ) : null}
     </div>

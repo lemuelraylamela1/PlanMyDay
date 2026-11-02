@@ -14,7 +14,7 @@ export function cameraSupportMessage(): string | null {
     return "Camera needs a secure link (https:// or localhost). Open the coordinator link from the dashboard on this device.";
   }
   if (!navigator.mediaDevices?.getUserMedia) {
-    return "This browser cannot access the camera. Try Chrome or Edge, or upload a QR image.";
+    return "This browser cannot access the camera. Open this link in Chrome or Safari.";
   }
   return null;
 }
@@ -45,16 +45,18 @@ export async function requestCameraStream(): Promise<MediaStream> {
       : "";
 
   if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-    throw new Error("Camera permission was blocked. Allow camera access for this site, then try again.");
+    throw new Error(
+      "Camera permission was blocked earlier. Tap the lock/tune icon in the address bar → Site settings → Camera → Allow, then tap Start camera again.",
+    );
   }
   if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-    throw new Error("No camera was found on this device. Use Upload QR image instead.");
+    throw new Error("No camera was found on this device.");
   }
   if (name === "NotReadableError" || name === "TrackStartError") {
     throw new Error("Camera is in use by another app. Close it and try again.");
   }
 
-  throw new Error("Could not start the camera. Try Chrome/Edge, or upload a QR image.");
+  throw new Error("Could not start the camera. Open this page in Chrome or Safari and allow camera access.");
 }
 
 async function detectWithBarcodeDetector(source: ImageBitmapSource): Promise<string | null> {

@@ -55,7 +55,8 @@ const nextConfig = {
       { key: "X-DNS-Prefetch-Control", value: "on" },
       {
         key: "Permissions-Policy",
-        value: "camera=(), microphone=(), geolocation=(self)",
+        // camera=(self) required for guest check-in scanner on /check-in/*
+        value: "camera=(self), microphone=(), geolocation=(self)",
       },
     ];
     return [{ source: "/:path*", headers: securityHeaders }];
