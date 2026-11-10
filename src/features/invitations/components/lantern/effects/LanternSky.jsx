@@ -246,6 +246,7 @@ const finish = (gl, program) => {
   return { program, uniforms };
 };
 
+/** @type {(props?: Record<string, any>) => any} */
 const LanternSky = ({
   focal = [0.5, 0.5],
   density = 1,
@@ -269,7 +270,7 @@ const LanternSky = ({
   className = '',
   style,
   ...rest
-}) => {
+} = {}) => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const wakeRef = useRef(null);

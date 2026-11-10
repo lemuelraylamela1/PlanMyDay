@@ -236,6 +236,7 @@ const finish = (gl, program) => {
   return { program, uniforms };
 };
 
+/** @type {(props?: Record<string, any>) => any} */
 const Galaxy = ({
   focal = [0.5, 0.5],
   rotation = [1.0, 0.0],
@@ -267,7 +268,7 @@ const Galaxy = ({
   className = '',
   style,
   ...rest
-}) => {
+} = {}) => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const wakeRef = useRef(null);

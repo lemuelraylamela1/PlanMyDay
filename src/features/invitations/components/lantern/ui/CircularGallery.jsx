@@ -225,6 +225,7 @@ const link = (gl) => {
   return { program, uniforms };
 };
 
+/** @type {(props?: Record<string, any>) => any} */
 const CircularGallery = ({
   items,
   bend = 3,
@@ -252,7 +253,7 @@ const CircularGallery = ({
   className = '',
   style,
   ...rest
-}) => {
+} = {}) => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const labelsRef = useRef(null);

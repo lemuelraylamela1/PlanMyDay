@@ -14,7 +14,10 @@ function shuffle<T>(list: T[]): T[] {
   const next = [...list];
   for (let i = next.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [next[i], next[j]] = [next[j], next[i]];
+    const a = next[i] as T;
+    const b = next[j] as T;
+    next[i] = b;
+    next[j] = a;
   }
   return next;
 }
