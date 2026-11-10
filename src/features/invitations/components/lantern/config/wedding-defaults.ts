@@ -10,6 +10,8 @@ export type StoryChapter = {
   date: string;
   title: string;
   description: string;
+  imageSrc: string;
+  imageAlt: string;
 };
 
 export type Hotel = {
@@ -132,7 +134,7 @@ export const weddingDefaults = {
     eyebrow: "Our Story",
     title: "A Love Written In Lantern Light",
     intro:
-      "Every fairytale has a beginning. Here is ours, told in the glowing moments that led us to forever.",
+      "Scroll with us through the nights that glowed a little brighter—three chapters of chance, adventure, and a vow still rising.",
     // PLACEHOLDER chapters — edit freely.
     chapters: [
       {
@@ -140,21 +142,27 @@ export const weddingDefaults = {
         date: "The Beginning",
         title: "When We First Met",
         description:
-          "Two paths crossed at just the right moment, and somehow the world felt a little brighter from that day on.",
+          "It began like a quiet spark—two strangers, one ordinary moment, and a warmth neither of us could name. From that day, the world tilted softly toward light.",
+        imageSrc: "/gallery/our-story/01.jpg",
+        imageAlt: "The first hello — where our story began",
       },
       {
         chapter: "Chapter Two",
         date: "Falling",
         title: "Our First Adventure",
         description:
-          "Long conversations, shared dreams, and laughter that never seemed to end. We knew we had found something rare.",
+          "Then came the long talks that outlasted evenings, the shared maps of dreams, and laughter that refused to fade. Somewhere between those miles, we knew this was rare.",
+        imageSrc: "/gallery/our-story/03.jpg",
+        imageAlt: "Adventures together along the way",
       },
       {
         chapter: "Chapter Three",
         date: "Forever",
         title: "The Proposal",
         description:
-          "Under a sky full of light, one question changed everything. With happy tears and a joyful yes, our forever began.",
+          "Under a sky washed in lantern glow, one question hung in the air. Tears answered before words could—and with a joyful yes, forever finally began.",
+        imageSrc: "/gallery/our-story/05.jpg",
+        imageAlt: "The proposal beneath the lantern light",
       },
     ] as StoryChapter[],
   },

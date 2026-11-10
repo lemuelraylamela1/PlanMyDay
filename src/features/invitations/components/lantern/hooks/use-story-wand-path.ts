@@ -75,6 +75,8 @@ export function useStoryWandPath(
           };
         };
 
+        // Sequential cinematic spreads: path arcs through each chapter marker,
+        // then settles on the end glow. Curviness keeps a gentle lantern-trail zigzag.
         const points = [
           ...chapters.map((chapter) => {
             const marker =
@@ -89,8 +91,8 @@ export function useStoryWandPath(
             trigger: startMarker,
             start: "clamp(top center)",
             endTrigger: endMarker ?? chapters[chapters.length - 1],
-            end: "clamp(top center)",
-            scrub: 1,
+            end: "clamp(bottom center)",
+            scrub: 1.15,
             invalidateOnRefresh: true,
           },
         });
@@ -102,7 +104,7 @@ export function useStoryWandPath(
             ease: "none",
             motionPath: {
               path: points,
-              curviness: 1.5,
+              curviness: 1.35,
               // Tip leads along the path (SVG wand points up / -Y).
               autoRotate: 90,
             },
@@ -110,9 +112,10 @@ export function useStoryWandPath(
           0,
         );
 
-        // Light chapter i as the wand nears that waypoint along the path.
+        // Light chapter i as the wand nears that waypoint (points include end marker).
+        const segmentCount = Math.max(points.length, 1);
         const thresholds = chapters.map((_, i) =>
-          Math.min(0.95, (i + 0.72) / Math.max(points.length, 1)),
+          Math.min(0.92, (i + 0.42) / segmentCount),
         );
 
         let lastSpawn = 0;

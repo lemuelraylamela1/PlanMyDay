@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import Galaxy from "../effects/Galaxy";
+import LanternSky from "../effects/LanternSky";
 import { HillSilhouette } from "../effects/hill-silhouette";
 import { FloatingLanterns } from "../effects/floating-lanterns";
 import { CastleSilhouette } from "../effects/castle-silhouette";
@@ -15,8 +15,8 @@ import { useExperience } from "../experience/experience-provider";
 import { useLanternContent } from "../content-context";
 import { useLanternPerf } from "../performance/lantern-perf-provider";
 
-/** Soft violet + lantern gold — matches countdown galaxy palette. */
-const GALAXY_STAR_COLORS = ["#f3eeff", "#c4b5fd", "#ffdf70", "#f4c444"];
+/** Warm Tangled paper-lantern palette for the WebGL sky. */
+const LANTERN_SKY_COLORS = ["#fff3b0", "#ffd45a", "#f5a24a", "#e8894a"];
 
 export function Hero() {
   const mounted = useMounted();
@@ -47,9 +47,10 @@ export function Hero() {
   const contentY = useTransform(scrollYProgress, [0, 1], ["0%", `${-22 * p}%`]);
   const contentOp = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
 
-  // Calmer than countdown — full-viewport sky sits under castle + lanterns.
-  const galaxyDensity = quality === "high" ? 1.15 : quality === "balanced" ? 0.85 : 0.55;
-  const galaxyLayers = quality === "high" ? 5 : quality === "balanced" ? 3 : 2;
+  // Festive Tangled lantern sky under castle — denser on high, lighter on low.
+  const skyDensity = quality === "high" ? 0.95 : quality === "balanced" ? 0.75 : 0.5;
+  const skyLayers = quality === "high" ? 4 : quality === "balanced" ? 3 : 2;
+  const svgLanternCount = quality === "high" ? 10 : quality === "balanced" ? 8 : 5;
 
   return (
     <section
@@ -65,20 +66,16 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -top-[10%] z-[1] h-[120%] overflow-hidden"
         aria-hidden
       >
-        <Galaxy
-          starColors={GALAXY_STAR_COLORS}
-          density={galaxyDensity}
-          layers={galaxyLayers}
-          glowIntensity={0.45}
-          flareIntensity={0.65}
-          starSize={1.05}
-          twinkleIntensity={0.4}
-          starSpeed={0.22}
-          speed={0.75}
-          rotationSpeed={0.03}
-          mouseRepulsion
-          mouseInteraction={!reduceMotion}
-          clickWarp={false}
+        <LanternSky
+          lanternColors={LANTERN_SKY_COLORS}
+          density={skyDensity}
+          layers={skyLayers}
+          glowIntensity={0.65}
+          lanternSize={0.7}
+          twinkleIntensity={0.22}
+          speed={0.95}
+          mouseRepulsion={false}
+          mouseInteraction={false}
           intro={!reduceMotion && revealed}
           disableAnimation={reduceMotion}
           transparent={false}
@@ -86,7 +83,7 @@ export function Hero() {
           opacity={1}
           dpr={profile.maxDpr}
         />
-        {/* Warm horizon twist — sunset wash over the violet galaxy toward the castle */}
+        {/* Warm horizon twist — sunset wash over the lantern sky toward the castle */}
         <div
           className="absolute inset-x-0 bottom-0 h-[48%]"
           style={{
@@ -143,8 +140,8 @@ export function Hero() {
         <CastleSilhouette className="h-[30vh] w-full min-[400px]:h-[32vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
       </motion.div>
 
-      <motion.div style={{ y: lanternsY }} className="pointer-events-none absolute inset-0 z-[4]" aria-hidden>
-        <FloatingLanterns count={22} intensity="festival" />
+      <motion.div style={{ y: lanternsY }} className="pointer-events-none absolute inset-0 z-[4] opacity-75" aria-hidden>
+        <FloatingLanterns count={svgLanternCount} intensity="festival" sizeScale={0.78} />
       </motion.div>
 
       <motion.div style={{ y: reflectionY }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]" aria-hidden>

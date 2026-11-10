@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { SectionHeading } from "../ui/section-heading";
+import Image from "next/image";
 import { MagicDust } from "../effects/magic-dust";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
@@ -58,15 +58,6 @@ function MagicWand() {
   );
 }
 
-/** Desktop zigzag + mobile-tight horizontal slots for chapter waypoints. */
-function chapterSlot(index: number, total: number) {
-  const t = total <= 1 ? 0.5 : index / (total - 1);
-  const top = 12 + t * 68;
-  const leftDesktop = index % 2 === 0 ? 8 : 52;
-  const leftMobile = index % 2 === 0 ? 4 : 18;
-  return { top, leftDesktop, leftMobile };
-}
-
 export function OurStory() {
   const wedding = useLanternContent();
   const { reducedMotion } = useExperience();
@@ -74,7 +65,6 @@ export function OurStory() {
   const pathRef = React.useRef<HTMLDivElement>(null);
 
   const chapters = wedding.story.chapters;
-  const stageMinHeight = `${Math.max(220, chapters.length * 85)}vh`;
   const enablePath = !reducedMotion && quality !== "low";
   const starTrail = enablePath;
   const maxStars = scaleEffectCount(18, profile.starScale, compact, 4);
@@ -102,69 +92,98 @@ export function OurStory() {
       <MagicDust count={20} intensity="soft" className="opacity-50" />
       <SceneAtmosphere tone="warm" className="opacity-60" />
 
-      <div className="relative z-[1] mx-auto max-w-5xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow={wedding.story.eyebrow}
-          title={wedding.story.title}
-          intro={wedding.story.intro}
-          theme="light"
-        />
-      </div>
+      {/* Prologue — editorial opener, not a generic section heading stack */}
+      <header className="story-prologue relative z-[1] mx-auto max-w-4xl px-4 pt-4 sm:px-6 sm:pt-6">
+        <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.45em] text-[#b76e79]">
+          {wedding.story.eyebrow}
+        </p>
+        <h2 className="story-prologue-title mt-5 max-w-[14ch] font-display text-[2.35rem] font-light leading-[1.08] tracking-[-0.03em] text-ink min-[380px]:text-4xl sm:max-w-none sm:text-6xl md:text-[4.25rem]">
+          {wedding.story.title}
+        </h2>
+        <p className="mt-6 max-w-xl font-serif text-lg leading-[1.85] text-ink/75 sm:text-xl sm:leading-[1.9]">
+          {wedding.story.intro}
+        </p>
+      </header>
 
-      <div
-        ref={pathRef}
-        className="story-path relative z-[1] mx-auto mt-10 w-full max-w-5xl px-4 sm:mt-14 sm:px-6"
-        style={{ minHeight: stageMinHeight }}
-      >
+      <div ref={pathRef} className="story-path relative z-[1] mt-12 w-full sm:mt-16">
         <div className="story-star-trail pointer-events-none absolute inset-0 z-20 overflow-visible" aria-hidden />
 
-        {/* Path start — wand begins here */}
         <div
-          className="story-path-start absolute left-1/2 top-[4%] z-30 -translate-x-1/2"
+          className="story-path-start absolute left-1/2 top-0 z-30 -translate-x-1/2 -translate-y-2"
           aria-hidden
         >
           <MagicWand />
           <span className="sr-only">Story path begins</span>
         </div>
 
-        {chapters.map((c, i) => {
-          const slot = chapterSlot(i, chapters.length);
-          return (
-            <article
-              key={`${c.chapter}-${c.title}`}
-              className={cn(
-                "story-chapter absolute z-10 w-[min(88vw,20.5rem)] sm:w-[min(42vw,22rem)]",
-                !enablePath && "is-lit",
-              )}
-              style={
-                {
-                  top: `${slot.top}%`,
-                  ["--chapter-left-mobile" as string]: `${slot.leftMobile}%`,
-                  ["--chapter-left-desktop" as string]: `${slot.leftDesktop}%`,
-                } as React.CSSProperties
-              }
-            >
-              <span className="story-chapter-marker" aria-hidden />
-              <div className="storybook-panel story-chapter-panel rounded-2xl p-5 sm:p-6">
-                <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.4em] text-lantern-rose/80">
-                  {c.chapter}
-                </p>
-                <h3 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
-                  {c.title}
-                </h3>
-                <p className="mt-1 font-serif italic text-lantern" style={{ color: "#b8860b" }}>
-                  {c.date}
-                </p>
-                <p className="story-chapter-body mt-3 font-serif text-[1.05rem] leading-[1.9] text-ink/80">
-                  {c.description}
-                </p>
-              </div>
-            </article>
-          );
-        })}
+        <div className="flex flex-col gap-16 sm:gap-24 md:gap-28">
+          {chapters.map((c, i) => {
+            const imageLeft = i % 2 === 0;
+            return (
+              <article
+                key={`${c.chapter}-${c.title}`}
+                className={cn(
+                  "story-chapter relative",
+                  !enablePath && "is-lit",
+                  imageLeft ? "story-chapter--image-left" : "story-chapter--image-right",
+                )}
+              >
+                <span className="story-chapter-marker" aria-hidden />
+
+                <div
+                  className={cn(
+                    "mx-auto grid max-w-6xl items-center gap-8 px-0 sm:gap-10 sm:px-6 lg:gap-14",
+                    "grid-cols-1 lg:grid-cols-2",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "story-chapter-media relative w-full overflow-hidden",
+                      imageLeft ? "lg:order-1" : "lg:order-2",
+                    )}
+                  >
+                    <div className="story-chapter-frame relative aspect-[4/5] w-full sm:aspect-[3/4] lg:aspect-[4/5]">
+                      <Image
+                        src={c.imageSrc}
+                        alt={c.imageAlt}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="story-chapter-image object-cover"
+                        priority={i === 0}
+                      />
+                      <div className="story-chapter-vignette" aria-hidden />
+                    </div>
+                  </div>
+
+                  <div
+                    className={cn(
+                      "story-chapter-prose px-4 sm:px-0",
+                      imageLeft
+                        ? "lg:order-2 lg:pl-2 lg:pr-6"
+                        : "lg:order-1 lg:pl-6 lg:pr-2",
+                    )}
+                  >
+                    <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.4em] text-lantern-rose/80">
+                      {c.chapter}
+                    </p>
+                    <h3 className="mt-3 font-display text-3xl font-semibold leading-[1.15] tracking-[-0.02em] text-ink sm:text-4xl md:text-[2.75rem]">
+                      {c.title}
+                    </h3>
+                    <p className="mt-2 font-serif text-base italic text-[#b8860b] sm:text-lg">
+                      {c.date}
+                    </p>
+                    <p className="story-chapter-body mt-5 max-w-md font-serif text-[1.1rem] leading-[1.95] text-ink/80 sm:text-[1.15rem] sm:leading-[2]">
+                      {c.description}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
 
         <div
-          className="story-path-end absolute left-1/2 top-[96%] h-3 w-3 -translate-x-1/2 rounded-full"
+          className="story-path-end relative mx-auto mt-16 h-3 w-3 sm:mt-20"
           aria-hidden
           style={{
             background: "radial-gradient(circle, #ffdf70 0%, transparent 70%)",
@@ -173,8 +192,8 @@ export function OurStory() {
         />
       </div>
 
-      <div className="relative z-[1] mx-auto max-w-5xl px-4 pb-4 text-center sm:px-6">
-        <p className="font-serif text-xl italic" style={{ color: "#b8860b" }}>
+      <div className="relative z-[1] mx-auto max-w-3xl px-4 pb-6 pt-10 text-center sm:px-6 sm:pt-14">
+        <p className="font-serif text-xl italic leading-relaxed text-[#b8860b] sm:text-2xl">
           {wedding.hero.closing}
         </p>
       </div>
