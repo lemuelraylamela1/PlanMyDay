@@ -8,6 +8,11 @@ import CircularGallery from "../ui/CircularGallery";
 import { MagicDust } from "../effects/magic-dust";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
+import {
+  useLanternPerf,
+  useMainEffectsActive,
+} from "../performance/lantern-perf-provider";
+import { useNearViewport } from "../hooks/use-near-viewport";
 import { galleryImages } from "../media";
 
 function shuffle<T>(list: T[]): T[] {
@@ -33,8 +38,13 @@ function toGalleryItems(list: typeof galleryImages) {
 export function Gallery() {
   const wedding = useLanternContent();
   const reduceMotion = useReducedMotion();
+  const { profile, compact } = useLanternPerf();
+  const effectsActive = useMainEffectsActive();
+  const stageRef = React.useRef<HTMLDivElement>(null);
+  const near = useNearViewport(stageRef, { enabled: effectsActive });
   // Stable order for SSR; shuffle only after mount to avoid hydration mismatch.
   const [items, setItems] = React.useState(() => toGalleryItems(galleryImages));
+  const showGallery = effectsActive && near;
 
   React.useEffect(() => {
     setItems(toGalleryItems(shuffle(galleryImages)));
@@ -63,23 +73,35 @@ export function Gallery() {
       </div>
 
       <div
+        ref={stageRef}
         className="relative z-10 mt-8 w-full sm:mt-10"
-        style={{ height: "560px", position: "relative" }}
+        style={{
+          height: compact ? "min(68vw, 420px)" : "560px",
+          position: "relative",
+        }}
         aria-label="Photo gallery"
       >
-        <CircularGallery
-          items={items}
-          bend={3}
-          textColor="#2a1540"
-          borderRadius={0.05}
-          scrollEase={0.05}
-          snap
-          showTitles
-          openOnClick
-          autoScroll={reduceMotion ? 0 : 0.35}
-          intro={!reduceMotion}
-          font='bold 28px "Cormorant Garamond", Georgia, serif'
-        />
+        {showGallery ? (
+          <CircularGallery
+            items={items}
+            bend={compact ? 2 : 3}
+            textColor="#2a1540"
+            borderRadius={0.05}
+            scrollEase={0.05}
+            snap
+            showTitles
+            openOnClick
+            autoScroll={reduceMotion ? 0 : compact ? 0.28 : 0.35}
+            intro={!reduceMotion}
+            itemSize={compact ? 1.12 : 1}
+            font={
+              compact
+                ? 'bold 22px "Cormorant Garamond", Georgia, serif'
+                : 'bold 28px "Cormorant Garamond", Georgia, serif'
+            }
+            dpr={profile.maxDpr}
+          />
+        ) : null}
       </div>
 
       <p className="relative z-10 mt-5 text-center font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-[#2a1540]/45 sm:mt-6">

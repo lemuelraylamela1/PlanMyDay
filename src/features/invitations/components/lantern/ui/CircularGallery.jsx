@@ -867,7 +867,8 @@ const CircularGallery = ({
         const dx = event.clientX - drag.x0;
         const dy = event.clientY - drag.y0;
         if (!drag.moved && Math.hypot(dx, dy) > 6) {
-          if (Math.abs(dy) > Math.abs(dx) && event.pointerType !== 'mouse') {
+          // Only yield to page scroll when the gesture is clearly vertical.
+          if (Math.abs(dy) > Math.abs(dx) * 1.35 && event.pointerType !== 'mouse') {
             state.drag = null;
             return;
           }
@@ -996,13 +997,20 @@ const CircularGallery = ({
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
-    const intersection = new IntersectionObserver((entries) => {
-      visible = entries.some((entry) => entry.isIntersecting);
-      if (visible) {
-        last = 0;
-        wake();
-      }
-    });
+    const intersection = new IntersectionObserver(
+      (entries) => {
+        visible = entries.some((entry) => entry.isIntersecting);
+        if (visible) {
+          last = 0;
+          // If the gallery initialized off-screen, finish a stalled intro so
+          // cards are visible on the first paint after scrolling into view.
+          if (state.intro < 0.15) state.intro = Math.max(state.intro, 0.35);
+          applyResize();
+          wake();
+        }
+      },
+      { rootMargin: '15% 0px' },
+    );
     intersection.observe(container);
     container.addEventListener('pointerdown', onPointerDown);
     container.addEventListener('pointermove', onPointerMove);

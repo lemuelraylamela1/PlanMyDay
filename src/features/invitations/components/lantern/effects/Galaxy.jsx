@@ -526,13 +526,18 @@ const Galaxy = ({
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
-    const intersection = new IntersectionObserver(entries => {
-      visible = entries.some(entry => entry.isIntersecting);
-      if (visible) {
-        last = 0;
-        wake();
-      }
-    });
+    const intersection = new IntersectionObserver(
+      (entries) => {
+        visible = entries.some((entry) => entry.isIntersecting);
+        if (visible) {
+          last = 0;
+          if (state.reveal < 0.15) state.reveal = Math.max(state.reveal, 0.35);
+          resize();
+          wake();
+        }
+      },
+      { rootMargin: '15% 0px' },
+    );
     intersection.observe(container);
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerdown', onPointerDown, { passive: true });
@@ -574,7 +579,9 @@ const Galaxy = ({
       programs.forEach(found => found.program && gl.deleteProgram(found.program));
       gl.deleteBuffer(buffer);
       gl.deleteVertexArray(vao);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      // Do not call WEBGL_lose_context.loseContext() — React Strict Mode
+      // remounts effects on the same canvas, and a lost context cannot be
+      // reacquired with getContext("webgl2"), leaving the sky blank.
     };
   }, []);
 

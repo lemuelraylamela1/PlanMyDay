@@ -66,23 +66,27 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -top-[10%] z-[1] h-[120%] overflow-hidden"
         aria-hidden
       >
-        <LanternSky
-          lanternColors={LANTERN_SKY_COLORS}
-          density={skyDensity}
-          layers={skyLayers}
-          glowIntensity={0.65}
-          lanternSize={0.7}
-          twinkleIntensity={0.22}
-          speed={0.95}
-          mouseRepulsion={false}
-          mouseInteraction={false}
-          intro={!reduceMotion && revealed}
-          disableAnimation={reduceMotion}
-          transparent={false}
-          backgroundColor="#0d0720"
-          opacity={1}
-          dpr={profile.maxDpr}
-        />
+        {/* Mount WebGL only after reveal — avoids blank canvases from mobile
+            GPU context pressure during the invitation/opening sequence. */}
+        {revealed ? (
+          <LanternSky
+            lanternColors={LANTERN_SKY_COLORS}
+            density={skyDensity}
+            layers={skyLayers}
+            glowIntensity={compact ? 0.8 : 0.65}
+            lanternSize={compact ? 0.95 : 0.7}
+            twinkleIntensity={0.22}
+            speed={0.95}
+            mouseRepulsion={false}
+            mouseInteraction={false}
+            intro={!reduceMotion}
+            disableAnimation={reduceMotion}
+            transparent={false}
+            backgroundColor="#0d0720"
+            opacity={1}
+            dpr={profile.maxDpr}
+          />
+        ) : null}
         {/* Warm horizon twist — sunset wash over the lantern sky toward the castle */}
         <div
           className="absolute inset-x-0 bottom-0 h-[48%]"
@@ -141,7 +145,11 @@ export function Hero() {
       </motion.div>
 
       <motion.div style={{ y: lanternsY }} className="pointer-events-none absolute inset-0 z-[4] opacity-75" aria-hidden>
-        <FloatingLanterns count={svgLanternCount} intensity="festival" sizeScale={0.78} />
+        <FloatingLanterns
+          count={svgLanternCount}
+          intensity="festival"
+          sizeScale={compact ? 0.95 : 0.78}
+        />
       </motion.div>
 
       <motion.div style={{ y: reflectionY }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]" aria-hidden>

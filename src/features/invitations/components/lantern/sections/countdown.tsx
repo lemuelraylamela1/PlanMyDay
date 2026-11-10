@@ -9,7 +9,11 @@ import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
-import { useLanternPerf } from "../performance/lantern-perf-provider";
+import {
+  useLanternPerf,
+  useMainEffectsActive,
+} from "../performance/lantern-perf-provider";
+import { useNearViewport } from "../hooks/use-near-viewport";
 
 /** Bright stars on the lantern night palette — soft violet + lantern gold. */
 const GALAXY_STAR_COLORS = ["#f3eeff", "#c4b5fd", "#ffdf70", "#f4c444"];
@@ -34,13 +38,17 @@ function getTimeLeft(target: number): TimeLeft | null {
 
 export function Countdown() {
   const wedding = useLanternContent();
-  const { profile, reduceMotion, quality } = useLanternPerf();
+  const { profile, reduceMotion, quality, compact } = useLanternPerf();
+  const effectsActive = useMainEffectsActive();
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const near = useNearViewport(sectionRef, { enabled: effectsActive });
   const target = React.useMemo(
     () => new Date(wedding.event.isoDate).getTime(),
     [wedding.event.isoDate]
   );
   const [time, setTime]     = React.useState<TimeLeft | null>(null);
   const [mounted, setMounted] = React.useState(false);
+  const showGalaxy = effectsActive && near;
 
   const galaxyDensity = quality === "high" ? 1.35 : quality === "balanced" ? 1 : 0.7;
   const galaxyLayers = quality === "high" ? 6 : quality === "balanced" ? 4 : 3;
@@ -68,6 +76,7 @@ export function Countdown() {
 
   return (
     <section
+      ref={sectionRef}
       id="countdown"
       className="relative overflow-hidden lantern-section"
       style={{ background: "linear-gradient(180deg, #0d0720 0%, #1e0f3a 60%, #2d1b5e 100%)" }}
@@ -77,27 +86,29 @@ export function Countdown() {
         aria-hidden
         className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
       >
-        <Galaxy
-          starColors={GALAXY_STAR_COLORS}
-          density={galaxyDensity}
-          layers={galaxyLayers}
-          glowIntensity={0.55}
-          flareIntensity={0.85}
-          starSize={1.15}
-          twinkleIntensity={0.45}
-          starSpeed={0.35}
-          speed={0.9}
-          rotationSpeed={0.05}
-          mouseRepulsion
-          mouseInteraction={!reduceMotion}
-          clickWarp={!reduceMotion}
-          intro={!reduceMotion}
-          disableAnimation={reduceMotion}
-          transparent={false}
-          backgroundColor="#0d0720"
-          opacity={1}
-          dpr={profile.maxDpr}
-        />
+        {showGalaxy ? (
+          <Galaxy
+            starColors={GALAXY_STAR_COLORS}
+            density={compact ? galaxyDensity * 1.15 : galaxyDensity}
+            layers={galaxyLayers}
+            glowIntensity={compact ? 0.7 : 0.55}
+            flareIntensity={0.85}
+            starSize={compact ? 1.35 : 1.15}
+            twinkleIntensity={0.45}
+            starSpeed={0.35}
+            speed={0.9}
+            rotationSpeed={0.05}
+            mouseRepulsion
+            mouseInteraction={!reduceMotion && !compact}
+            clickWarp={!reduceMotion && !compact}
+            intro={!reduceMotion}
+            disableAnimation={reduceMotion}
+            transparent={false}
+            backgroundColor="#0d0720"
+            opacity={1}
+            dpr={profile.maxDpr}
+          />
+        ) : null}
         {/* Soft violet depth so the field still reads as the lantern night gradient */}
         <div
           className="absolute inset-0"
