@@ -168,21 +168,7 @@ export const weddingDefaults = {
   gallery: {
     eyebrow: "Cherished Moments",
     title: "Our Gallery",
-    intro:
-      "A glimpse of the memories we hold dear. More to come as our story continues to unfold.",
-    placeholderCount: 10,
-    captions: [
-      "The first hello",
-      "Golden hour",
-      "Adventures together",
-      "Quiet moments",
-      "The proposal",
-      "Celebrations",
-      "Family & friends",
-      "Forever begins",
-      "Our story",
-      "The journey",
-    ],
+    intro: "Fifteen frames of our story. Drag or scroll to wander through.",
   },
 
   rsvp: {

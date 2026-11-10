@@ -13,6 +13,12 @@ import { Fireflies } from "../effects/fireflies";
 import { useMounted } from "../hooks/use-mounted";
 import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
+import {
+  OrnateFiligreeBanner,
+  OrnateScrollRod,
+  OrnateSideFiligree,
+  OrnateWaxSeal,
+} from "../ui/ornate-scroll";
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
@@ -41,21 +47,6 @@ const item: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: LUXURY } },
 };
-
-function ScrollRod({ position }: { position: "top" | "bottom" }) {
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute inset-x-[-0.45rem] z-20 flex h-3.5 items-center sm:inset-x-[-0.6rem] sm:h-5 ${
-        position === "top" ? "-top-1.5 sm:-top-2" : "-bottom-1.5 sm:-bottom-2"
-      }`}
-    >
-      <span className="scroll-rod-cap h-5 w-5 shrink-0 rounded-full sm:h-7 sm:w-7" />
-      <span className="scroll-rod h-full flex-1 rounded-full" />
-      <span className="scroll-rod-cap h-5 w-5 shrink-0 rounded-full sm:h-7 sm:w-7" />
-    </div>
-  );
-}
 
 export function InvitationGate() {
   const { guestName, open, beginMusic, reducedMotion } = useExperience();
@@ -96,7 +87,6 @@ export function InvitationGate() {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.55, ease: LUXURY } }}
     >
-      {/* Fixed atmosphere behind the scrollable parchment */}
       <div aria-hidden className="pointer-events-none fixed inset-0">
         <StarField
           className="absolute inset-0"
@@ -123,7 +113,6 @@ export function InvitationGate() {
         <div className="scroll-vignette absolute inset-0" />
       </div>
 
-      {/* Scrollable stage — centers when tall enough, scrolls on short phones */}
       <div className="relative z-10 flex min-h-[100svh] min-h-[100dvh] w-full items-center justify-center px-3 py-[max(1.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-10">
         <motion.div
           className="relative w-full max-w-[min(100%,20.5rem)] min-[380px]:max-w-[min(100%,22rem)] sm:max-w-md"
@@ -155,10 +144,10 @@ export function InvitationGate() {
               delay: 1.5,
             }}
           >
-            <ScrollRod position="top" />
+            <OrnateScrollRod position="top" />
 
             <motion.div
-              className="parchment parchment-edges relative overflow-hidden rounded-md px-5 py-8 text-center min-[380px]:px-7 min-[380px]:py-10 sm:px-11 sm:py-14"
+              className="parchment parchment-edges ornate-scroll-body relative overflow-hidden px-5 py-8 text-center min-[380px]:px-7 min-[380px]:py-10 sm:px-10 sm:py-12"
               style={{ transformOrigin: "center", willChange: "transform" }}
               initial={mounted ? { scaleY: reducedMotion ? 1 : 0 } : false}
               animate={mounted ? { scaleY: 1 } : false}
@@ -171,30 +160,21 @@ export function InvitationGate() {
             >
               <span
                 aria-hidden
-                className="parchment-grain pointer-events-none absolute inset-0 rounded-md"
+                className="parchment-grain pointer-events-none absolute inset-0"
               />
-
-              <span className="pointer-events-none absolute left-2.5 top-2.5 h-6 w-6 rounded-tl-md border-l-2 border-t-2 border-[#b8860b]/50 sm:left-3 sm:top-3 sm:h-8 sm:w-8" />
-              <span className="pointer-events-none absolute right-2.5 top-2.5 h-6 w-6 rounded-tr-md border-r-2 border-t-2 border-[#b8860b]/50 sm:right-3 sm:top-3 sm:h-8 sm:w-8" />
-              <span className="pointer-events-none absolute bottom-2.5 left-2.5 h-6 w-6 rounded-bl-md border-b-2 border-l-2 border-[#b8860b]/50 sm:bottom-3 sm:left-3 sm:h-8 sm:w-8" />
-              <span className="pointer-events-none absolute bottom-2.5 right-2.5 h-6 w-6 rounded-br-md border-b-2 border-r-2 border-[#b8860b]/50 sm:bottom-3 sm:right-3 sm:h-8 sm:w-8" />
+              <OrnateSideFiligree side="left" />
+              <OrnateSideFiligree side="right" />
 
               <motion.div
-                className="relative"
+                className="relative z-10"
                 variants={container}
                 initial="hidden"
                 animate={contentActive ? "show" : "hidden"}
               >
-                <motion.div variants={item} className="mb-3 flex justify-center sm:mb-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#b8860b]/50 bg-[#4a3218]/10 text-[#8a5a1e] shadow-[inset_0_0_18px_rgba(120,72,28,0.25)] sm:h-14 sm:w-14">
-                    <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-7 sm:w-7" fill="none">
-                      <path
-                        d="M12 2l2.4 5.6L20 8.6l-4 4.1.9 5.7L12 15.8 7.1 18.4 8 12.7 4 8.6l5.6-1z"
-                        fill="currentColor"
-                        opacity="0.85"
-                      />
-                    </svg>
-                  </div>
+                <OrnateFiligreeBanner position="top" />
+
+                <motion.div variants={item} className="mb-3 flex justify-center sm:mb-4">
+                  <OrnateWaxSeal />
                 </motion.div>
 
                 <motion.p
@@ -213,7 +193,7 @@ export function InvitationGate() {
 
                 <motion.div
                   variants={item}
-                  className="my-4 flex items-center justify-center gap-3 sm:my-6"
+                  className="my-4 flex items-center justify-center gap-3 sm:my-5"
                 >
                   <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#b8860b]/70 sm:w-12" />
                   <svg
@@ -256,10 +236,14 @@ export function InvitationGate() {
                 >
                   Tap to release the lanterns - music will play
                 </motion.p>
+
+                <div className="mt-5">
+                  <OrnateFiligreeBanner position="bottom" />
+                </div>
               </motion.div>
             </motion.div>
 
-            <ScrollRod position="bottom" />
+            <OrnateScrollRod position="bottom" />
           </motion.div>
         </motion.div>
       </div>

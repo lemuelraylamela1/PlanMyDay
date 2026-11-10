@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Lenis from "lenis";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useExperience } from "./experience-provider";
 import { useLanternPerf } from "../performance/lantern-perf-provider";
 
@@ -20,6 +21,10 @@ export function SmoothScroll() {
       smoothWheel: true,
       touchMultiplier: 1.5,
     });
+
+    // Keep GSAP ScrollTrigger (story wand path, etc.) in sync with Lenis.
+    const onLenisScroll = () => ScrollTrigger.update();
+    lenis.on("scroll", onLenisScroll);
 
     let raf = 0;
     const loop = (time: number) => {
@@ -52,6 +57,7 @@ export function SmoothScroll() {
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("click", onAnchorClick);
+      lenis.off("scroll", onLenisScroll);
       lenis.destroy();
     };
   }, [phase, reducedMotion, profile.smoothScroll, compact]);

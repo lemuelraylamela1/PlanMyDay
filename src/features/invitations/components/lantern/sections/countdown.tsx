@@ -4,11 +4,15 @@ import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { SectionHeading } from "../ui/section-heading";
 import { FloatingLanterns } from "../effects/floating-lanterns";
-import { StarField } from "../effects/star-field";
+import Galaxy from "../effects/Galaxy";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
+
+/** Bright stars on the lantern night palette — soft violet + lantern gold. */
+const GALAXY_STAR_COLORS = ["#f3eeff", "#c4b5fd", "#ffdf70", "#f4c444"];
 
 type TimeLeft = {
   days: number;
@@ -30,12 +34,16 @@ function getTimeLeft(target: number): TimeLeft | null {
 
 export function Countdown() {
   const wedding = useLanternContent();
+  const { profile, reduceMotion, quality } = useLanternPerf();
   const target = React.useMemo(
     () => new Date(wedding.event.isoDate).getTime(),
     [wedding.event.isoDate]
   );
   const [time, setTime]     = React.useState<TimeLeft | null>(null);
   const [mounted, setMounted] = React.useState(false);
+
+  const galaxyDensity = quality === "high" ? 1.35 : quality === "balanced" ? 1 : 0.7;
+  const galaxyLayers = quality === "high" ? 6 : quality === "balanced" ? 4 : 3;
 
   React.useEffect(() => {
     const initial = window.setTimeout(() => {
@@ -64,17 +72,52 @@ export function Countdown() {
       className="relative overflow-hidden lantern-section"
       style={{ background: "linear-gradient(180deg, #0d0720 0%, #1e0f3a 60%, #2d1b5e 100%)" }}
     >
-      <StarField className="absolute inset-0" count={120} parallaxFactor={0.04} />
-      <MagicDust count={14} intensity="normal" className="opacity-60 max-sm:opacity-45" />
-      <SceneAtmosphere tone="night" className="opacity-70" />
-
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="lantern-glow absolute left-1/2 top-1/2 h-[60vh] w-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-50" />
-        <div className="aurora-glow absolute left-1/2 top-1/3 h-[45vh] w-[85vw] -translate-x-1/2 opacity-60" />
+      {/* Opaque violet starfield — transparent WebGL was compositing as a washed blank sky. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+      >
+        <Galaxy
+          starColors={GALAXY_STAR_COLORS}
+          density={galaxyDensity}
+          layers={galaxyLayers}
+          glowIntensity={0.55}
+          flareIntensity={0.85}
+          starSize={1.15}
+          twinkleIntensity={0.45}
+          starSpeed={0.35}
+          speed={0.9}
+          rotationSpeed={0.05}
+          mouseRepulsion
+          mouseInteraction={!reduceMotion}
+          clickWarp={!reduceMotion}
+          intro={!reduceMotion}
+          disableAnimation={reduceMotion}
+          transparent={false}
+          backgroundColor="#0d0720"
+          opacity={1}
+          dpr={profile.maxDpr}
+        />
+        {/* Soft violet depth so the field still reads as the lantern night gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 0%, rgba(30,15,58,0.35) 55%, rgba(45,27,94,0.55) 100%)",
+          }}
+        />
       </div>
 
-      <FloatingLanterns count={8} intensity="festival" className="opacity-80 max-sm:opacity-60" />
-      <LanternReflection className="opacity-50" />
+      <MagicDust count={10} intensity="soft" className="z-[2] opacity-35 max-sm:opacity-25" />
+      <SceneAtmosphere tone="night" className="z-[2] opacity-40" />
+
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-[2]">
+        <div className="lantern-glow absolute left-1/2 top-1/2 h-[55vh] w-[55vh] -translate-x-1/2 -translate-y-1/2 opacity-35" />
+        <div className="aurora-glow absolute left-1/2 top-1/3 h-[40vh] w-[80vw] -translate-x-1/2 opacity-35" />
+      </div>
+
+      <FloatingLanterns count={8} intensity="festival" className="z-[3] opacity-80 max-sm:opacity-60" />
+      <LanternReflection className="z-[3] opacity-50" />
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6">
         <SectionHeading

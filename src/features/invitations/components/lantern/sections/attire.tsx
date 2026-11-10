@@ -89,17 +89,17 @@ export function Attire() {
             {dressCode.note}
           </p>
 
-          <div className="mt-6 flex items-center gap-3 sm:mt-7">
+          <div className="mt-7 flex items-center gap-4 sm:mt-8 sm:gap-5">
             <span
               aria-hidden
-              className="hidden h-px w-10 bg-lantern-rose/35 sm:block"
+              className="hidden h-px w-12 bg-lantern-rose/50 sm:block sm:w-16"
             />
-            <p className="font-cinzel text-[11px] font-semibold uppercase tracking-[0.34em] text-lantern-rose sm:text-xs sm:tracking-[0.38em]">
+            <p className="font-cinzel text-base font-bold uppercase tracking-[0.22em] text-lantern sm:text-xl sm:tracking-[0.28em] lg:text-2xl lg:tracking-[0.3em]">
               {dressCode.restriction}
             </p>
             <span
               aria-hidden
-              className="hidden h-px w-10 bg-lantern-rose/35 sm:block"
+              className="hidden h-px w-12 bg-lantern-rose/50 sm:block sm:w-16"
             />
           </div>
         </motion.header>

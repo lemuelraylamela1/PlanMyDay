@@ -18,7 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "drive:auth": "node scripts/google-drive-oauth.mjs"
+    "drive:auth": "node scripts/google-drive-oauth.mjs",
+    "postinstall": "patch-package"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -89,6 +90,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
     "eslint-config-next": "^16.2.10",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.10",
     "prettier": "^3.4.2",
     "prisma": "^6.1.0",

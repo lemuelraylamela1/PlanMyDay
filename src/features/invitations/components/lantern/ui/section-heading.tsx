@@ -39,7 +39,7 @@ export function SectionHeading({
         <span
           className={cn(
             "font-cinzel text-[10px] font-semibold uppercase tracking-[0.4em]",
-            isDark ? "text-lantern-rose/90" : "text-lantern-rose/80"
+            isDark ? "text-[#f5c0cf]" : "text-[#b76e79]",
           )}
         >
           {eyebrow}
@@ -58,14 +58,14 @@ export function SectionHeading({
               "h-px w-10",
               isDark
                 ? "bg-gradient-to-r from-transparent to-lantern/70"
-                : "bg-gradient-to-r from-transparent to-lantern-rose/50"
+                : "bg-gradient-to-r from-transparent to-[#e8829a]/70"
             )}
           />
         )}
         <h2
           className={cn(
             "max-w-[16ch] font-display text-[1.85rem] font-light leading-[1.15] tracking-[-0.02em] min-[380px]:text-3xl sm:max-w-none sm:text-5xl",
-            isDark ? "text-gold-foil" : "text-ink"
+            isDark ? "text-gold-foil" : "text-[#2a1540]"
           )}
         >
           {title}
@@ -76,7 +76,7 @@ export function SectionHeading({
               "h-px w-10",
               isDark
                 ? "bg-gradient-to-l from-transparent to-lantern/70"
-                : "bg-gradient-to-l from-transparent to-lantern-rose/50"
+                : "bg-gradient-to-l from-transparent to-[#e8829a]/70"
             )}
           />
         )}
@@ -87,7 +87,7 @@ export function SectionHeading({
           className={cn(
             "max-w-2xl px-1 font-serif text-base leading-[1.75] sm:text-xl sm:leading-[1.85]",
             isCenter ? "mx-auto" : "",
-            isDark ? "text-blush/85" : "text-ink/80"
+            isDark ? "text-[#f5c0cf]/90" : "text-[#2a1540]/75",
           )}
         >
           {intro}

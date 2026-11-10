@@ -389,6 +389,128 @@ body.experience-locked {
   animation: lantern-border-glow 7s ease-in-out infinite;
 }
 
+/* —— Our Story: magical wand MotionPath storytelling —— */
+@keyframes story-wand-tip-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(255, 223, 112, 0.85))
+      drop-shadow(0 0 18px rgba(244, 196, 68, 0.45));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(255, 246, 214, 1))
+      drop-shadow(0 0 28px rgba(244, 196, 68, 0.7));
+    transform: scale(1.06);
+  }
+}
+
+@keyframes story-star-drift {
+  0% {
+    opacity: 0.95;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--star-drift-x, 12px), var(--star-drift-y, -28px), 0)
+      scale(0.35);
+  }
+}
+
+.invite-root .story-wand {
+  position: relative;
+  width: 2.75rem;
+  height: 6.75rem;
+  z-index: 30;
+  will-change: transform;
+  filter: drop-shadow(0 0 10px rgba(244, 196, 68, 0.4));
+  pointer-events: none;
+}
+
+.invite-root .story-wand-tip {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: story-wand-tip-pulse 2.4s ease-in-out infinite;
+}
+
+.invite-root .story-wand-aura {
+  opacity: 0.85;
+}
+
+.invite-root .story-chapter {
+  left: var(--chapter-left-mobile, 8%);
+  opacity: 0.38;
+  transform: scale(0.96);
+  filter: saturate(0.75);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s ease,
+    filter 0.55s ease;
+}
+
+@media (min-width: 640px) {
+  .invite-root .story-chapter {
+    left: var(--chapter-left-desktop, 8%);
+  }
+
+  .invite-root .story-wand {
+    width: 3.25rem;
+    height: 8rem;
+  }
+}
+
+.invite-root .story-chapter-marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #ffdf70 0%, rgba(244, 196, 68, 0.2) 70%, transparent 100%);
+  box-shadow: 0 0 14px rgba(244, 196, 68, 0.55);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.invite-root .story-chapter.is-lit {
+  opacity: 1;
+  transform: scale(1);
+  filter: none;
+}
+
+.invite-root .story-chapter.is-lit .story-chapter-marker {
+  opacity: 1;
+  box-shadow:
+    0 0 18px rgba(244, 196, 68, 0.8),
+    0 0 36px rgba(232, 130, 154, 0.35);
+}
+
+.invite-root .story-chapter.is-lit .story-chapter-panel {
+  box-shadow:
+    0 24px 80px -42px rgba(42, 21, 64, 0.55),
+    0 0 0 1px rgba(244, 196, 68, 0.35),
+    0 0 42px rgba(244, 196, 68, 0.22);
+}
+
+.invite-root .story-chapter:not(.is-lit) .story-chapter-body {
+  opacity: 0.55;
+}
+
+.invite-root .story-star {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 25;
+  background:
+    radial-gradient(circle at 50% 50%, #fffef6 0%, #ffdf70 35%, rgba(244, 196, 68, 0) 72%);
+  box-shadow:
+    0 0 8px rgba(255, 223, 112, 0.95),
+    0 0 16px rgba(244, 196, 68, 0.55);
+  animation: story-star-drift 1.1s ease-out forwards;
+  will-change: transform, opacity;
+}
+
 .invite-root .parchment {
   background-color: #f3e2c0;
   background-image:
@@ -435,6 +557,23 @@ body.experience-locked {
 .invite-root .scroll-rod-cap {
   background: radial-gradient(circle at 35% 30%, #d9a24e, #8a5a26 60%, #4d3116 100%);
   box-shadow: 0 0 0 2px rgba(244, 196, 68, 0.35), 0 6px 14px -4px rgba(0, 0, 0, 0.6);
+}
+.invite-root .scroll-rod-finial {
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 32% 28%, #f0d089 0%, #c4893a 45%, #7a4e22 78%, #3f2812 100%);
+  box-shadow:
+    0 0 0 1.5px rgba(212, 168, 64, 0.45),
+    inset 0 2px 3px rgba(255, 240, 200, 0.4),
+    0 6px 14px -4px rgba(0, 0, 0, 0.65);
+}
+.invite-root .ornate-scroll-body {
+  border-radius: 0.35rem;
+  box-shadow:
+    inset 0 0 26px rgba(120, 72, 28, 0.4),
+    inset 0 0 70px rgba(150, 96, 40, 0.22),
+    inset 0 2px 3px rgba(255, 250, 235, 0.5),
+    0 28px 70px -36px rgba(0, 0, 0, 0.75);
 }
 
 .invite-root .scroll-vignette {
@@ -508,6 +647,17 @@ html[data-lantern-perf="low"] .invite-root .storybook-panel {
   animation: none;
 }
 
+html[data-lantern-perf="balanced"] .invite-root .story-wand-tip,
+html[data-lantern-perf="low"] .invite-root .story-wand-tip {
+  animation: none;
+}
+
+html[data-lantern-perf="low"] .invite-root .story-chapter {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .invite-root *,
   .invite-root *::before,
@@ -516,5 +666,15 @@ html[data-lantern-perf="low"] .invite-root .storybook-panel {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .invite-root .story-chapter {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .invite-root .story-wand {
+    visibility: hidden;
   }
 }

@@ -26,24 +26,65 @@ export const portraitHeroImages = [
   },
 ] as const;
 
-/** Gallery images from proposal photos. */
+/** Single gallery photo. */
 export interface GalleryImage {
   src: string;
   caption: string;
 }
 
-export const galleryImages: GalleryImage[] = [
-  { src: "/proposal-photos/hero-01.jpg", caption: "The first hello" },
-  { src: "/proposal-photos/hero-02.jpg", caption: "Golden hour" },
-  { src: "/proposal-photos/hero-03.jpg", caption: "Adventures together" },
-  { src: "/proposal-photos/hero-04.jpg", caption: "Quiet moments" },
-  { src: "/proposal-photos/hero-05.jpg", caption: "The proposal" },
-  { src: "/proposal-photos/hero-06.jpg", caption: "Celebrations" },
-  { src: "/proposal-photos/hero-07.jpg", caption: "Family & friends" },
-  { src: "/proposal-photos/hero-08.jpg", caption: "Forever begins" },
-  { src: "/proposal-photos/hero-09.jpg", caption: "Our story" },
-  { src: "/proposal-photos/hero-10.jpg", caption: "The journey" },
+/** One categorized gallery set (5 photos each). */
+export interface GallerySet {
+  id: string;
+  title: string;
+  description?: string;
+  images: GalleryImage[];
+}
+
+/**
+ * Our Gallery — 3 sets × 5 images.
+ * Replace files in `public/gallery/{set-id}/01.jpg` … `05.jpg` when uploading finals.
+ */
+export const gallerySets: GallerySet[] = [
+  {
+    id: "our-story",
+    title: "Our Story",
+    description: "Where it all began.",
+    images: [
+      { src: "/gallery/our-story/01.jpg", caption: "The first hello" },
+      { src: "/gallery/our-story/02.jpg", caption: "Golden hour" },
+      { src: "/gallery/our-story/03.jpg", caption: "Adventures together" },
+      { src: "/gallery/our-story/04.jpg", caption: "Quiet moments" },
+      { src: "/gallery/our-story/05.jpg", caption: "The proposal" },
+    ],
+  },
+  {
+    id: "fairytale",
+    title: "Fairytale",
+    description: "A day wrapped in lantern light.",
+    images: [
+      { src: "/gallery/fairytale/01.jpg", caption: "Celebrations" },
+      { src: "/gallery/fairytale/02.jpg", caption: "Family & friends" },
+      { src: "/gallery/fairytale/03.jpg", caption: "Forever begins" },
+      { src: "/gallery/fairytale/04.jpg", caption: "Our story" },
+      { src: "/gallery/fairytale/05.jpg", caption: "The journey" },
+    ],
+  },
+  {
+    id: "forever",
+    title: "Forever",
+    description: "Moments we will always keep.",
+    images: [
+      { src: "/gallery/forever/01.jpg", caption: "Side by side" },
+      { src: "/gallery/forever/02.jpg", caption: "Soft glances" },
+      { src: "/gallery/forever/03.jpg", caption: "Hand in hand" },
+      { src: "/gallery/forever/04.jpg", caption: "Promise kept" },
+      { src: "/gallery/forever/05.jpg", caption: "Always yours" },
+    ],
+  },
 ];
+
+/** Flat list of all gallery photos (15). */
+export const galleryImages: GalleryImage[] = gallerySets.flatMap((set) => set.images);
 
 /** Venue photo for wedding details. */
 export const VENUE_IMAGE = {
