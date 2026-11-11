@@ -134,7 +134,7 @@ export const weddingDefaults = {
     eyebrow: "Our Story",
     title: "A Love Written In Lantern Light",
     intro:
-      "Scroll with us through the nights that glowed a little brighter—five frames of chance, adventure, and a vow still rising.",
+      "Open this little book and turn each page—five chapters of chance, adventure, and a vow still rising under lantern light.",
     // PLACEHOLDER chapters — edit freely.
     chapters: [
       {

@@ -594,6 +594,82 @@ body.experience-locked {
   animation: lantern-border-glow 7s ease-in-out infinite;
 }
 
+/* —— Our Story: Tangled page-flip book —— */
+@keyframes story-book-hint-pulse {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 18px rgba(244, 196, 68, 0.14);
+  }
+  50% {
+    transform: translateY(-3px);
+    box-shadow: 0 0 28px rgba(244, 196, 68, 0.28);
+  }
+}
+
+@keyframes story-book-sun-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+.invite-root .story-book-cover {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 28%, rgba(244, 196, 68, 0.22), transparent 60%),
+    radial-gradient(ellipse 90% 70% at 50% 100%, rgba(232, 130, 154, 0.18), transparent 55%),
+    linear-gradient(165deg, #2a1540 0%, #1e0f3a 42%, #0d0720 100%);
+  color: #fdf6ec;
+  box-shadow: inset 0 0 0 1px rgba(244, 196, 68, 0.22);
+}
+
+.invite-root .story-book-cover-glow {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 223, 112, 0.2), transparent 42%),
+    radial-gradient(circle at 70% 80%, rgba(232, 130, 154, 0.12), transparent 45%);
+}
+
+.invite-root .story-book-foil {
+  border: 1px solid rgba(244, 196, 68, 0.38);
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 196, 68, 0.12),
+    inset 0 0 24px rgba(244, 196, 68, 0.08);
+}
+
+.invite-root .story-book-sunburst {
+  animation: story-book-sun-breathe 4.5s ease-in-out infinite;
+}
+
+.invite-root .story-book-endpaper,
+.invite-root .story-book-page {
+  background-color: #f3e2c0;
+  background-image:
+    radial-gradient(ellipse at 22% 18%, rgba(255, 250, 235, 0.9), transparent 55%),
+    radial-gradient(ellipse at 82% 78%, rgba(238, 214, 170, 0.85), transparent 60%),
+    linear-gradient(160deg, #f7ead0 0%, #efdcb6 42%, #e7cfa0 100%);
+  color: #4a3218;
+  box-shadow: inset 0 0 28px rgba(120, 72, 28, 0.22);
+}
+
+.invite-root .story-book-glow {
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgba(244, 196, 68, 0.28) 0%,
+    rgba(232, 130, 154, 0.08) 42%,
+    transparent 70%
+  );
+  filter: blur(18px);
+}
+
+.invite-root .story-book-hint-icon {
+  animation: story-book-hint-pulse 2.8s ease-in-out infinite;
+}
+
 /* —— Our Story: cinematic chapters + wand MotionPath —— */
 @keyframes story-wand-tip-pulse {
   0%,
@@ -936,6 +1012,13 @@ html[data-lantern-perf="low"] .invite-root .dark-glass {
 }
 
 html[data-lantern-perf="low"] .invite-root .storybook-panel {
+  animation: none;
+}
+
+html[data-lantern-perf="balanced"] .invite-root .story-book-hint-icon,
+html[data-lantern-perf="low"] .invite-root .story-book-hint-icon,
+html[data-lantern-perf="balanced"] .invite-root .story-book-sunburst,
+html[data-lantern-perf="low"] .invite-root .story-book-sunburst {
   animation: none;
 }
 
