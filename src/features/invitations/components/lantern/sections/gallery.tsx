@@ -50,6 +50,8 @@ function GalleryLightbox({
   onClose: () => void;
 }) {
   const closeRef = React.useRef<HTMLButtonElement>(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
 
   React.useEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -59,7 +61,7 @@ function GalleryLightbox({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -67,15 +69,19 @@ function GalleryLightbox({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, []);
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-[#120814]/92 p-3 sm:p-6"
+      className="fixed inset-0 z-[120] flex touch-none items-center justify-center bg-[#120814]/92 p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={item.text || item.alt || "Photograph"}
       onClick={onClose}
+      onPointerUp={(event) => {
+        // Mobile: treat backdrop release as close even if click is suppressed.
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <button
         ref={closeRef}

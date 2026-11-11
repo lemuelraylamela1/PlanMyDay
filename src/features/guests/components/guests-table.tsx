@@ -63,7 +63,10 @@ import {
   updateInvitationStatusAction,
 } from "@/features/guests/actions";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
-import { generateInviteAction } from "@/features/invitations/actions";
+import {
+  generateInviteAction,
+  regenerateInviteAction,
+} from "@/features/invitations/actions";
 import { getGuestCheckInQrAction } from "@/features/check-in/actions";
 import { downloadQrPng } from "@/features/check-in/components/guest-check-in-qr-card";
 
@@ -116,7 +119,12 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
   const [query, setQuery] = React.useState(filter.q ?? "");
   const [pending, setPending] = React.useState(false);
   const [linkLoadingId, setLinkLoadingId] = React.useState<string | null>(null);
-  const [rsvpLink, setRsvpLink] = React.useState<{ name: string; url: string; qr: string } | null>(null);
+  const [rsvpLink, setRsvpLink] = React.useState<{
+    name: string;
+    url: string;
+    qr: string;
+    guestId: string;
+  } | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [weddingIdQr, setWeddingIdQr] = React.useState<{ fullName: string; qrDataUrl: string } | null>(
@@ -209,9 +217,31 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
         name: formatGuestDisplayName(g),
         url: res.data.url,
         qr: res.data.qr,
+        guestId: g.id,
       });
       setCopied(false);
       setLinkDialogOpen(true);
+    } else if (!res.success) {
+      toast.error(res.error);
+    }
+  }
+
+  async function onRegenerateRsvpLink() {
+    if (!rsvpLink) return;
+    if (
+      !confirm(
+        "Generate a new invitation link? The previous link and QR code will stop working.",
+      )
+    ) {
+      return;
+    }
+    setLinkLoadingId(rsvpLink.guestId);
+    const res = await regenerateInviteAction(rsvpLink.guestId);
+    setLinkLoadingId(null);
+    if (res.success && res.data) {
+      setRsvpLink({ ...rsvpLink, url: res.data.url, qr: res.data.qr });
+      setCopied(false);
+      toast.success("New invitation link generated.");
     } else if (!res.success) {
       toast.error(res.error);
     }
@@ -476,7 +506,7 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
           <DialogHeader>
             <DialogTitle>RSVP link for {rsvpLink?.name}</DialogTitle>
             <DialogDescription>
-              Share this secure link or QR code. It opens the RSVP website with{" "}
+              This link stays valid until you generate a new one. It opens the RSVP website with{" "}
               {rsvpLink?.name}&apos;s name pre-filled — no personal details are exposed in the URL.
             </DialogDescription>
           </DialogHeader>
@@ -498,6 +528,17 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                   {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={onRegenerateRsvpLink}
+                disabled={linkLoadingId === rsvpLink.guestId}
+              >
+                {linkLoadingId === rsvpLink.guestId ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Generate new link
+              </Button>
             </div>
           )}
         </DialogContent>

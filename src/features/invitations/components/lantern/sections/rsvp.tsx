@@ -164,7 +164,7 @@ export function Rsvp({ token, guest, response }: Props) {
         const failure =
           payload?.error ||
           (res.status === 404
-            ? "This invitation link is invalid or has expired."
+            ? "This invitation link is invalid or has been replaced."
             : "We couldn't send your reply. Please try again.");
         setError(failure);
         toast.error(failure);

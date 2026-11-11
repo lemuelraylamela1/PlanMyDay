@@ -386,10 +386,13 @@ const CircularGallery = ({
       hover: new Map(),
       focus: new Map(),
       drag: null,
+      /** Survives vertical scroll-yield so a light tap can still open the lightbox. */
+      press: null,
       lastInput: 0,
       active: 0,
       spacing: 1
     };
+    const TAP_SLOP = 14;
     let cards = [];
     let pool = [];
     let raf = 0;
@@ -845,9 +848,65 @@ const CircularGallery = ({
       setSlot(nearest());
     };
 
+    const activateCard = (card) => {
+      if (!card) return;
+      const s = settingsRef.current;
+      s.onItemClick?.(card.item, card.index);
+      if (!s.openOnClick) {
+        setSlot(card.slot);
+        return;
+      }
+      if (state.open > 0.5 && card.slot === state.active) close();
+      else openSlot(card.slot);
+    };
+
+    const finishPress = (event, { treatAsTap }) => {
+      const press = state.press;
+      if (!press || press.id !== event.pointerId) return;
+      const drag = state.drag && state.drag.id === event.pointerId ? state.drag : null;
+      state.press = null;
+      state.drag = null;
+      container.removeAttribute('data-dragging');
+      if (container.hasPointerCapture?.(event.pointerId)) {
+        container.releasePointerCapture(event.pointerId);
+      }
+
+      const dist = Math.hypot(event.clientX - press.x0, event.clientY - press.y0);
+      if (drag?.moved) {
+        const samples = drag.samples;
+        if (samples.length > 1) {
+          const a = samples[0];
+          const b = samples[samples.length - 1];
+          const span = Math.max(b.t - a.t, 16);
+          const speed = ((b.x - a.x) / span) * 1000;
+          state.target -= speed * 0.18 * (settingsRef.current.scrollSpeed / 2);
+        }
+        snapNow();
+        return;
+      }
+
+      if (treatAsTap && dist <= TAP_SLOP) {
+        const card = press.card || hit(point(event)) || hit(press.p);
+        if (card) {
+          activateCard(card);
+          return;
+        }
+        if (state.open > 0.5) close();
+      }
+    };
+
     const onPointerDown = (event) => {
       if (event.button !== 0 || event.target.closest('[data-gallery-close]')) return;
       const p = point(event);
+      const card = hit(p);
+      state.press = {
+        id: event.pointerId,
+        x0: event.clientX,
+        y0: event.clientY,
+        p,
+        card,
+        pointerType: event.pointerType
+      };
       state.drag = {
         id: event.pointerId,
         x0: event.clientX,
@@ -866,7 +925,7 @@ const CircularGallery = ({
       if (drag && drag.id === event.pointerId) {
         const dx = event.clientX - drag.x0;
         const dy = event.clientY - drag.y0;
-        if (!drag.moved && Math.hypot(dx, dy) > 6) {
+        if (!drag.moved && Math.hypot(dx, dy) > TAP_SLOP) {
           // Only yield to page scroll when the gesture is clearly vertical.
           if (Math.abs(dy) > Math.abs(dx) * 1.35 && event.pointerType !== 'mouse') {
             state.drag = null;
@@ -890,44 +949,17 @@ const CircularGallery = ({
     };
 
     const onPointerUp = (event) => {
-      const drag = state.drag;
-      if (!drag || drag.id !== event.pointerId) return;
-      state.drag = null;
-      container.removeAttribute('data-dragging');
-      if (container.hasPointerCapture?.(event.pointerId)) container.releasePointerCapture(event.pointerId);
-      if (drag.moved) {
-        const samples = drag.samples;
-        if (samples.length > 1) {
-          const a = samples[0];
-          const b = samples[samples.length - 1];
-          const span = Math.max(b.t - a.t, 16);
-          const speed = ((b.x - a.x) / span) * 1000;
-          state.target -= speed * 0.18 * (settingsRef.current.scrollSpeed / 2);
-        }
-        snapNow();
-        return;
-      }
-      const card = hit(drag.p);
-      const s = settingsRef.current;
-      if (!card) {
-        if (state.open > 0.5) close();
-        return;
-      }
-      s.onItemClick?.(card.item, card.index);
-      if (!s.openOnClick) {
-        setSlot(card.slot);
-        return;
-      }
-      if (state.open > 0.5 && card.slot === state.active) close();
-      else openSlot(card.slot);
+      finishPress(event, { treatAsTap: true });
     };
 
     const onPointerCancel = (event) => {
-      if (state.drag && state.drag.id === event.pointerId) {
-        state.drag = null;
-        container.removeAttribute('data-dragging');
-        snapNow();
-      }
+      // Mobile browsers cancel the pointer when they take over scrolling.
+      // Still open on a near-stationary tap; otherwise just clear state.
+      const press = state.press;
+      if (!press || press.id !== event.pointerId) return;
+      const dist = Math.hypot(event.clientX - press.x0, event.clientY - press.y0);
+      finishPress(event, { treatAsTap: dist <= TAP_SLOP });
+      if (dist > TAP_SLOP) snapNow();
     };
 
     const onPointerLeave = () => {

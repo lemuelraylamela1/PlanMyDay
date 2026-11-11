@@ -8,6 +8,7 @@ import { ActionResult, fail, ok } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import {
   issueInvitationToken,
+  regenerateInvitationToken,
   getInvitationQrDataUrl,
   resolveInvitation,
 } from "@/features/invitations/service";
@@ -22,6 +23,7 @@ export async function generateInviteAction(
   });
   if (!guest) return fail("Guest not found.");
 
+  // Reuses the existing link when present — does not rotate/expire the guest URL.
   const { url } = await issueInvitationToken(wedding.id, guestId);
   const qr = await getInvitationQrDataUrl(url);
 
@@ -36,7 +38,38 @@ export async function generateInviteAction(
     action: "INVITE",
     entityType: "Guest",
     entityId: guestId,
-    summary: `Generated invitation for ${guest.firstName}`,
+    summary: `Opened invitation link for ${guest.firstName}`,
+  });
+
+  revalidatePath("/invitations");
+  return ok({ url, qr });
+}
+
+/** Explicitly rotates a guest invite URL; the previous link stops working. */
+export async function regenerateInviteAction(
+  guestId: string,
+): Promise<ActionResult<{ url: string; qr: string }>> {
+  const { wedding, user } = await getCurrentWedding();
+  const guest = await db.guest.findFirst({
+    where: { id: guestId, weddingId: wedding.id, deletedAt: null },
+  });
+  if (!guest) return fail("Guest not found.");
+
+  const { url } = await regenerateInvitationToken(wedding.id, guestId);
+  const qr = await getInvitationQrDataUrl(url);
+
+  await db.guest.update({
+    where: { id: guestId },
+    data: { invitationStatus: guest.invitationStatus === "NOT_SENT" ? "SENT" : guest.invitationStatus },
+  });
+
+  await logActivity({
+    weddingId: wedding.id,
+    userId: user.id,
+    action: "INVITE",
+    entityType: "Guest",
+    entityId: guestId,
+    summary: `Regenerated invitation link for ${guest.firstName}`,
   });
 
   revalidatePath("/invitations");
@@ -86,7 +119,7 @@ export async function submitInvitationRsvpAction(
   },
 ): Promise<ActionResult> {
   const invitation = await resolveInvitation(token);
-  if (!invitation) return fail("This invitation link is invalid or has expired.");
+  if (!invitation) return fail("This invitation link is invalid or has been replaced.");
 
   const result = await submitRsvpForGuest({
     weddingId: invitation.wedding.id,

@@ -24,14 +24,7 @@ export function invitationUrl(token: string, guestName?: string | null) {
   return `${base}/invite/${encodedToken}`;
 }
 
-/**
- * Ensures a guest has a valid invitation token. Returns the raw token and URL.
- * Only the hash is stored; the raw token is exposed once (for links/QR).
- */
-export async function issueInvitationToken(weddingId: string, guestId: string) {
-  const rawToken = generateToken();
-  const tokenHash = hashToken(rawToken);
-
+async function guestDisplayName(weddingId: string, guestId: string) {
   const guest = await db.guest.findFirst({
     where: { id: guestId, weddingId, deletedAt: null },
     select: {
@@ -41,15 +34,59 @@ export async function issueInvitationToken(weddingId: string, guestId: string) {
       preferredName: true,
     },
   });
+  return guest ? formatGuestDisplayName(guest) : null;
+}
+
+/**
+ * Ensures a guest has a valid invitation token. Returns the raw token and URL.
+ * Reuses the existing link unless `regenerate` is true — links do not expire by time.
+ * Only regenerating (or first create) rotates the token and invalidates the previous URL.
+ */
+export async function issueInvitationToken(
+  weddingId: string,
+  guestId: string,
+  regenerate = false,
+) {
+  const guestName = await guestDisplayName(weddingId, guestId);
+  const existing = await db.invitationToken.findUnique({ where: { guestId } });
+
+  if (existing && !regenerate && !existing.revokedAt && existing.rawToken) {
+    // Clear any legacy expiry so older rows stay valid indefinitely.
+    if (existing.expiresAt) {
+      await db.invitationToken.update({
+        where: { guestId },
+        data: { expiresAt: null },
+      });
+    }
+    return { token: existing.rawToken, url: invitationUrl(existing.rawToken, guestName) };
+  }
+
+  const rawToken = generateToken();
+  const tokenHash = hashToken(rawToken);
 
   await db.invitationToken.upsert({
     where: { guestId },
-    create: { weddingId, guestId, tokenHash },
-    update: { tokenHash, revokedAt: null, openedAt: null },
+    create: {
+      weddingId,
+      guestId,
+      rawToken,
+      tokenHash,
+      expiresAt: null,
+    },
+    update: {
+      rawToken,
+      tokenHash,
+      expiresAt: null,
+      revokedAt: null,
+      openedAt: null,
+    },
   });
 
-  const guestName = guest ? formatGuestDisplayName(guest) : null;
   return { token: rawToken, url: invitationUrl(rawToken, guestName) };
+}
+
+export async function regenerateInvitationToken(weddingId: string, guestId: string) {
+  return issueInvitationToken(weddingId, guestId, true);
 }
 
 export async function getInvitationQrDataUrl(url: string) {
@@ -58,7 +95,8 @@ export async function getInvitationQrDataUrl(url: string) {
 
 /**
  * Resolves an invitation token into guest + wedding context for the public
- * RSVP experience. Returns null for invalid/revoked/expired tokens.
+ * RSVP experience. Returns null for invalid/revoked tokens.
+ * Invite links do not expire by time — only revoke or regenerate invalidates them.
  * Never exposes tokens or other guests' data.
  */
 export async function resolveInvitation(token: string) {
@@ -78,8 +116,15 @@ export async function resolveInvitation(token: string) {
   });
 
   if (!record || record.revokedAt) return null;
-  if (record.expiresAt && record.expiresAt < new Date()) return null;
   if (record.guest.deletedAt || record.wedding.deletedAt) return null;
+
+  // Self-heal legacy rows that still have an expiresAt set.
+  if (record.expiresAt) {
+    await db.invitationToken.update({
+      where: { id: record.id },
+      data: { expiresAt: null },
+    });
+  }
 
   return record;
 }

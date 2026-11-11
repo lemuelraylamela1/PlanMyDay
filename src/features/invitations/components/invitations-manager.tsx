@@ -24,7 +24,10 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MailOpen } from "lucide-react";
-import { generateInviteAction } from "@/features/invitations/actions";
+import {
+  generateInviteAction,
+  regenerateInviteAction,
+} from "@/features/invitations/actions";
 
 export interface InviteGuestRow {
   id: string;
@@ -43,7 +46,12 @@ const inviteVariant: Record<InviteGuestRow["invitationStatus"], "secondary" | "i
 export function InvitationsManager({ guests }: { guests: InviteGuestRow[] }) {
   const [open, setOpen] = React.useState(false);
   const [loadingId, setLoadingId] = React.useState<string | null>(null);
-  const [invite, setInvite] = React.useState<{ name: string; url: string; qr: string } | null>(null);
+  const [invite, setInvite] = React.useState<{
+    name: string;
+    url: string;
+    qr: string;
+    guestId: string;
+  } | null>(null);
   const [copied, setCopied] = React.useState(false);
 
   async function onView(g: InviteGuestRow) {
@@ -51,8 +59,29 @@ export function InvitationsManager({ guests }: { guests: InviteGuestRow[] }) {
     const res = await generateInviteAction(g.id);
     setLoadingId(null);
     if (res.success && res.data) {
-      setInvite({ name: g.name, url: res.data.url, qr: res.data.qr });
+      setInvite({ name: g.name, url: res.data.url, qr: res.data.qr, guestId: g.id });
       setOpen(true);
+    } else if (!res.success) {
+      toast.error(res.error);
+    }
+  }
+
+  async function onRegenerate() {
+    if (!invite) return;
+    if (
+      !confirm(
+        "Generate a new invitation link? The previous link and QR code will stop working.",
+      )
+    ) {
+      return;
+    }
+    setLoadingId(invite.guestId);
+    const res = await regenerateInviteAction(invite.guestId);
+    setLoadingId(null);
+    if (res.success && res.data) {
+      setInvite({ ...invite, url: res.data.url, qr: res.data.qr });
+      setCopied(false);
+      toast.success("New invitation link generated.");
     } else if (!res.success) {
       toast.error(res.error);
     }
@@ -141,10 +170,21 @@ export function InvitationsManager({ guests }: { guests: InviteGuestRow[] }) {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Share this secure link or QR code. Links look like
-                /invite/lemuelandgraziellewedding/guest-name/… The guest name is for sharing; access
-                still requires the private token.
+                This link stays valid until you generate a new one for this guest. Share the URL or
+                QR code — the guest name in the path is for sharing; access still requires the
+                private token.
               </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={onRegenerate}
+                disabled={loadingId === invite.guestId}
+              >
+                {loadingId === invite.guestId ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Generate new link
+              </Button>
             </div>
           )}
         </DialogContent>

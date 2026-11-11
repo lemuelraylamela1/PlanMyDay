@@ -765,7 +765,10 @@ model InvitationToken {
   id        String    @id @default(uuid()) @db.Uuid
   weddingId String    @db.Uuid
   guestId   String    @unique @db.Uuid
+  /** Raw token kept so admins can re-open the same invite URL without rotating it. */
+  rawToken  String?   @unique
   tokenHash String    @unique
+  /** Unused: invite links do not expire unless the admin regenerates them. */
   expiresAt DateTime?
   revokedAt DateTime?
   openedAt  DateTime?

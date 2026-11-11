@@ -62,8 +62,8 @@ export function InvitationNotFound() {
 
         <p className="mt-5 font-serif text-lg leading-relaxed text-cream/70">
           We couldn&apos;t find an invitation matching your link. It may have
-          expired or the link may be incorrect. Please check the invitation you
-          received and try again.
+          been replaced with a newer link, or the URL may be incorrect. Please
+          check the invitation you received and try again.
         </p>
 
         <div className="mt-10">
