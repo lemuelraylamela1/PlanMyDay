@@ -327,6 +327,211 @@ body.experience-locked {
   animation: lantern-shimmer 6s linear infinite;
 }
 
+/* ── Magical hero story CTA ─────────────────────────────────────────── */
+@keyframes story-cta-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes story-cta-sheen {
+  0% {
+    transform: translateX(-130%) skewX(-18deg);
+  }
+  45%,
+  100% {
+    transform: translateX(130%) skewX(-18deg);
+  }
+}
+
+@keyframes story-cta-spark {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  60% {
+    opacity: 0.35;
+    transform: scale(0.75);
+  }
+}
+
+@keyframes story-cta-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.invite-root .story-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  width: 100%;
+  max-width: 20rem;
+  padding: 0.95rem 2.1rem;
+  isolation: isolate;
+  overflow: visible;
+  border: 0;
+  border-radius: 9999px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #1a0f05;
+  font-family: var(--font-cinzel, "Cinzel", Georgia, serif);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 230, 0.55) 0%, transparent 42%),
+    linear-gradient(135deg, #fff1b0 0%, #f4c444 38%, #e0a428 72%, #c98a18 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 236, 170, 0.55),
+    0 10px 28px rgba(0, 0, 0, 0.4),
+    0 0 36px rgba(244, 196, 68, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition:
+    transform 0.45s var(--ease-luxury, cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow 0.45s var(--ease-luxury, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@media (min-width: 640px) {
+  .invite-root .story-cta {
+    width: auto;
+    min-height: 3.5rem;
+    padding: 1rem 2.6rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.24em;
+  }
+}
+
+.invite-root .story-cta:hover,
+.invite-root .story-cta:focus-visible {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(255, 246, 210, 0.8),
+    0 16px 36px rgba(0, 0, 0, 0.42),
+    0 0 48px rgba(255, 223, 112, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.invite-root .story-cta:focus-visible {
+  outline: 2px solid rgba(255, 223, 112, 0.9);
+  outline-offset: 4px;
+}
+
+.invite-root .story-cta-aura {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 120%;
+  height: 180%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 223, 112, 0.55) 0%,
+    rgba(244, 196, 68, 0.22) 38%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: story-cta-breathe 3.6s ease-in-out infinite;
+}
+
+.invite-root .story-cta-ring {
+  position: absolute;
+  inset: -7px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 247, 200, 0.85) 28deg,
+    transparent 70deg,
+    transparent 180deg,
+    rgba(255, 210, 120, 0.55) 210deg,
+    transparent 260deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
+  opacity: 0.75;
+  animation: story-cta-ring 8s linear infinite;
+}
+
+.invite-root .story-cta-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.invite-root .story-cta-sheen::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 42%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  animation: story-cta-sheen 3.8s var(--ease-luxury, cubic-bezier(0.16, 1, 0.3, 1))
+    infinite;
+}
+
+.invite-root .story-cta-sparks {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.invite-root .story-cta-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffef5 0%, #ffdf70 45%, transparent 72%);
+  box-shadow: 0 0 8px rgba(255, 223, 112, 0.9);
+  animation-name: story-cta-spark;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.invite-root .story-cta-label {
+  position: relative;
+  z-index: 3;
+  text-shadow: 0 1px 0 rgba(255, 250, 230, 0.35);
+}
+
+.invite-root .story-cta:hover .story-cta-aura {
+  animation-duration: 2.2s;
+}
+
 .invite-root .text-rose-shimmer {
   background: linear-gradient(
     100deg,
@@ -683,6 +888,30 @@ html[data-lantern-perf="low"] .invite-root .text-rose-shimmer {
   background-position: 40% center;
 }
 
+html[data-lantern-perf="balanced"] .invite-root .story-cta-ring,
+html[data-lantern-perf="low"] .invite-root .story-cta-ring,
+html[data-lantern-perf="balanced"] .invite-root .story-cta-sparks,
+html[data-lantern-perf="low"] .invite-root .story-cta-sparks {
+  display: none;
+}
+
+html[data-lantern-perf="balanced"] .invite-root .story-cta-aura,
+html[data-lantern-perf="low"] .invite-root .story-cta-aura,
+html[data-lantern-perf="balanced"] .invite-root .story-cta-sheen::before,
+html[data-lantern-perf="low"] .invite-root .story-cta-sheen::before {
+  animation: none;
+}
+
+html[data-lantern-perf="balanced"] .invite-root .story-cta-aura,
+html[data-lantern-perf="low"] .invite-root .story-cta-aura {
+  opacity: 0.7;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+html[data-lantern-perf="low"] .invite-root .story-cta-sheen {
+  display: none;
+}
+
 html[data-lantern-perf="balanced"] .invite-root .lantern-glow,
 html[data-lantern-perf="low"] .invite-root .lantern-glow {
   animation: none;
@@ -729,6 +958,17 @@ html[data-lantern-perf="low"] .invite-root .story-chapter {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .invite-root .story-cta-ring,
+  .invite-root .story-cta-sparks,
+  .invite-root .story-cta-sheen {
+    display: none !important;
+  }
+
+  .invite-root .story-cta-aura {
+    opacity: 0.65 !important;
+    transform: translate(-50%, -50%) scale(1) !important;
   }
 
   .invite-root .story-chapter {

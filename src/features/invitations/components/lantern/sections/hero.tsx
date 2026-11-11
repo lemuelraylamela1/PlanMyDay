@@ -7,7 +7,7 @@ import LanternSky from "../effects/LanternSky";
 import { HillSilhouette } from "../effects/hill-silhouette";
 import { FloatingLanterns } from "../effects/floating-lanterns";
 import { CastleSilhouette } from "../effects/castle-silhouette";
-import { GoldButton } from "../ui/gold-button";
+import { StoryCta } from "../ui/story-cta";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { useMounted } from "../hooks/use-mounted";
@@ -73,8 +73,8 @@ export function Hero() {
             lanternColors={LANTERN_SKY_COLORS}
             density={skyDensity}
             layers={skyLayers}
-            glowIntensity={compact ? 0.8 : 0.65}
-            lanternSize={compact ? 0.95 : 0.7}
+            glowIntensity={compact ? 0.7 : 0.55}
+            lanternSize={compact ? 0.42 : 0.38}
             twinkleIntensity={0.22}
             speed={0.95}
             mouseRepulsion={false}
@@ -148,7 +148,7 @@ export function Hero() {
         <FloatingLanterns
           count={svgLanternCount}
           intensity="festival"
-          sizeScale={compact ? 0.95 : 0.78}
+          sizeScale={compact ? 0.52 : 0.48}
         />
       </motion.div>
 
@@ -263,14 +263,7 @@ export function Hero() {
             transition={{ duration: 1, delay: 1.05 }}
             className="mt-7 flex w-full justify-center sm:mt-9"
           >
-            <a href="#portrait" className="inline-flex w-full max-w-xs justify-center sm:w-auto">
-              <GoldButton
-                size="lg"
-                className="min-h-12 w-full text-[0.78rem] tracking-[0.2em] shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:min-h-14 sm:w-auto"
-              >
-                Enter Our Story
-              </GoldButton>
-            </a>
+            <StoryCta href="#portrait">Enter Our Story</StoryCta>
           </motion.div>
         </div>
       </motion.div>
