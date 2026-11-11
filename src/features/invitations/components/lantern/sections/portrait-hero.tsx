@@ -166,7 +166,7 @@ export function PortraitHero() {
         aria-label="Scroll down to continue"
         className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5 text-cream/80"
       >
-        <span className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-cream/70 sm:text-[10px] sm:tracking-[0.32em]">
+        <span className="whitespace-nowrap font-cinzel text-[8px] font-semibold uppercase tracking-[0.18em] text-cream/70 min-[380px]:text-[9px] min-[380px]:tracking-[0.24em] sm:text-[10px] sm:tracking-[0.32em]">
           Scroll down to continue
         </span>
         <motion.span

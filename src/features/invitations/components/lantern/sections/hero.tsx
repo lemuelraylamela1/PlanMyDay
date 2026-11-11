@@ -11,6 +11,7 @@ import { StoryCta } from "../ui/story-cta";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { useMounted } from "../hooks/use-mounted";
+import { scrollToSection } from "../hooks/scroll-to-section";
 import { useExperience } from "../experience/experience-provider";
 import { useLanternContent } from "../content-context";
 import { useLanternPerf } from "../performance/lantern-perf-provider";
@@ -51,6 +52,34 @@ export function Hero() {
   const skyDensity = quality === "high" ? 0.95 : quality === "balanced" ? 0.75 : 0.5;
   const skyLayers = quality === "high" ? 4 : quality === "balanced" ? 3 : 2;
   const svgLanternCount = quality === "high" ? 10 : quality === "balanced" ? 8 : 5;
+  const [storyVeil, setStoryVeil] = React.useState(0);
+  const storyBusy = React.useRef(false);
+
+  const enterStory = React.useCallback(
+    (event?: React.MouseEvent) => {
+      event?.preventDefault();
+      if (storyBusy.current) return;
+      storyBusy.current = true;
+
+      const duration = reduceMotion ? 0 : compact ? 2000 : 2400;
+      scrollToSection("portrait", {
+        duration,
+        onProgress: (progress) => {
+          // Soft night veil peaks mid-journey, then clears as portrait arrives.
+          const veil = Math.sin(progress * Math.PI) * (reduceMotion ? 0 : 0.55);
+          setStoryVeil(veil);
+        },
+        onComplete: () => {
+          setStoryVeil(0);
+          storyBusy.current = false;
+          if (typeof window !== "undefined" && window.location.hash !== "#portrait") {
+            window.history.replaceState(null, "", "#portrait");
+          }
+        },
+      });
+    },
+    [compact, reduceMotion],
+  );
 
   return (
     <section
@@ -263,14 +292,29 @@ export function Hero() {
             transition={{ duration: 1, delay: 1.05 }}
             className="mt-7 flex w-full justify-center sm:mt-9"
           >
-            <StoryCta href="#portrait">Enter Our Story</StoryCta>
+            <StoryCta href="#portrait" onClick={enterStory}>
+              Enter Our Story
+            </StoryCta>
           </motion.div>
         </div>
       </motion.div>
 
+      {/* Soft night veil while the cinematic scroll carries into #portrait */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[60]"
+        style={{
+          opacity: storyVeil,
+          background:
+            "radial-gradient(ellipse at 50% 40%, rgba(13,7,32,0.15) 0%, rgba(7,3,20,0.92) 70%)",
+          transition: reduceMotion ? undefined : "opacity 80ms linear",
+        }}
+      />
+
       <motion.a
         href="#portrait"
         aria-label="Scroll to our portrait"
+        onClick={enterStory}
         initial={false}
         animate={mounted ? { opacity: 1 } : false}
         transition={{ delay: 1.6 }}

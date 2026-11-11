@@ -24,6 +24,7 @@ export function StoryCta({
   className,
   children = "Enter Our Story",
   href,
+  onClick,
   ...props
 }: StoryCtaProps) {
   const content = (
@@ -53,14 +54,18 @@ export function StoryCta({
 
   if (href) {
     return (
-      <a href={href} className={classes}>
+      <a
+        href={href}
+        className={classes}
+        onClick={onClick as React.MouseEventHandler<HTMLAnchorElement>}
+      >
         {content}
       </a>
     );
   }
 
   return (
-    <button type="button" className={classes} {...props}>
+    <button type="button" className={classes} onClick={onClick} {...props}>
       {content}
     </button>
   );

@@ -5,6 +5,7 @@ import Lenis from "lenis";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useExperience } from "./experience-provider";
 import { useLanternPerf } from "../performance/lantern-perf-provider";
+import { setActiveLenis } from "./lenis-bridge";
 
 /** Enables Lenis smooth scrolling once the site is revealed (desktop high tier only). */
 export function SmoothScroll() {
@@ -21,6 +22,7 @@ export function SmoothScroll() {
       smoothWheel: true,
       touchMultiplier: 1.5,
     });
+    setActiveLenis(lenis);
 
     // Keep GSAP ScrollTrigger (story wand path, etc.) in sync with Lenis.
     const onLenisScroll = () => ScrollTrigger.update();
@@ -35,13 +37,14 @@ export function SmoothScroll() {
 
     // Smoothly scroll for in-page anchor links.
     // Full-viewport sections (#hero, #portrait, …) must land flush — no header offset.
+    // #portrait is handled by the hero cinematic scroll (longer duration + veil).
     const onAnchorClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest(
         'a[href^="#"]',
       ) as HTMLAnchorElement | null;
       if (!target) return;
       const id = target.getAttribute("href");
-      if (!id || id === "#") return;
+      if (!id || id === "#" || id === "#portrait") return;
       const el = document.querySelector(id);
       if (el) {
         e.preventDefault();
@@ -58,6 +61,7 @@ export function SmoothScroll() {
       cancelAnimationFrame(raf);
       document.removeEventListener("click", onAnchorClick);
       lenis.off("scroll", onLenisScroll);
+      setActiveLenis(null);
       lenis.destroy();
     };
   }, [phase, reducedMotion, profile.smoothScroll, compact]);
