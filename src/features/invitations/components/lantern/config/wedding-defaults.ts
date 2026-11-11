@@ -75,7 +75,7 @@ export const weddingDefaults = {
     dressCode: {
       title: "RSVP Attire Guide",
       eyebrow: "Dress Code",
-      guests: "Any shades of pink · formal or semi-formal",
+      guests: "Lavender or soft pink · formal or semi-formal",
       note: "We would be honored to see our motif come to life through you.",
       restriction: "Strictly no white",
       roles: [
@@ -109,10 +109,10 @@ export const weddingDefaults = {
         },
         {
           role: "Guests",
-          attire: "Any shades of pink · formal or semi-formal",
-          swatch: "#e8829a",
+          attire: "Lavender or soft pink · formal or semi-formal",
+          swatch: "#c5b3d8",
           imageSrc: "/attire/guests-v3.jpg",
-          imageAlt: "Guests in soft pink formal or semi-formal attire",
+          imageAlt: "Guests in lavender or soft pink formal or semi-formal attire",
         },
       ],
     },
@@ -227,7 +227,7 @@ export const weddingDefaults = {
       {
         question: "What is the dress code?",
         answer:
-          "Bridesmaids wear light pink, groomsmen wear cream with a pink tie, family wears darker pink with gentlemen in barong, and sponsors wear cream. Guests may wear any shade of pink in formal or semi-formal attire. Strictly no white.",
+          "Bridesmaids wear light pink, groomsmen wear cream with a pink tie, family wears darker pink with gentlemen in barong, and sponsors wear cream. Guests may wear lavender or soft pink in formal or semi-formal attire. Strictly no white.",
       },
       {
         question: "Can I bring a plus one or children?",

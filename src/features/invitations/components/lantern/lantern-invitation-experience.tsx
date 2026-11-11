@@ -12,7 +12,6 @@ import { EventDetails } from "./sections/event-details";
 import { Attire } from "./sections/attire";
 import { Gallery } from "./sections/gallery";
 import { Countdown } from "./sections/countdown";
-import { Travel } from "./sections/travel";
 import { Faq } from "./sections/faq";
 import { FinalInvitation } from "./sections/final-invitation";
 import { Rsvp } from "./sections/rsvp";
@@ -51,7 +50,7 @@ export function LanternInvitationExperience({
           <EventDetails />
           <Attire />
           <Countdown />
-          <Travel />
+          {/* Travel & Accommodation — hidden for now */}
           <Faq />
           <FinalInvitation />
           <Rsvp

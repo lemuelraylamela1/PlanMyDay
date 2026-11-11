@@ -112,7 +112,7 @@ export const attireGuideImages = {
   },
   guests: {
     src: "/attire/guests-v3.jpg",
-    alt: "Guests in soft pink formal or semi-formal attire",
+    alt: "Guests in lavender or soft pink formal or semi-formal attire",
   },
 } as const;
 
