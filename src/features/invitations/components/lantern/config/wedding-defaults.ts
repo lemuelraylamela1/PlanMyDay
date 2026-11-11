@@ -134,7 +134,7 @@ export const weddingDefaults = {
     eyebrow: "Our Story",
     title: "A Love Written In Lantern Light",
     intro:
-      "Scroll with us through the nights that glowed a little brighter—three chapters of chance, adventure, and a vow still rising.",
+      "Scroll with us through the nights that glowed a little brighter—five frames of chance, adventure, and a vow still rising.",
     // PLACEHOLDER chapters — edit freely.
     chapters: [
       {
@@ -148,6 +148,15 @@ export const weddingDefaults = {
       },
       {
         chapter: "Chapter Two",
+        date: "Golden Hour",
+        title: "Light Between Us",
+        description:
+          "Evenings softened into gold—shared glances, unhurried walks, and the quiet certainty that ordinary days felt brighter side by side.",
+        imageSrc: "/gallery/our-story/02.jpg",
+        imageAlt: "Golden hour together",
+      },
+      {
+        chapter: "Chapter Three",
         date: "Falling",
         title: "Our First Adventure",
         description:
@@ -156,7 +165,16 @@ export const weddingDefaults = {
         imageAlt: "Adventures together along the way",
       },
       {
-        chapter: "Chapter Three",
+        chapter: "Chapter Four",
+        date: "Stillness",
+        title: "Quiet Moments",
+        description:
+          "In the soft hours between plans and promises, we found home in silence—hands held, hearts sure, nothing needed but each other.",
+        imageSrc: "/gallery/our-story/04.jpg",
+        imageAlt: "Quiet moments shared",
+      },
+      {
+        chapter: "Chapter Five",
         date: "Forever",
         title: "The Proposal",
         description:
