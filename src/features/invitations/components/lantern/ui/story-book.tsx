@@ -10,24 +10,99 @@ import { cn } from "@/lib/utils";
 
 function CoverFront({ title, names }: { title: string; names: string }) {
   return (
-    <div className="story-book-cover relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-5 text-center">
+    <div className="story-book-cover relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 text-center sm:px-5">
       <span aria-hidden className="story-book-cover-glow pointer-events-none absolute inset-0" />
-      <span aria-hidden className="story-book-foil pointer-events-none absolute inset-3 rounded-[3px]" />
-      <p className="relative font-cinzel text-[9px] font-semibold uppercase tracking-[0.42em] text-[#e8b4bc]">
-        Once upon a time
-      </p>
-      <div aria-hidden className="story-book-sunburst relative mt-5 h-14 w-14 sm:h-16 sm:w-16">
-        <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_40%_35%,#ffe9a8_0%,#f4c444_42%,#c9891f_78%,transparent_79%)] opacity-90" />
-        <span className="absolute inset-[-18%] rounded-full border border-[#f4c444]/35" />
-        <span className="absolute inset-[-32%] rounded-full border border-[#f4c444]/18" />
+      <span aria-hidden className="story-book-cover-stars pointer-events-none absolute inset-0" />
+      <span aria-hidden className="story-book-cover-vignette pointer-events-none absolute inset-0" />
+
+      <span aria-hidden className="story-book-foil pointer-events-none absolute inset-[10px] rounded-[4px] sm:inset-3" />
+      <span aria-hidden className="story-book-foil-inner pointer-events-none absolute inset-[14px] rounded-[2px] sm:inset-[18px]" />
+      <span aria-hidden className="story-book-corner story-book-corner-tl" />
+      <span aria-hidden className="story-book-corner story-book-corner-tr" />
+      <span aria-hidden className="story-book-corner story-book-corner-bl" />
+      <span aria-hidden className="story-book-corner story-book-corner-br" />
+
+      <div className="relative z-[1] flex w-full flex-col items-center px-2">
+        <p className="font-cinzel text-[8px] font-semibold uppercase tracking-[0.46em] text-[#f0c4cc] sm:text-[9px] sm:tracking-[0.5em]">
+          Once upon a time
+        </p>
+
+        <div aria-hidden className="story-book-lantern relative mt-4 h-[3.6rem] w-[2.55rem] sm:mt-5 sm:h-[4.35rem] sm:w-[3.1rem]">
+          <span className="story-book-lantern-glow absolute left-1/2 top-[58%] h-[120%] w-[160%] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+          <svg viewBox="0 0 100 140" className="relative h-full w-full">
+            <defs>
+              <radialGradient id="coverLanternBody" cx="50%" cy="78%" r="65%">
+                <stop offset="0%" stopColor="#fffaf0" />
+                <stop offset="42%" stopColor="#ffdf70" />
+                <stop offset="100%" stopColor="#d98736" />
+              </radialGradient>
+              <radialGradient id="coverLanternFlame" cx="50%" cy="55%" r="58%">
+                <stop offset="0%" stopColor="#fffaf0" />
+                <stop offset="100%" stopColor="#ff9d3c" />
+              </radialGradient>
+              <linearGradient id="coverLanternCap" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ffe9a8" />
+                <stop offset="100%" stopColor="#c9891f" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M50 4 C46 4 43 7 43 11 L43 16 L57 16 L57 11 C57 7 54 4 50 4Z"
+              fill="url(#coverLanternCap)"
+              opacity="0.95"
+            />
+            <path
+              d="M38 16 H62"
+              stroke="#ffdf70"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              opacity="0.85"
+            />
+            <path
+              d="M50 16 C28 16 16 32 16 58 C16 86 26 108 39 118 L61 118 C74 108 84 86 84 58 C84 32 72 16 50 16Z"
+              fill="url(#coverLanternBody)"
+              stroke="#ffdf70"
+              strokeOpacity="0.7"
+              strokeWidth="1.4"
+            />
+            <path
+              d="M50 98 C44 106 45 116 50 122 C56 116 56 106 50 98Z"
+              fill="url(#coverLanternFlame)"
+            />
+            <path
+              d="M28 52 H72"
+              stroke="rgba(255,250,230,0.28)"
+              strokeWidth="1"
+            />
+            <path
+              d="M30 72 H70"
+              stroke="rgba(255,250,230,0.2)"
+              strokeWidth="1"
+            />
+          </svg>
+        </div>
+
+        <span
+          aria-hidden
+          className="story-book-ornament mt-4 h-3 w-[4.5rem] sm:mt-5 sm:w-[5.5rem]"
+        />
+
+        <h3 className="story-book-cover-title relative mt-3 max-w-[11ch] font-display text-[1.7rem] font-light leading-[1.05] tracking-[-0.025em] sm:mt-4 sm:text-[2rem]">
+          {title}
+        </h3>
+
+        <p className="story-book-cover-names relative mt-2.5 font-script text-[1.35rem] leading-none sm:mt-3 sm:text-[1.65rem]">
+          {names}
+        </p>
+
+        <span
+          aria-hidden
+          className="story-book-ornament mt-4 h-3 w-[3.25rem] opacity-80 sm:mt-5 sm:w-16"
+        />
+
+        <p className="mt-4 font-cinzel text-[7.5px] uppercase tracking-[0.4em] text-[#fdf6ec]/62 sm:mt-5 sm:text-[8px] sm:tracking-[0.42em]">
+          Open &amp; turn the pages
+        </p>
       </div>
-      <h3 className="relative mt-5 max-w-[12ch] font-display text-[1.55rem] font-light leading-[1.1] tracking-[-0.02em] text-[#fdf6ec] sm:text-[1.85rem]">
-        {title}
-      </h3>
-      <p className="relative mt-3 font-script text-xl text-[#f4c444] sm:text-2xl">{names}</p>
-      <p className="relative mt-6 font-cinzel text-[8px] uppercase tracking-[0.38em] text-[#fdf6ec]/55">
-        Open &amp; turn the pages
-      </p>
     </div>
   );
 }
@@ -185,7 +260,7 @@ export function StoryBook({ className }: { className?: string }) {
   return (
     <div className={cn("story-book relative mx-auto flex w-full flex-col items-center", className)}>
       <div
-        className="relative mx-auto flex w-full max-w-full items-center justify-center overflow-x-auto overflow-y-visible py-6 sm:py-10"
+        className="relative mx-auto flex w-full max-w-full items-center justify-center overflow-x-clip overflow-y-visible py-6 sm:py-10"
         style={{ minHeight: pageHeight + 24 }}
       >
         <div

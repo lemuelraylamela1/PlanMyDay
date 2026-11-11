@@ -62,6 +62,7 @@ export function OpeningSequence() {
         ],
         { opacity: 0 }
       );
+      gsap.set(".seq-title-card", { xPercent: -50, yPercent: -50 });
       gsap.set(".seq-stage", { scale: 1, force3D: true });
       gsap.set(".seq-constellation-star", { x: 0, y: 0, scale: 0.4, opacity: 0, force3D: true });
       gsap.set(".seq-hero-lantern", { y: 140, scale: 0.72, force3D: true });
@@ -79,14 +80,30 @@ export function OpeningSequence() {
       tl.add("chapter", 0.22);
       tl.fromTo(
         ".seq-title-card",
-        { y: 28, opacity: 0, scale: 0.97 },
-        { y: 0, opacity: 1, scale: 1, duration: 1, ease: "power3.out" },
+        { xPercent: -50, yPercent: -50, y: 28, opacity: 0, scale: 0.97 },
+        {
+          xPercent: -50,
+          yPercent: -50,
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 1,
+          ease: "power3.out",
+        },
         "chapter"
       );
 
       tl.to(
         ".seq-title-card",
-        { y: -22, opacity: 0, scale: 0.96, duration: 0.7, ease: "power2.inOut" },
+        {
+          xPercent: -50,
+          yPercent: -50,
+          y: -22,
+          opacity: 0,
+          scale: 0.96,
+          duration: 0.7,
+          ease: "power2.inOut",
+        },
         "chapter+=1.35"
       );
 
@@ -213,7 +230,7 @@ export function OpeningSequence() {
       </div>
 
       <div className="seq-stage relative z-10 h-full w-full will-change-transform">
-        <div className="seq-title-card absolute left-1/2 top-[max(10svh,env(safe-area-inset-top))] w-[min(90vw,34rem)] -translate-x-1/2 rounded-[1.5rem] border border-lantern/40 bg-night/55 px-4 py-5 text-center opacity-0 shadow-[0_0_80px_rgba(244,196,68,0.24)] backdrop-blur-md sm:top-[16svh] sm:rounded-[2rem] sm:px-10 sm:py-7">
+        <div className="seq-title-card absolute left-1/2 top-1/2 w-[min(90vw,34rem)] -translate-x-1/2 -translate-y-1/2 rounded-[1.5rem] border border-lantern/40 bg-night/55 px-4 py-5 text-center opacity-0 shadow-[0_0_80px_rgba(244,196,68,0.24)] backdrop-blur-md sm:rounded-[2rem] sm:px-10 sm:py-7">
           <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.32em] text-lantern-rose/90 sm:text-[10px] sm:tracking-[0.42em]">
             {wedding.invitation.eyebrow}
           </p>

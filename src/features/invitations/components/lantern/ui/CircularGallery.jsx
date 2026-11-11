@@ -1123,7 +1123,11 @@ const CircularGallery = ({
               aria-label={`${item.text || item.alt || 'Image'}, ${index + 1} of ${count}`}
               aria-current={index === active ? 'true' : undefined}
               onFocus={() => engineRef.current?.focus(index)}
-              onClick={() => engineRef.current?.open(index)}
+              onClick={() => {
+                engineRef.current?.focus(index);
+                onItemClick?.(item, index);
+                if (openOnClick) engineRef.current?.open(index);
+              }}
             >
               {item.text || item.alt || `Image ${index + 1}`}
             </button>

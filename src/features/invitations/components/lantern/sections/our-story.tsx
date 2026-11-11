@@ -1,12 +1,15 @@
 "use client";
 
+import { FloatingLanterns } from "../effects/floating-lanterns";
 import { MagicDust } from "../effects/magic-dust";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 import { StoryBook } from "../ui/story-book";
 
 export function OurStory() {
   const wedding = useLanternContent();
+  const { compact } = useLanternPerf();
 
   return (
     <section
@@ -21,6 +24,12 @@ export function OurStory() {
           background:
             "radial-gradient(ellipse 80% 55% at 50% 18%, rgba(244,196,68,0.12) 0%, transparent 55%), linear-gradient(180deg, rgba(30,15,58,0.9) 0%, rgba(13,7,32,1) 42%, rgba(13,7,32,1) 100%)",
         }}
+      />
+      <FloatingLanterns
+        count={compact ? 10 : 14}
+        intensity="festival"
+        sizeScale={compact ? 0.55 : 0.62}
+        className="z-0 opacity-70 max-sm:opacity-55"
       />
       <MagicDust count={20} intensity="soft" className="opacity-40" />
       <SceneAtmosphere tone="warm" className="opacity-40" />
