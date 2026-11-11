@@ -135,23 +135,24 @@ function buildStoryLeaves(
     ];
   }
 
+  const first = sides[0]!;
   const leaves: PageFlipLeaf[] = [
     {
       id: "cover",
       alt: "Our story book cover",
       front: coverFront,
-      back: sides[0].left,
+      back: first.left,
     },
   ];
 
   for (let i = 0; i < sides.length; i++) {
-    const right = sides[i].right;
-    const nextLeft = i + 1 < sides.length ? sides[i + 1].left : <ClosingEndpaper />;
+    const side = sides[i]!;
+    const next = sides[i + 1];
     leaves.push({
       id: `spread-${i + 1}`,
-      alt: sides[i].alt,
-      front: right,
-      back: nextLeft,
+      alt: side.alt,
+      front: side.right,
+      back: next ? next.left : <ClosingEndpaper />,
     });
   }
 

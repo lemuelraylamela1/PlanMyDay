@@ -12,8 +12,9 @@ const SPARKS = [
   { top: "104%", left: "58%", delay: "1.4s", duration: "2.5s" },
 ] as const;
 
-type StoryCtaProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+type StoryCtaProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> & {
   href?: string;
+  onClick?: React.MouseEventHandler<HTMLButtonElement | HTMLAnchorElement>;
 };
 
 /**
@@ -57,7 +58,7 @@ export function StoryCta({
       <a
         href={href}
         className={classes}
-        onClick={onClick as React.MouseEventHandler<HTMLAnchorElement>}
+        onClick={onClick}
       >
         {content}
       </a>

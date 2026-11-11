@@ -102,7 +102,7 @@ export function Attire() {
     if (activeIndex >= roles.length) setActiveIndex(0);
   }, [activeIndex, roles.length]);
 
-  if (roles.length === 0 || !activeRole) return null;
+  if (!activeRole) return null;
 
   return (
     <motion.section
