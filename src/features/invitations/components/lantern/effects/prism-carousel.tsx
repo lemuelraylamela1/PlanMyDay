@@ -42,6 +42,9 @@ type Props = {
   backgroundColor?: string;
   paused?: boolean;
   ariaLabel?: string;
+  titleColor?: string;
+  subtitleColor?: string;
+  accentColor?: string;
   onIndexChange?: (index: number) => void;
   onSelect?: (item: PrismCarouselItem, index: number) => void;
   className?: string;
@@ -78,6 +81,9 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
       backgroundColor = "transparent",
       paused = false,
       ariaLabel = "Attire lookbook carousel. Use arrow keys or swipe to browse roles.",
+      titleColor = "#2a1540",
+      subtitleColor = "#4a3358",
+      accentColor = "#c0607a",
       onIndexChange,
       onSelect,
       className,
@@ -367,12 +373,18 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
         {captions && active ? (
           <div className="relative z-10 mx-auto flex max-w-xl flex-col items-center px-4 pb-2 text-center">
             {active.title ? (
-              <h3 className="font-display text-2xl font-light tracking-[-0.02em] text-ink sm:text-3xl">
+              <h3
+                className="font-display text-2xl font-light tracking-[-0.02em] sm:text-3xl"
+                style={{ color: titleColor }}
+              >
                 {active.title}
               </h3>
             ) : null}
             {active.subtitle ? (
-              <p className="mt-1 font-serif text-sm italic text-ink/70 sm:text-base">
+              <p
+                className="mt-1 font-serif text-sm italic sm:text-base"
+                style={{ color: subtitleColor }}
+              >
                 {active.subtitle}
               </p>
             ) : null}
@@ -380,17 +392,24 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
         ) : null}
 
         {controls ? (
-          <div className="relative z-10 mt-3 flex items-center justify-center gap-4 pb-1">
+          <div className="relative z-10 mt-3 grid grid-cols-[2.5rem_minmax(4.5rem,auto)_2.5rem] items-center justify-center gap-x-4 pb-1">
             <button
               type="button"
               onClick={previous}
               disabled={!loop && index === 0}
               aria-label="Previous look"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lantern-rose/25 bg-cream/80 text-ink transition hover:border-lantern/50 hover:bg-cream disabled:opacity-40"
+              className="inline-flex h-10 w-10 items-center justify-center justify-self-center rounded-full bg-cream/90 transition disabled:opacity-40"
+              style={{
+                color: titleColor,
+                border: `1px solid ${accentColor}`,
+              }}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <p className="min-w-[4.5rem] font-cinzel text-[11px] font-semibold uppercase tracking-[0.28em] text-lantern-rose">
+            <p
+              className="text-center font-cinzel text-[11px] font-semibold uppercase tracking-[0.28em] pl-[0.28em]"
+              style={{ color: accentColor }}
+            >
               {index + 1} / {count}
             </p>
             <button
@@ -398,7 +417,11 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
               onClick={next}
               disabled={!loop && index === count - 1}
               aria-label="Next look"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-lantern-rose/25 bg-cream/80 text-ink transition hover:border-lantern/50 hover:bg-cream disabled:opacity-40"
+              className="inline-flex h-10 w-10 items-center justify-center justify-self-center rounded-full bg-cream/90 transition disabled:opacity-40"
+              style={{
+                color: titleColor,
+                border: `1px solid ${accentColor}`,
+              }}
             >
               <ChevronRight className="h-5 w-5" />
             </button>
