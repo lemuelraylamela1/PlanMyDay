@@ -194,7 +194,8 @@ export const weddingDefaults = {
   gallery: {
     eyebrow: "Cherished Moments",
     title: "Our Gallery",
-    intro: "Fifteen frames of our story. Drag or scroll to wander through.",
+    intro:
+      "Fifteen frames of our story across three flowing rows. Drag any row to find a moment — tap for full size.",
   },
 
   rsvp: {
