@@ -41,7 +41,7 @@ export async function listGuests(weddingId: string, filter: GuestFilter) {
         return [{ facebookLink: order }, { lastName: "asc" }, { firstName: "asc" }];
       case "name":
       default:
-        return [{ lastName: order }, { firstName: order }];
+        return [{ firstName: order }, { lastName: order }];
     }
   })();
 
