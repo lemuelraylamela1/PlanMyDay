@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ExperienceProvider, useExperience } from "./experience-provider";
 import { InvitationGate } from "./invitation-gate";
 import { MusicPlayer } from "./music-player";
@@ -14,9 +14,12 @@ import {
 
 function OpeningFallback() {
   return (
-    <div
+    <motion.div
       aria-hidden
       className="fixed inset-0 z-[110]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       style={{
         background:
           "linear-gradient(180deg, #070314 0%, #0d0720 38%, #1e0f3a 70%, #39205f 100%)",
@@ -70,7 +73,7 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
         </div>
       </MainEffectsProvider>
 
-      <AnimatePresence>
+      <AnimatePresence mode="sync">
         {phase === "invitation" && <InvitationGate key="gate" />}
         {phase === "opening" && <OpeningSequence key="sequence" />}
       </AnimatePresence>

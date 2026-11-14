@@ -69,7 +69,9 @@ export function InvitationGate() {
       return;
     }
     setDissolving(true);
-    window.setTimeout(open, 280);
+    // Let parchment + castle scenery melt into night before OpeningSequence
+    // crossfades in — avoids the ~0:03 castle flash / hard cut.
+    window.setTimeout(open, 980);
   }, [dissolving, reducedMotion, open, beginMusic]);
 
   const contentActive = unrolled && !dissolving;
@@ -85,8 +87,24 @@ export function InvitationGate() {
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.55, ease: LUXURY } }}
+      exit={{
+        opacity: 0,
+        transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
+      }}
     >
+      {/* Match OpeningSequence sky during dissolve so the handoff has no castle flash. */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none fixed inset-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: dissolving ? 1 : 0 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        style={{
+          background:
+            "linear-gradient(180deg, #070314 0%, #0d0720 38%, #1e0f3a 70%, #39205f 100%)",
+        }}
+      />
+
       <div aria-hidden className="pointer-events-none fixed inset-0">
         <StarField
           className="absolute inset-0"
@@ -96,21 +114,44 @@ export function InvitationGate() {
         />
         <MagicDust count={14} intensity="soft" className="opacity-60" active />
 
-        <div className="lantern-glow absolute left-1/3 top-1/4 h-[40vh] w-[40vh] -translate-x-1/2 -translate-y-1/2 opacity-50" />
-        <div className="lantern-glow absolute right-1/4 top-2/3 h-[26vh] w-[26vh] opacity-35" />
-        <div
-          className="absolute left-1/2 top-1/2 h-[44vh] w-[44vh] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25"
+        {/* Soft moon rises as scenery fades — bridges into OpeningSequence. */}
+        <motion.div
+          className="absolute left-1/2 top-[42%] h-[70vh] w-[70vh] -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
             background:
-              "radial-gradient(circle, rgba(232,130,154,0.35) 0%, transparent 65%)",
+              "radial-gradient(circle, rgba(255,223,112,0.42), rgba(232,130,154,0.18) 42%, transparent 70%)",
           }}
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={
+            dissolving
+              ? { opacity: 0.7, scale: 1 }
+              : { opacity: 0, scale: 0.85 }
+          }
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         />
 
-        <FloatingLanterns count={10} className="opacity-65" active />
-        <Fireflies count={12} className="opacity-85" active />
-        <LanternReflection className="opacity-60" active />
-        <CastleSilhouette className="absolute bottom-0 left-1/2 w-[180%] max-w-none -translate-x-1/2 opacity-28 sm:w-[140%]" />
-        <div className="scroll-vignette absolute inset-0" />
+        {/* Fade castle / lantern scenery with the scroll — do not leave a castle flash. */}
+        <motion.div
+          className="absolute inset-0"
+          animate={dissolving ? { opacity: 0 } : { opacity: 1 }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="lantern-glow absolute left-1/3 top-1/4 h-[40vh] w-[40vh] -translate-x-1/2 -translate-y-1/2 opacity-50" />
+          <div className="lantern-glow absolute right-1/4 top-2/3 h-[26vh] w-[26vh] opacity-35" />
+          <div
+            className="absolute left-1/2 top-1/2 h-[44vh] w-[44vh] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(232,130,154,0.35) 0%, transparent 65%)",
+            }}
+          />
+
+          <FloatingLanterns count={10} className="opacity-65" active={!dissolving} />
+          <Fireflies count={12} className="opacity-85" active={!dissolving} />
+          <LanternReflection className="opacity-60" active={!dissolving} />
+          <CastleSilhouette className="absolute bottom-0 left-1/2 w-[180%] max-w-none -translate-x-1/2 opacity-28 sm:w-[140%]" />
+          <div className="scroll-vignette absolute inset-0" />
+        </motion.div>
       </div>
 
       <div className="relative z-10 flex min-h-[100svh] min-h-[100dvh] w-full items-center justify-center px-3 py-[max(1.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-10">
@@ -120,13 +161,13 @@ export function InvitationGate() {
           animate={
             mounted
               ? dissolving
-                ? { opacity: 0, scale: 1.04, y: -12 }
-                : { opacity: 1, y: 0, scale: 1 }
+                ? { opacity: 0, scale: 1.015, y: -8, filter: "blur(6px)" }
+                : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }
               : false
           }
           transition={
             dissolving
-              ? { duration: 0.85, ease: [0.22, 1, 0.36, 1] }
+              ? { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
               : { duration: 0.95, ease: LUXURY, delay: 0.15 }
           }
           style={{ willChange: "transform, opacity" }}

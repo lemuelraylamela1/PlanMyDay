@@ -66,13 +66,15 @@ export function OpeningSequence() {
       gsap.set(".seq-stage", { scale: 1, force3D: true });
       gsap.set(".seq-constellation-star", { x: 0, y: 0, scale: 0.4, opacity: 0, force3D: true });
       gsap.set(".seq-hero-lantern", { y: 140, scale: 0.72, force3D: true });
+      // Keep a soft moon already lit so the first frames aren't an empty void
+      // while this layer crossfades over the invitation gate.
+      gsap.set(".seq-moon-glow", { scale: 0.78, opacity: 0.42, force3D: true });
 
       // Phase 1: the dream sky opens.
-      tl.add("dreamSky", 0);
-      tl.fromTo(
+      tl.add("dreamSky", 0.12);
+      tl.to(
         ".seq-moon-glow",
-        { scale: 0.62, opacity: 0.2 },
-        { scale: 1, opacity: 0.82, duration: 1.5, ease: "power2.out" },
+        { scale: 1, opacity: 0.82, duration: 1.35, ease: "power2.out" },
         "dreamSky"
       );
 
@@ -215,7 +217,9 @@ export function OpeningSequence() {
     <motion.div
       ref={root}
       className="fixed inset-0 z-[110] flex items-center justify-center overflow-hidden"
-      initial={{ opacity: 1 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       exit={{ opacity: 0, transition: { duration: 1.1, ease: [0.22, 1, 0.36, 1] } }}
     >
       <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #070314 0%, #0d0720 38%, #1e0f3a 70%, #39205f 100%)" }} />

@@ -22,6 +22,9 @@ type InfiniteSliderProps = {
   draggable?: boolean;
 };
 
+/** Ignore tiny pointer jitter so desktop clicks still open photos. */
+const DRAG_THRESHOLD_PX = 10;
+
 function wrapLoop(value: number, loop: number) {
   if (loop <= 0) return value;
   let next = value;
@@ -47,8 +50,9 @@ export function InfiniteSlider({
   const [key, setKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  const draggingRef = useRef(false);
+  const pointerActiveRef = useRef(false);
   const dragMovedRef = useRef(false);
+  const startPointerRef = useRef(0);
   const lastPointerRef = useRef(0);
   const loopSizeRef = useRef(0);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -127,15 +131,20 @@ export function InfiniteSlider({
       : {};
 
   const stopDragging = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    setIsDragging(false);
+    if (!pointerActiveRef.current) return;
+    const didDrag = dragMovedRef.current;
+    pointerActiveRef.current = false;
+
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    // Resume autoplay from the scrubbed position.
-    setIsTransitioning(true);
-    setKey((prev) => prev + 1);
+
+    if (didDrag) {
+      setIsDragging(false);
+      // Resume autoplay from the scrubbed position.
+      setIsTransitioning(true);
+      setKey((prev) => prev + 1);
+    }
   };
 
   return (
@@ -146,24 +155,38 @@ export function InfiniteSlider({
         draggable && "cursor-grab touch-pan-y active:cursor-grabbing select-none",
         className,
       )}
-      style={draggable ? { touchAction: direction === "horizontal" ? "pan-y" : "pan-x" } : undefined}
+      style={
+        draggable
+          ? { touchAction: direction === "horizontal" ? "pan-y" : "pan-x" }
+          : undefined
+      }
       onPointerDown={(event) => {
         if (!draggable || event.button !== 0) return;
-        draggingRef.current = true;
+        // Don't capture yet — capturing the parent steals desktop clicks from slides.
+        pointerActiveRef.current = true;
         dragMovedRef.current = false;
-        lastPointerRef.current =
-          direction === "horizontal" ? event.clientX : event.clientY;
-        setIsDragging(true);
-        event.currentTarget.setPointerCapture(event.pointerId);
-      }}
-      onPointerMove={(event) => {
-        if (!draggingRef.current) return;
         const point =
           direction === "horizontal" ? event.clientX : event.clientY;
+        startPointerRef.current = point;
+        lastPointerRef.current = point;
+      }}
+      onPointerMove={(event) => {
+        if (!pointerActiveRef.current) return;
+        const point =
+          direction === "horizontal" ? event.clientX : event.clientY;
+        const total = Math.abs(point - startPointerRef.current);
+
+        if (!dragMovedRef.current) {
+          if (total < DRAG_THRESHOLD_PX) return;
+          dragMovedRef.current = true;
+          setIsDragging(true);
+          event.currentTarget.setPointerCapture(event.pointerId);
+          lastPointerRef.current = point;
+          return;
+        }
+
         const delta = point - lastPointerRef.current;
         lastPointerRef.current = point;
-        if (Math.abs(delta) > 0.5) dragMovedRef.current = true;
-
         const next = wrapLoop(
           translation.get() + delta,
           loopSizeRef.current,
