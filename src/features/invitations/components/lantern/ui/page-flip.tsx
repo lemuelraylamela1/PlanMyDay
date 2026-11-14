@@ -293,7 +293,7 @@ export function PageFlip({
     const draggedForward = drag.mode === "forward" && progress >= COMMIT_RATIO;
     const draggedBack = drag.mode === "back" && progress <= 1 - COMMIT_RATIO;
 
-    if (!drag.moved && trigger === "click" && drag.axis !== "vertical") {
+    if (!drag.moved && trigger === "click") {
       if (drag.mode === "forward") turnForward();
       else turnBack();
     } else if (drag.axis === "horizontal" && (flickedForward || draggedForward)) {
