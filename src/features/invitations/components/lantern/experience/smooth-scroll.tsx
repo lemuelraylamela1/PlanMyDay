@@ -37,14 +37,14 @@ export function SmoothScroll() {
 
     // Smoothly scroll for in-page anchor links.
     // Full-viewport sections (#hero, #portrait, …) must land flush — no header offset.
-    // #portrait is handled by the hero cinematic scroll (longer duration + veil).
+    // #portrait / #rsvp use dedicated cinematic scroll (longer duration).
     const onAnchorClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest(
         'a[href^="#"]',
       ) as HTMLAnchorElement | null;
       if (!target) return;
       const id = target.getAttribute("href");
-      if (!id || id === "#" || id === "#portrait") return;
+      if (!id || id === "#" || id === "#portrait" || id === "#rsvp") return;
       const el = document.querySelector(id);
       if (el) {
         e.preventDefault();

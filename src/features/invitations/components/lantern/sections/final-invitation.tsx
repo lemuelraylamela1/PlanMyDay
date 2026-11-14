@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { motion } from "framer-motion";
 import { StarField } from "../effects/star-field";
 import { FloatingLanterns } from "../effects/floating-lanterns";
@@ -10,9 +11,35 @@ import { LanternReflection } from "../effects/lantern-reflection";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
+import { scrollToSection } from "../hooks/scroll-to-section";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 
 export function FinalInvitation() {
   const wedding = useLanternContent();
+  const { compact, reduceMotion } = useLanternPerf();
+  const scrollBusy = React.useRef(false);
+
+  const goToRsvp = React.useCallback(
+    (event?: React.MouseEvent) => {
+      event?.preventDefault();
+      event?.stopPropagation();
+      if (scrollBusy.current) return;
+      scrollBusy.current = true;
+
+      // Slow cinematic glide into the RSVP form (shorter on compact / reduced motion).
+      const duration = reduceMotion ? 0 : compact ? 2800 : 3600;
+      scrollToSection("rsvp", {
+        duration,
+        onComplete: () => {
+          scrollBusy.current = false;
+          if (typeof window !== "undefined" && window.location.hash !== "#rsvp") {
+            window.history.replaceState(null, "", "#rsvp");
+          }
+        },
+      });
+    },
+    [compact, reduceMotion],
+  );
 
   return (
     <section
@@ -78,7 +105,7 @@ export function FinalInvitation() {
             transition={{ delay: 0.3, duration: 0.8 }}
             className="mt-10 sm:mt-12"
           >
-            <a href="#rsvp">
+            <a href="#rsvp" onClick={goToRsvp}>
               <GoldButton size="lg" className="min-h-12 w-full max-w-xs sm:w-auto">
                 {wedding.final.cta}
               </GoldButton>
