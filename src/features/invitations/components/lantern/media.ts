@@ -116,6 +116,18 @@ export const attireGuideImages = {
   },
 } as const;
 
+/** Monetary gift QR codes (MariBank + GCash). */
+export const giftQrImages = {
+  maribank: {
+    src: "/gifts/maribank.jpg",
+    alt: "MariBank InstaPay QR code for Lemuel Ray Lamela",
+  },
+  gcash: {
+    src: "/gifts/gcash.jpg",
+    alt: "GCash InstaPay QR code",
+  },
+} as const;
+
 /** Ambient background music path. Temporary stand-in — swap later. */
 export const AMBIENT_MUSIC_SRC = "/proposal-audio/gehlee-closer.mp3";
 
@@ -123,6 +135,7 @@ export const AMBIENT_MUSIC_SRC = "/proposal-audio/gehlee-closer.mp3";
 export const SAVE_THE_DATE_VIDEO = {
   src: "/proposal-video/save-the-date.mp4",
   mobileSrc: "/proposal-video/save-the-date-720.mp4",
+  posterSrc: "/proposal-video/save-the-date-poster.jpg",
   title: "Save the Date",
   width: 2560,
   height: 1440,

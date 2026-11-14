@@ -431,7 +431,6 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
                   order={filter.sortOrder ?? "asc"}
                   onSort={() => toggleSort("invitationStatus")}
                 />
-                <TableHead className="hidden md:table-cell">RSVP Link</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -486,21 +485,6 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary">{g.invitationStatus.replace("_", " ")}</Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onGenerateRsvpLink(g)}
-                      disabled={linkLoadingId === g.id}
-                    >
-                      {linkLoadingId === g.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <QrCode className="h-4 w-4" />
-                      )}
-                      Generate RSVP link
-                    </Button>
-                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -511,6 +495,12 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openEdit(g)}>
                           <Pencil className="h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => void onGenerateRsvpLink(g)}
+                          disabled={linkLoadingId === g.id}
+                        >
+                          <QrCode className="h-4 w-4" /> Generate RSVP link
                         </DropdownMenuItem>
                         {g.rsvpStatus === "ACCEPTED" ? (
                           <DropdownMenuItem onClick={() => void onOpenWeddingIdQr(g)}>

@@ -16,6 +16,10 @@ import { GoldButton } from "../ui/gold-button";
 import { OrnateScroll } from "../ui/ornate-scroll";
 import type { InvitationCheckIn, InvitationGuest, InvitationResponse, RsvpStatusValue } from "../types";
 import { GuestCheckInQrCard } from "@/features/check-in/components/guest-check-in-qr-card";
+import {
+  joinRsvpMessage,
+  splitRsvpMessage,
+} from "@/features/invitations/rsvp-message";
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
@@ -31,26 +35,6 @@ const statusHeadline: Record<Exclude<RsvpStatusValue, "PENDING">, string> = {
   TENTATIVE: "Noted as tentative",
 };
 
-const HASHTAG_MARKER = "Suggested hashtags:";
-
-function splitMessage(raw: string | null | undefined) {
-  if (!raw) return { note: "", hashtags: "" };
-  const idx = raw.lastIndexOf(HASHTAG_MARKER);
-  if (idx === -1) return { note: raw, hashtags: "" };
-  return {
-    note: raw.slice(0, idx).trim(),
-    hashtags: raw.slice(idx + HASHTAG_MARKER.length).trim(),
-  };
-}
-
-function joinMessage(note: string, hashtags: string) {
-  const cleanedNote = note.trim();
-  const cleanedTags = hashtags.trim();
-  if (!cleanedTags) return cleanedNote || null;
-  if (!cleanedNote) return `${HASHTAG_MARKER} ${cleanedTags}`;
-  return `${cleanedNote}\n\n${HASHTAG_MARKER} ${cleanedTags}`;
-}
-
 interface Props {
   token?: string | null;
   guest?: InvitationGuest | null;
@@ -60,7 +44,7 @@ interface Props {
 
 export function Rsvp({ token, guest, response }: Props) {
   const wedding = useLanternContent();
-  const { invitationToken } = useExperience();
+  const { invitationToken, rsvpOpen, openRsvp } = useExperience();
   const effectiveToken = token ?? invitationToken;
 
   const mealChoices: readonly string[] = wedding.rsvp.mealOptions;
@@ -78,7 +62,7 @@ export function Rsvp({ token, guest, response }: Props) {
     response?.dietaryRestrictions ?? "",
   );
   const [plusOneName, setPlusOneName] = React.useState(response?.plusOneName ?? "");
-  const initialMessage = splitMessage(response?.message);
+  const initialMessage = splitRsvpMessage(response?.message);
   const [message, setMessage] = React.useState(initialMessage.note);
   const [suggestedHashtags, setSuggestedHashtags] = React.useState(
     initialMessage.hashtags,
@@ -88,7 +72,7 @@ export function Rsvp({ token, guest, response }: Props) {
   const [checkIn, setCheckIn] = React.useState<InvitationCheckIn | null>(guest?.checkIn ?? null);
 
   function loadResponse(next: InvitationResponse | null) {
-    const parts = splitMessage(next?.message);
+    const parts = splitRsvpMessage(next?.message);
     setAttending(next?.attending ?? null);
     setMealPreference(next?.mealPreference ?? "");
     setDietaryRestrictions(next?.dietaryRestrictions ?? "");
@@ -98,6 +82,7 @@ export function Rsvp({ token, guest, response }: Props) {
   }
 
   function startChange() {
+    openRsvp();
     loadResponse(savedResponse);
     setError(null);
     setJustSubmitted(false);
@@ -131,7 +116,7 @@ export function Rsvp({ token, guest, response }: Props) {
       mealPreference: attending ? mealPreference : null,
       dietaryRestrictions: attending ? dietaryRestrictions.trim() || null : null,
       plusOneName: attending && plusOneAllowed ? plusOneName.trim() || null : null,
-      message: joinMessage(message, suggestedHashtags),
+      message: joinRsvpMessage(message, suggestedHashtags),
     };
 
     setPending(true);
@@ -176,6 +161,7 @@ export function Rsvp({ token, guest, response }: Props) {
       setCheckIn(reply.attending ? payload.checkIn ?? null : null);
       setJustSubmitted(true);
       setEditing(false);
+      openRsvp();
     } catch {
       const failure = "We couldn't send your reply. Please check your connection and try again.";
       setError(failure);
@@ -186,6 +172,11 @@ export function Rsvp({ token, guest, response }: Props) {
   }
 
   const showSuccess = !editing && status !== "PENDING";
+
+  // Form only after "RSVP Now"; receipt always stays on the main site once replied.
+  if (!rsvpOpen && !showSuccess) {
+    return null;
+  }
 
   return (
     <section

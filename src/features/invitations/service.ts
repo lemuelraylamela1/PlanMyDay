@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { generateToken, hashToken } from "@/lib/tokens";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
-import { slugifyGuestName, WEDDING_INVITE_SLUG } from "@/features/invitations/invite-path";
+import { slugifyGuestName } from "@/features/invitations/invite-path";
 
 export function invitationUrl(token: string, guestName?: string | null) {
   // Guest invites use the wedding public host (`/invite/...`).
@@ -18,7 +18,7 @@ export function invitationUrl(token: string, guestName?: string | null) {
 
   if (guestName?.trim()) {
     const guestSlug = slugifyGuestName(guestName);
-    return `${base}/invite/${WEDDING_INVITE_SLUG}/${guestSlug}/${encodedToken}`;
+    return `${base}/invite/${guestSlug}/${encodedToken}`;
   }
 
   return `${base}/invite/${encodedToken}`;

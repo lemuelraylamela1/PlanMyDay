@@ -198,6 +198,27 @@ export const weddingDefaults = {
       "Fifteen frames of our story across three flowing rows. Drag any row to find a moment — tap for full size.",
   },
 
+  gifts: {
+    eyebrow: "Monetary Gifts",
+    title: "A Gift of Love",
+    intro:
+      "Your presence is the greatest gift. If you wish to bless us further, you may send a monetary gift through MariBank or GCash by scanning a QR code below.",
+    methods: [
+      {
+        label: "MariBank",
+        account: "Lemuel Ray Lamela · MariBank",
+        imageSrc: "/gifts/maribank.jpg",
+        imageAlt: "MariBank InstaPay QR code for Lemuel Ray Lamela",
+      },
+      {
+        label: "GCash",
+        account: "GCash",
+        imageSrc: "/gifts/gcash.jpg",
+        imageAlt: "GCash InstaPay QR code",
+      },
+    ],
+  },
+
   rsvp: {
     eyebrow: "Will You Join Us?",
     title: "Send Your Reply",

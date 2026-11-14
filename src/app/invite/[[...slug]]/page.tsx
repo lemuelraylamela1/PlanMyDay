@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 /**
  * Invite routes:
  * - /invite/{token}
- * - /invite/lemuelandgraziellewedding/{guest-name}/{token}
+ * - /invite/{guest-name}/{token}
+ * - /invite/lemuelandgraziellewedding/{guest-name}/{token} (legacy)
  */
 export default async function InvitePage({
   params,
@@ -22,6 +23,10 @@ export default async function InvitePage({
 
   if (parts.length === 1) {
     return renderInviteByToken(decodeURIComponent(parts[0] ?? ""));
+  }
+
+  if (parts.length === 2) {
+    return renderInviteByToken(decodeURIComponent(parts[1] ?? ""));
   }
 
   if (parts.length === 3 && isWeddingInviteSlug(parts[0] ?? "")) {

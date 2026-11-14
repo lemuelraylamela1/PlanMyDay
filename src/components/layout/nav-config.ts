@@ -8,6 +8,7 @@ import {
   ListChecks,
   Clock,
   MailOpen,
+  MessageSquareText,
   HandHeart,
   Globe,
   Image,
@@ -51,6 +52,7 @@ export const navGroups: NavGroup[] = [
     label: "Guests & Web",
     items: [
       { label: "Invitations & RSVP", href: "/invitations", icon: MailOpen },
+      { label: "Guest Responses", href: "/guest-responses", icon: MessageSquareText },
       { label: "Check-in", href: "/check-in", icon: ScanLine },
       { label: "Entourage", href: "/sponsor-proposals", icon: HandHeart },
       { label: "Website", href: "/website", icon: Globe },

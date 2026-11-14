@@ -10,6 +10,7 @@ import { SaveTheDate } from "./sections/save-the-date";
 import { OurStory } from "./sections/our-story";
 import { EventDetails } from "./sections/event-details";
 import { Attire } from "./sections/attire";
+import { MonetaryGifts } from "./sections/monetary-gifts";
 import { Gallery } from "./sections/gallery";
 import { Countdown } from "./sections/countdown";
 import { Faq } from "./sections/faq";
@@ -37,9 +38,17 @@ export function LanternInvitationExperience({
     [wedding, guest]
   );
 
+  // Only a completed RSVP should surface the section without clicking "RSVP Now".
+  const hasRsvpReceipt =
+    guest?.rsvpStatus != null && guest.rsvpStatus !== "PENDING";
+
   return (
     <LanternContentProvider value={content}>
-      <Experience token={token} guestName={guest?.name}>
+      <Experience
+        token={token}
+        guestName={guest?.name}
+        initialRsvpOpen={hasRsvpReceipt}
+      >
         <main>
           <Hero />
           <PortraitHero />
@@ -49,6 +58,7 @@ export function LanternInvitationExperience({
           <OurStory />
           <EventDetails />
           <Attire />
+          <MonetaryGifts />
           <Countdown />
           {/* Travel & Accommodation — hidden for now */}
           <Faq />

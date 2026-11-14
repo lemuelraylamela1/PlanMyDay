@@ -85,13 +85,19 @@ export function Experience({
   children,
   token,
   guestName,
+  initialRsvpOpen = false,
 }: {
   children: React.ReactNode;
   token?: string | null;
   guestName?: string | null;
+  initialRsvpOpen?: boolean;
 }) {
   return (
-    <ExperienceProvider token={token} guestName={guestName}>
+    <ExperienceProvider
+      token={token}
+      guestName={guestName}
+      initialRsvpOpen={initialRsvpOpen}
+    >
       <ExperienceShell>{children}</ExperienceShell>
     </ExperienceProvider>
   );

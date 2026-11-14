@@ -13,10 +13,12 @@ import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
 import { scrollToSection } from "../hooks/scroll-to-section";
 import { useLanternPerf } from "../performance/lantern-perf-provider";
+import { useExperience } from "../experience/experience-provider";
 
 export function FinalInvitation() {
   const wedding = useLanternContent();
   const { compact, reduceMotion } = useLanternPerf();
+  const { openRsvp, rsvpOpen } = useExperience();
   const scrollBusy = React.useRef(false);
 
   const goToRsvp = React.useCallback(
@@ -26,19 +28,30 @@ export function FinalInvitation() {
       if (scrollBusy.current) return;
       scrollBusy.current = true;
 
-      // Slow cinematic glide into the RSVP form (shorter on compact / reduced motion).
+      openRsvp();
+
+      // Wait for the RSVP section to mount before the cinematic scroll.
       const duration = reduceMotion ? 0 : compact ? 2800 : 3600;
-      scrollToSection("rsvp", {
-        duration,
-        onComplete: () => {
-          scrollBusy.current = false;
-          if (typeof window !== "undefined" && window.location.hash !== "#rsvp") {
-            window.history.replaceState(null, "", "#rsvp");
-          }
-        },
-      });
+      const startScroll = () => {
+        if (!document.getElementById("rsvp")) {
+          window.setTimeout(startScroll, 32);
+          return;
+        }
+        scrollToSection("rsvp", {
+          duration,
+          onComplete: () => {
+            scrollBusy.current = false;
+          },
+        });
+      };
+
+      if (rsvpOpen) {
+        startScroll();
+      } else {
+        window.setTimeout(startScroll, 48);
+      }
     },
-    [compact, reduceMotion],
+    [compact, openRsvp, reduceMotion, rsvpOpen],
   );
 
   return (
@@ -105,11 +118,14 @@ export function FinalInvitation() {
             transition={{ delay: 0.3, duration: 0.8 }}
             className="mt-10 sm:mt-12"
           >
-            <a href="#rsvp" onClick={goToRsvp}>
-              <GoldButton size="lg" className="min-h-12 w-full max-w-xs sm:w-auto">
-                {wedding.final.cta}
-              </GoldButton>
-            </a>
+            <GoldButton
+              type="button"
+              size="lg"
+              className="min-h-12 w-full max-w-xs sm:w-auto"
+              onClick={goToRsvp}
+            >
+              {wedding.final.cta}
+            </GoldButton>
           </motion.div>
         </motion.div>
       </div>

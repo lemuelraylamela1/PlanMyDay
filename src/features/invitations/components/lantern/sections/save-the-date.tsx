@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Maximize2, Minimize2, Play } from "lucide-react";
 
@@ -45,6 +46,8 @@ export function SaveTheDate() {
   const inView = useInView(sectionRef, { amount: 0.4 });
   const [playing, setPlaying] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
+  // iOS/Safari often won't paint the first video frame until play — keep poster visible.
+  const [showPoster, setShowPoster] = React.useState(true);
 
   React.useEffect(() => {
     const sync = () => {
@@ -111,6 +114,7 @@ export function SaveTheDate() {
   }
 
   function handleVideoPlay() {
+    setShowPoster(false);
     setPlaying(true);
     setAmbientSuspended(true);
   }
@@ -122,6 +126,7 @@ export function SaveTheDate() {
 
   function handleVideoEnded() {
     setPlaying(false);
+    setShowPoster(true);
     setAmbientSuspended(false);
   }
 
@@ -215,16 +220,21 @@ export function SaveTheDate() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.9, ease: LUXURY, delay: 0.12 }}
-        className="relative z-10 mx-auto mt-4 min-h-0 w-full flex-1 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:mt-6 sm:px-6 lg:px-10"
+        className="relative z-10 mx-auto mt-4 flex min-h-0 w-full flex-1 items-center justify-center px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:mt-6 sm:px-6 lg:px-10"
       >
+        {/*
+          Keep the stage 16:9 so the film fills the frame. A tall full-bleed stage
+          + object-contain letterboxes oddly on iOS (thumbnail stuck to the bottom).
+        */}
         <div
           ref={stageRef}
-          className="relative h-full w-full overflow-hidden bg-night"
+          className="relative aspect-video w-full max-h-full overflow-hidden rounded-lg bg-night shadow-[0_24px_60px_-28px_rgba(0,0,0,0.65)]"
         >
           <video
             ref={videoRef}
-            className="absolute inset-0 h-full w-full object-contain object-center"
+            className="absolute inset-0 h-full w-full object-cover object-center"
             src={videoSrc}
+            poster={SAVE_THE_DATE_VIDEO.posterSrc}
             playsInline
             preload="metadata"
             controls={false}
@@ -237,9 +247,21 @@ export function SaveTheDate() {
             <track kind="captions" />
           </video>
 
+          {showPoster && !playing ? (
+            <Image
+              src={SAVE_THE_DATE_VIDEO.posterSrc}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 100vw, 1200px"
+              className="pointer-events-none absolute inset-0 z-[1] object-cover object-center"
+              priority={compact}
+              unoptimized
+            />
+          ) : null}
+
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night/40 via-transparent to-night/15"
+            className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-night/40 via-transparent to-night/15"
           />
 
           <button

@@ -27,6 +27,12 @@ type ExperienceContextValue = {
   registerMusicStarter: (starter: (() => void) | null) => void;
   muted: boolean;
   toggleMuted: () => void;
+  /**
+   * RSVP form stays hidden until "RSVP Now" (or an existing reply / #rsvp hash).
+   * Receipt remains visible after a completed RSVP.
+   */
+  rsvpOpen: boolean;
+  openRsvp: () => void;
 };
 
 const ExperienceContext = React.createContext<ExperienceContextValue | null>(null);
@@ -37,10 +43,13 @@ export function ExperienceProvider({
   children,
   token,
   guestName: guestNameProp,
+  initialRsvpOpen = false,
 }: {
   children: React.ReactNode;
   token?: string | null;
   guestName?: string | null;
+  /** Show RSVP immediately (existing reply / receipt). */
+  initialRsvpOpen?: boolean;
 }) {
   const [phase, setPhase] = React.useState<ExperiencePhase>("invitation");
   const [guestName, setGuestName] = React.useState<string>(
@@ -52,6 +61,7 @@ export function ExperienceProvider({
   const [ambientSuspended, setAmbientSuspendedState] =
     React.useState(false);
   const [muted, setMuted] = React.useState(false);
+  const [rsvpOpen, setRsvpOpen] = React.useState(initialRsvpOpen);
   const musicStarterRef = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
@@ -78,6 +88,22 @@ export function ExperienceProvider({
     }, 0);
     return () => window.clearTimeout(id);
   }, []);
+
+  React.useEffect(() => {
+    if (initialRsvpOpen) setRsvpOpen(true);
+  }, [initialRsvpOpen]);
+
+  // Drop a leftover #rsvp hash so a prior visit doesn't force the form open.
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#rsvp") return;
+    if (initialRsvpOpen) return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+  }, [initialRsvpOpen]);
 
   React.useEffect(() => {
     const locked = phase !== "revealed";
@@ -118,6 +144,10 @@ export function ExperienceProvider({
     });
   }, []);
 
+  const openRsvp = React.useCallback(() => {
+    setRsvpOpen(true);
+  }, []);
+
   const value = React.useMemo<ExperienceContextValue>(
     () => ({
       phase,
@@ -133,6 +163,8 @@ export function ExperienceProvider({
       registerMusicStarter,
       muted,
       toggleMuted,
+      rsvpOpen,
+      openRsvp,
     }),
     [
       phase,
@@ -148,6 +180,8 @@ export function ExperienceProvider({
       registerMusicStarter,
       muted,
       toggleMuted,
+      rsvpOpen,
+      openRsvp,
     ],
   );
 
