@@ -25,6 +25,7 @@ export default async function SponsorProposalsPage() {
     name: proposal.name,
     email: proposal.email,
     phone: proposal.phone,
+    facebookLink: proposal.facebookLink,
     customMessage: proposal.customMessage,
     status: proposal.status,
     hasToken: Boolean(proposal.tokenHash),

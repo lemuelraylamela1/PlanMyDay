@@ -18,15 +18,37 @@ export async function listGuests(weddingId: string, filter: GuestFilter) {
             { lastName: { contains: filter.q, mode: "insensitive" } },
             { email: { contains: filter.q, mode: "insensitive" } },
             { preferredName: { contains: filter.q, mode: "insensitive" } },
+            { facebookLink: { contains: filter.q, mode: "insensitive" } },
           ],
         }
       : {}),
   };
 
+  const order = filter.sortOrder ?? "asc";
+  const orderBy: Prisma.GuestOrderByWithRelationInput[] = (() => {
+    switch (filter.sortBy) {
+      case "title":
+        return [{ title: order }, { lastName: "asc" }, { firstName: "asc" }];
+      case "side":
+        return [{ side: order }, { lastName: "asc" }, { firstName: "asc" }];
+      case "group":
+        return [{ group: { name: order } }, { lastName: "asc" }, { firstName: "asc" }];
+      case "rsvpStatus":
+        return [{ rsvpStatus: order }, { lastName: "asc" }, { firstName: "asc" }];
+      case "invitationStatus":
+        return [{ invitationStatus: order }, { lastName: "asc" }, { firstName: "asc" }];
+      case "facebook":
+        return [{ facebookLink: order }, { lastName: "asc" }, { firstName: "asc" }];
+      case "name":
+      default:
+        return [{ lastName: order }, { firstName: order }];
+    }
+  })();
+
   const [items, total] = await Promise.all([
     db.guest.findMany({
       where,
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      orderBy,
       skip: (filter.page - 1) * filter.pageSize,
       take: filter.pageSize,
       include: { group: { select: { id: true, name: true } } },

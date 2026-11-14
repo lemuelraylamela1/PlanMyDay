@@ -1,3 +1,9 @@
+import {
+  downloadExcelWorkbook,
+  type ExcelColumn,
+  type ExcelSheet,
+} from "@/lib/excel-export";
+
 export interface SupplierExportPayment {
   amount: number;
   paymentDate: string;
@@ -38,93 +44,63 @@ function shortDate(value: string | null) {
   }).format(new Date(value));
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-}
+const supplierColumns: ExcelColumn[] = [
+  { key: "company", header: "Supplier", width: 28 },
+  { key: "category", header: "Category", width: 18 },
+  { key: "contact", header: "Contact", width: 18 },
+  { key: "phone", header: "Phone", width: 16 },
+  { key: "email", header: "Email", width: 28 },
+  { key: "status", header: "Status", width: 14, align: "Center" },
+  { key: "paymentStatus", header: "Payment status", width: 16, align: "Center" },
+  { key: "contract", header: "Contract", width: 14, type: "Number", align: "Right" },
+  { key: "paid", header: "Paid", width: 14, type: "Number", align: "Right" },
+  { key: "balance", header: "Balance", width: 14, type: "Number", align: "Right" },
+  { key: "dueDate", header: "Due date", width: 14, align: "Center" },
+];
 
-function xml(value: string | number | null | undefined) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function cell(value: string | number, type: "String" | "Number" = "String", style = "") {
-  const styleAttribute = style ? ` ss:StyleID="${style}"` : "";
-  return `<Cell${styleAttribute}><Data ss:Type="${type}">${xml(value)}</Data></Cell>`;
-}
+const paymentColumns: ExcelColumn[] = [
+  { key: "company", header: "Supplier", width: 28 },
+  { key: "paymentDate", header: "Payment date", width: 16, align: "Center" },
+  { key: "amount", header: "Amount", width: 14, type: "Number", align: "Right" },
+  { key: "notes", header: "Notes", width: 36 },
+];
 
 export function exportSuppliersToExcel(rows: SupplierExportRow[], currency: string) {
-  const supplierRows = rows
-    .map((supplier) => {
-      const balance = Math.max(0, supplier.contractAmount - supplier.downPayment);
-      return `<Row>
-        ${cell(supplier.company)}
-        ${cell(supplier.categoryName ?? "")}
-        ${cell(supplier.contactPerson ?? "")}
-        ${cell(supplier.phone ?? "")}
-        ${cell(supplier.email ?? "")}
-        ${cell(supplier.status)}
-        ${cell(supplier.paymentStatus)}
-        ${cell(supplier.contractAmount, "Number", "Money")}
-        ${cell(supplier.downPayment, "Number", "Money")}
-        ${cell(balance, "Number", "Money")}
-        ${cell(shortDate(supplier.dueDate))}
-      </Row>`;
-    })
-    .join("");
+  const supplierSheet: ExcelSheet = {
+    name: "Suppliers",
+    columns: supplierColumns,
+    rows: rows.map((supplier) => ({
+      company: supplier.company,
+      category: supplier.categoryName ?? "",
+      contact: supplier.contactPerson ?? "",
+      phone: supplier.phone ?? "",
+      email: supplier.email ?? "",
+      status: supplier.status,
+      paymentStatus: supplier.paymentStatus,
+      contract: supplier.contractAmount,
+      paid: supplier.downPayment,
+      balance: Math.max(0, supplier.contractAmount - supplier.downPayment),
+      dueDate: shortDate(supplier.dueDate),
+    })),
+  };
 
-  const paymentRows = rows
-    .flatMap((supplier) =>
-      supplier.payments.map(
-        (payment) => `<Row>
-          ${cell(supplier.company)}
-          ${cell(shortDate(payment.paymentDate))}
-          ${cell(payment.amount, "Number", "Money")}
-          ${cell(payment.notes ?? "")}
-        </Row>`,
-      ),
-    )
-    .join("");
+  const paymentSheet: ExcelSheet = {
+    name: "Payments",
+    columns: paymentColumns,
+    rows: rows.flatMap((supplier) =>
+      supplier.payments.map((payment) => ({
+        company: supplier.company,
+        paymentDate: shortDate(payment.paymentDate),
+        amount: payment.amount,
+        notes: payment.notes ?? "",
+      })),
+    ),
+  };
 
-  const workbook = `<?xml version="1.0"?>
-  <?mso-application progid="Excel.Sheet"?>
-  <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-    xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-    <Styles>
-      <Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#E5E7EB" ss:Pattern="Solid"/></Style>
-      <Style ss:ID="Money"><NumberFormat ss:Format="&quot;${xml(currency)}&quot; #,##0.00"/></Style>
-    </Styles>
-    <Worksheet ss:Name="Suppliers">
-      <Table>
-        <Row>
-          ${["Supplier", "Category", "Contact", "Phone", "Email", "Status", "Payment status", "Contract", "Paid", "Balance", "Due date"].map((heading) => cell(heading, "String", "Header")).join("")}
-        </Row>
-        ${supplierRows}
-      </Table>
-    </Worksheet>
-    <Worksheet ss:Name="Payments">
-      <Table>
-        <Row>
-          ${["Supplier", "Payment date", "Amount", "Notes"].map((heading) => cell(heading, "String", "Header")).join("")}
-        </Row>
-        ${paymentRows}
-      </Table>
-    </Worksheet>
-  </Workbook>`;
-
-  downloadBlob(
-    new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" }),
+  downloadExcelWorkbook(
+    [supplierSheet, paymentSheet],
     `supplier-report-${fileDate()}.xls`,
+    { title: `Supplier Financial Report (${currency})` },
   );
 }
 
@@ -163,7 +139,8 @@ export async function exportSuppliersToPdf(rows: SupplierExportRow[], currency: 
       shortDate(supplier.dueDate) || "—",
     ]),
     styles: { fontSize: 8, cellPadding: 5 },
-    headStyles: { fillColor: [55, 65, 81] },
+    headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [241, 245, 249] },
   });
 
   const payments = rows.flatMap((supplier) =>
@@ -183,7 +160,8 @@ export async function exportSuppliersToPdf(rows: SupplierExportRow[], currency: 
       head: [["Supplier", "Payment date", "Amount", "Notes"]],
       body: payments,
       styles: { fontSize: 8, cellPadding: 5 },
-      headStyles: { fillColor: [55, 65, 81] },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [241, 245, 249] },
     });
   }
 

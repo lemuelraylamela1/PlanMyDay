@@ -396,6 +396,7 @@ model Guest {
   preferredName       String?
   email               String?
   phone               String?
+  facebookLink        String?
   side                GuestSide        @default(BOTH)
   relationship        String?
   invitationStatus    InvitationStatus @default(NOT_SENT)
@@ -812,6 +813,7 @@ model SponsorProposal {
   name            String
   email           String?
   phone           String?
+  facebookLink    String?
   customMessage   String         @db.Text
   status          ProposalStatus @default(PENDING)
   tokenHash       String?        @unique

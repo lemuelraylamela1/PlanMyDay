@@ -15,10 +15,21 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import {
+  SortableTableHead,
+  compareDate,
+  compareText,
+  type SortOrder,
+} from "@/components/shared/sortable-table-head";
+import {
+  TablePagination,
+  useClientPagination,
+} from "@/components/shared/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +58,7 @@ import {
   deleteSponsorProposalAction,
   generateProposalLinkAction,
 } from "@/features/sponsor-proposals/actions";
+import { EntourageImportDialog } from "@/features/sponsor-proposals/components/import-dialog";
 import {
   ProposalFormDialog,
   type ProposalFormValue,
@@ -54,6 +66,7 @@ import {
 import {
   entourageRoleLabels,
   entourageRoles,
+  normalizeExternalUrl,
   type EntourageRole,
 } from "@/features/sponsor-proposals/schemas";
 
@@ -63,6 +76,7 @@ export interface SponsorProposalRow {
   name: string;
   email: string | null;
   phone: string | null;
+  facebookLink: string | null;
   customMessage: string;
   status: "PENDING" | "ACCEPTED" | "DECLINED";
   hasToken: boolean;
@@ -78,12 +92,60 @@ const statusVariant = {
 } as const;
 
 type ResponseFilter = "all" | "responded" | "opened" | "link" | "unshared";
+type EntourageSortField = "name" | "role" | "facebook" | "status" | "response";
+
+const STATUS_RANK: Record<SponsorProposalRow["status"], number> = {
+  PENDING: 0,
+  ACCEPTED: 1,
+  DECLINED: 2,
+};
+
+const RESPONSE_RANK: Record<Exclude<ResponseFilter, "all">, number> = {
+  unshared: 0,
+  link: 1,
+  opened: 2,
+  responded: 3,
+};
 
 function responseKind(proposal: SponsorProposalRow): Exclude<ResponseFilter, "all"> {
   if (proposal.respondedAt) return "responded";
   if (proposal.openedAt) return "opened";
   if (proposal.hasToken) return "link";
   return "unshared";
+}
+
+function compareProposals(
+  a: SponsorProposalRow,
+  b: SponsorProposalRow,
+  field: EntourageSortField,
+  order: SortOrder,
+) {
+  const direction = order === "asc" ? 1 : -1;
+  switch (field) {
+    case "name":
+      return compareText(a.name, b.name, direction);
+    case "role":
+      return (
+        compareText(entourageRoleLabels[a.role], entourageRoleLabels[b.role], direction) ||
+        compareText(a.name, b.name, direction)
+      );
+    case "facebook":
+      return compareText(a.facebookLink, b.facebookLink, direction);
+    case "status":
+      return (
+        (STATUS_RANK[a.status] - STATUS_RANK[b.status]) * direction ||
+        compareText(a.name, b.name, direction)
+      );
+    case "response": {
+      const kindDiff =
+        (RESPONSE_RANK[responseKind(a)] - RESPONSE_RANK[responseKind(b)]) * direction;
+      if (kindDiff !== 0) return kindDiff;
+      return (
+        compareDate(a.respondedAt ?? a.openedAt, b.respondedAt ?? b.openedAt, direction) ||
+        compareText(a.name, b.name, direction)
+      );
+    }
+  }
 }
 
 function formatResponseTime(value: string) {
@@ -100,6 +162,7 @@ export function ProposalsManager({
 }) {
   const router = useRouter();
   const [formOpen, setFormOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<SponsorProposalRow | null>(null);
   const [linkOpen, setLinkOpen] = React.useState(false);
   const [loadingId, setLoadingId] = React.useState<string | null>(null);
@@ -109,6 +172,8 @@ export function ProposalsManager({
   const [role, setRole] = React.useState<"all" | EntourageRole>("all");
   const [statusFilter, setStatusFilter] = React.useState<"all" | SponsorProposalRow["status"]>("all");
   const [response, setResponse] = React.useState<ResponseFilter>("all");
+  const [sortField, setSortField] = React.useState<EntourageSortField>("name");
+  const [sortOrder, setSortOrder] = React.useState<SortOrder>("asc");
 
   function addProposal() {
     setEditing(null);
@@ -168,9 +233,35 @@ export function ProposalsManager({
     if (response !== "all" && responseKind(proposal) !== response) return false;
     const term = query.trim().toLowerCase();
     if (!term) return true;
-    return [proposal.name, proposal.email, proposal.phone, proposal.responseMessage]
-      .some((value) => value?.toLowerCase().includes(term));
+    return [
+      proposal.name,
+      proposal.email,
+      proposal.phone,
+      proposal.facebookLink,
+      proposal.responseMessage,
+    ].some((value) => value?.toLowerCase().includes(term));
   });
+
+  const sorted = [...filtered].sort((a, b) =>
+    compareProposals(a, b, sortField, sortOrder),
+  );
+  const paginationResetKey = `${query}|${role}|${statusFilter}|${response}|${sortField}|${sortOrder}`;
+  const {
+    page,
+    pageSize,
+    pagedItems: visible,
+    setPage,
+    setPageSize,
+  } = useClientPagination(sorted, paginationResetKey);
+
+  function toggleSort(field: EntourageSortField) {
+    if (sortField === field) {
+      setSortOrder((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortOrder("asc");
+  }
 
   const initial: ProposalFormValue | undefined = editing
     ? {
@@ -179,6 +270,7 @@ export function ProposalsManager({
         name: editing.name,
         email: editing.email ?? "",
         phone: editing.phone ?? "",
+        facebookLink: editing.facebookLink ?? "",
         customMessage: editing.customMessage,
       }
     : undefined;
@@ -235,36 +327,84 @@ export function ProposalsManager({
             </SelectContent>
           </Select>
         </div>}
-        <Button onClick={addProposal}><Plus className="h-4 w-4" /> Add entourage</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Import
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/api/sponsor-proposals/export">
+              <Download className="h-4 w-4" /> Export
+            </a>
+          </Button>
+          <Button onClick={addProposal}>
+            <Plus className="h-4 w-4" /> Add entourage
+          </Button>
+        </div>
       </div>
 
       {proposals.length === 0 ? (
         <EmptyState
           icon={HandHeart}
           title="No entourage proposals yet"
-          description="Add each person or couple, choose their role, then create a personal proposal link."
-          action={<Button onClick={addProposal}><Plus className="h-4 w-4" /> Add your first proposal</Button>}
+          description="Add each person or couple, import a CSV, then create personal proposal links."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="h-4 w-4" /> Import CSV
+              </Button>
+              <Button onClick={addProposal}>
+                <Plus className="h-4 w-4" /> Add your first proposal
+              </Button>
+            </div>
+          }
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Response</TableHead>
+                <SortableTableHead
+                  label="Name"
+                  active={sortField === "name"}
+                  order={sortOrder}
+                  onSort={() => toggleSort("name")}
+                />
+                <SortableTableHead
+                  label="Role"
+                  active={sortField === "role"}
+                  order={sortOrder}
+                  onSort={() => toggleSort("role")}
+                />
+                <SortableTableHead
+                  label="Facebook Link"
+                  className="hidden md:table-cell"
+                  active={sortField === "facebook"}
+                  order={sortOrder}
+                  onSort={() => toggleSort("facebook")}
+                />
+                <SortableTableHead
+                  label="Status"
+                  active={sortField === "status"}
+                  order={sortOrder}
+                  onSort={() => toggleSort("status")}
+                />
+                <SortableTableHead
+                  label="Response"
+                  active={sortField === "response"}
+                  order={sortOrder}
+                  onSort={() => toggleSort("response")}
+                />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {sorted.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                     No entourage matches this search or filter.
                   </TableCell>
                 </TableRow>
-              ) : filtered.map((proposal) => (
+              ) : visible.map((proposal) => (
                 <TableRow key={proposal.id}>
                   <TableCell>
                     <div className="font-medium">{proposal.name}</div>
@@ -273,6 +413,22 @@ export function ProposalsManager({
                     )}
                   </TableCell>
                   <TableCell>{entourageRoleLabels[proposal.role]}</TableCell>
+                  <TableCell className="hidden max-w-[220px] md:table-cell">
+                    {proposal.facebookLink ? (
+                      <a
+                        href={normalizeExternalUrl(proposal.facebookLink) ?? proposal.facebookLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex max-w-full items-center gap-1 text-sm text-primary underline-offset-2 hover:underline"
+                        title={proposal.facebookLink}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Open profile</span>
+                      </a>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[proposal.status]}>
                       {proposal.status.charAt(0) + proposal.status.slice(1).toLowerCase()}
@@ -329,12 +485,25 @@ export function ProposalsManager({
         </div>
       )}
 
+      {proposals.length > 0 ? (
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          total={sorted.length}
+          noun="member"
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      ) : null}
+
       <ProposalFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={initial}
         onSaved={() => router.refresh()}
       />
+
+      <EntourageImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
         <DialogContent>

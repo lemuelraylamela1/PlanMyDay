@@ -19,6 +19,7 @@ import {
   Copy,
   Check,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
+import { SortableTableHead, type SortOrder } from "@/components/shared/sortable-table-head";
+import { TablePagination, type PageSizeOption } from "@/components/shared/table-pagination";
 import { Users } from "lucide-react";
-import { GuestFormDialog, type GuestFormValue } from "@/features/guests/components/guest-form-dialog";
+import {
+  GuestFormDialog,
+  type GuestFormValue,
+} from "@/features/guests/components/guest-form-dialog";
 import { ImportDialog } from "@/features/guests/components/import-dialog";
 import {
   deleteGuestsAction,
@@ -63,10 +69,8 @@ import {
   updateInvitationStatusAction,
 } from "@/features/guests/actions";
 import { formatGuestDisplayName } from "@/features/guests/display-name";
-import {
-  generateInviteAction,
-  regenerateInviteAction,
-} from "@/features/invitations/actions";
+import { normalizeExternalUrl, type GuestSortField } from "@/features/guests/schemas";
+import { generateInviteAction, regenerateInviteAction } from "@/features/invitations/actions";
 import { getGuestCheckInQrAction } from "@/features/check-in/actions";
 import { downloadQrPng } from "@/features/check-in/components/guest-check-in-qr-card";
 
@@ -78,6 +82,7 @@ export interface GuestRow {
   preferredName: string | null;
   email: string | null;
   phone: string | null;
+  facebookLink: string | null;
   side: "BRIDE" | "GROOM" | "BOTH";
   relationship: string | null;
   rsvpStatus: "PENDING" | "ACCEPTED" | "DECLINED" | "TENTATIVE";
@@ -91,12 +96,13 @@ export interface GuestRow {
   groupName: string | null;
 }
 
-const rsvpVariant: Record<GuestRow["rsvpStatus"], "success" | "destructive" | "warning" | "info"> = {
-  ACCEPTED: "success",
-  DECLINED: "destructive",
-  PENDING: "warning",
-  TENTATIVE: "info",
-};
+const rsvpVariant: Record<GuestRow["rsvpStatus"], "success" | "destructive" | "warning" | "info"> =
+  {
+    ACCEPTED: "success",
+    DECLINED: "destructive",
+    PENDING: "warning",
+    TENTATIVE: "info",
+  };
 
 interface Props {
   guests: GuestRow[];
@@ -104,10 +110,18 @@ interface Props {
   page: number;
   totalPages: number;
   total: number;
-  filter: { q?: string; side?: string; rsvpStatus?: string };
+  pageSize: PageSizeOption;
+  filter: {
+    q?: string;
+    side?: string;
+    rsvpStatus?: string;
+    sortBy?: GuestSortField;
+    sortOrder?: SortOrder;
+    pageSize?: PageSizeOption;
+  };
 }
 
-export function GuestsTable({ guests, groups, page, totalPages, total, filter }: Props) {
+export function GuestsTable({ guests, groups, page, total, pageSize, filter }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -127,9 +141,10 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
   } | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
-  const [weddingIdQr, setWeddingIdQr] = React.useState<{ fullName: string; qrDataUrl: string } | null>(
-    null,
-  );
+  const [weddingIdQr, setWeddingIdQr] = React.useState<{
+    fullName: string;
+    qrDataUrl: string;
+  } | null>(null);
 
   function updateParams(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -159,6 +174,17 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
     setSelected(next);
   }
 
+  function toggleSort(field: GuestSortField) {
+    if (filter.sortBy === field) {
+      updateParams({
+        sortBy: field,
+        sortOrder: filter.sortOrder === "desc" ? "asc" : "desc",
+      });
+      return;
+    }
+    updateParams({ sortBy: field, sortOrder: "asc" });
+  }
+
   function openCreate() {
     setEditing(undefined);
     setFormOpen(true);
@@ -172,6 +198,7 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
       preferredName: g.preferredName ?? "",
       email: g.email ?? "",
       phone: g.phone ?? "",
+      facebookLink: g.facebookLink ?? "",
       side: g.side,
       relationship: g.relationship ?? "",
       rsvpStatus: g.rsvpStatus,
@@ -229,9 +256,7 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
   async function onRegenerateRsvpLink() {
     if (!rsvpLink) return;
     if (
-      !confirm(
-        "Generate a new invitation link? The previous link and QR code will stop working.",
-      )
+      !confirm("Generate a new invitation link? The previous link and QR code will stop working.")
     ) {
       return;
     }
@@ -282,11 +307,10 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Select
-            value={filter.side ?? "all"}
-            onValueChange={(v) => updateParams({ side: v })}
-          >
-            <SelectTrigger className="w-[130px]"><SelectValue placeholder="Side" /></SelectTrigger>
+          <Select value={filter.side ?? "all"} onValueChange={(v) => updateParams({ side: v })}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Side" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sides</SelectItem>
               <SelectItem value="BRIDE">Bride side</SelectItem>
@@ -298,7 +322,9 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
             value={filter.rsvpStatus ?? "all"}
             onValueChange={(v) => updateParams({ rsvpStatus: v })}
           >
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="RSVP" /></SelectTrigger>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="RSVP" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All RSVP</SelectItem>
               <SelectItem value="PENDING">Pending</SelectItem>
@@ -352,15 +378,59 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all"
+                  />
                 </TableHead>
-                <TableHead className="w-[90px]">Title</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Contact</TableHead>
-                <TableHead className="hidden lg:table-cell">Side</TableHead>
-                <TableHead className="hidden lg:table-cell">Group</TableHead>
-                <TableHead>RSVP</TableHead>
-                <TableHead className="hidden sm:table-cell">Invite</TableHead>
+                <SortableTableHead
+                  label="Title"
+                  className="w-[90px]"
+                  active={filter.sortBy === "title"}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("title")}
+                />
+                <SortableTableHead
+                  label="Name"
+                  active={filter.sortBy === "name" || !filter.sortBy}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("name")}
+                />
+                <SortableTableHead
+                  label="Facebook Link"
+                  className="hidden md:table-cell"
+                  active={filter.sortBy === "facebook"}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("facebook")}
+                />
+                <SortableTableHead
+                  label="Side"
+                  className="hidden lg:table-cell"
+                  active={filter.sortBy === "side"}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("side")}
+                />
+                {/* <SortableTableHead
+                  label="Group"
+                  className="hidden lg:table-cell"
+                  active={filter.sortBy === "group"}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("group")}
+                /> */}
+                <SortableTableHead
+                  label="RSVP"
+                  active={filter.sortBy === "rsvpStatus"}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("rsvpStatus")}
+                />
+                <SortableTableHead
+                  label="Invite"
+                  className="hidden sm:table-cell"
+                  active={filter.sortBy === "invitationStatus"}
+                  order={filter.sortOrder ?? "asc"}
+                  onSort={() => toggleSort("invitationStatus")}
+                />
                 <TableHead className="hidden md:table-cell">RSVP Link</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -369,7 +439,10 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
               {guests.map((g) => (
                 <TableRow key={g.id} data-state={selected.has(g.id) ? "selected" : undefined}>
                   <TableCell>
-                    <Checkbox checked={selected.has(g.id)} onCheckedChange={() => toggleOne(g.id)} />
+                    <Checkbox
+                      checked={selected.has(g.id)}
+                      onCheckedChange={() => toggleOne(g.id)}
+                    />
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">{g.title || "—"}</span>
@@ -379,17 +452,34 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                       {g.firstName} {g.lastName}
                     </div>
                     {g.preferredName && (
-                      <div className="text-xs text-muted-foreground">&ldquo;{g.preferredName}&rdquo;</div>
+                      <div className="text-xs text-muted-foreground">
+                        &ldquo;{g.preferredName}&rdquo;
+                      </div>
+                    )}
+                    {g.email && (
+                      <div className="text-xs text-muted-foreground md:hidden">{g.email}</div>
                     )}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="text-sm">{g.email ?? "—"}</div>
-                    {g.phone && <div className="text-xs text-muted-foreground">{g.phone}</div>}
+                  <TableCell className="hidden max-w-[220px] md:table-cell">
+                    {g.facebookLink ? (
+                      <a
+                        href={normalizeExternalUrl(g.facebookLink) ?? g.facebookLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex max-w-full items-center gap-1 text-sm text-primary underline-offset-2 hover:underline"
+                        title={g.facebookLink}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Open profile</span>
+                      </a>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="hidden capitalize lg:table-cell">
                     {g.side.toLowerCase()}
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">{g.groupName ?? "—"}</TableCell>
+                  {/* <TableCell className="hidden lg:table-cell">{g.groupName ?? "—"}</TableCell> */}
                   <TableCell>
                     <Badge variant={rsvpVariant[g.rsvpStatus]}>{g.rsvpStatus}</Badge>
                   </TableCell>
@@ -427,7 +517,12 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                             <QrCode className="h-4 w-4" /> Wedding ID QR
                           </DropdownMenuItem>
                         ) : null}
-                        <DropdownMenuItem onClick={() => { setSelected(new Set([g.id])); onBulkInvite(); }}>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelected(new Set([g.id]));
+                            onBulkInvite();
+                          }}
+                        >
                           <Mail className="h-4 w-4" /> Send invite
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -457,8 +552,10 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
                           onClick={async () => {
                             if (!confirm("Delete this guest?")) return;
                             const res = await deleteGuestsAction([g.id]);
-                            if (res.success) { toast.success("Deleted."); router.refresh(); }
-                            else toast.error(res.error);
+                            if (res.success) {
+                              toast.success("Deleted.");
+                              router.refresh();
+                            } else toast.error(res.error);
                           }}
                         >
                           <Trash2 className="h-4 w-4" /> Delete
@@ -473,32 +570,21 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
         </div>
       )}
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{total} guest(s)</span>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => updateParams({ page: String(page - 1) })}
-          >
-            Previous
-          </Button>
-          <span>
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => updateParams({ page: String(page + 1) })}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <TablePagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        noun="guest"
+        onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
+        onPageSizeChange={(nextSize) => updateParams({ pageSize: String(nextSize), page: "1" })}
+      />
 
-      <GuestFormDialog open={formOpen} onOpenChange={setFormOpen} groups={groups} initial={editing} />
+      <GuestFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        groups={groups}
+        initial={editing}
+      />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
@@ -525,7 +611,11 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
               <div className="flex items-center gap-2">
                 <Input readOnly value={rsvpLink.url} />
                 <Button variant="outline" size="icon" onClick={copyRsvpLink}>
-                  {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                  {copied ? (
+                    <Check className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
               <Button
@@ -549,7 +639,8 @@ export function GuestsTable({ guests, groups, page, totalPages, total, filter }:
           <DialogHeader>
             <DialogTitle>Wedding ID for {weddingIdQr?.fullName}</DialogTitle>
             <DialogDescription>
-              Spare check-in QR for the entrance. Only accepted guests with this code can be verified.
+              Spare check-in QR for the entrance. Only accepted guests with this code can be
+              verified.
             </DialogDescription>
           </DialogHeader>
           {weddingIdQr ? (

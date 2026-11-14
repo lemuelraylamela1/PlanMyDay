@@ -48,6 +48,7 @@ const emptyGuest: GuestInput = {
   preferredName: "",
   email: "",
   phone: "",
+  facebookLink: "",
   side: "BOTH",
   relationship: "",
   rsvpStatus: "PENDING",
@@ -152,6 +153,18 @@ export function GuestFormDialog({ open, onOpenChange, groups, initial }: Props) 
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input id="phone" {...register("phone")} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="facebookLink">Facebook link</Label>
+              <Input
+                id="facebookLink"
+                type="url"
+                placeholder="https://facebook.com/..."
+                {...register("facebookLink")}
+              />
+              {errors.facebookLink && (
+                <p className="text-xs text-destructive">{errors.facebookLink.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Side</Label>

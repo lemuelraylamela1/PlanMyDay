@@ -17,12 +17,19 @@ export default async function GuestsPage({
 }) {
   const { wedding } = await getCurrentWedding();
   const sp = await searchParams;
+  const requestedPageSize = Number(sp.pageSize ?? 10);
+  const pageSize =
+    requestedPageSize === 10 || requestedPageSize === 50 || requestedPageSize === 100
+      ? requestedPageSize
+      : 10;
   const filter = guestFilterSchema.parse({
     q: sp.q,
     side: sp.side,
     rsvpStatus: sp.rsvpStatus,
+    sortBy: sp.sortBy,
+    sortOrder: sp.sortOrder,
     page: sp.page ?? 1,
-    pageSize: 20,
+    pageSize,
   });
 
   const [{ items, total, page, totalPages }, stats, groups] = await Promise.all([
@@ -39,6 +46,7 @@ export default async function GuestsPage({
     preferredName: g.preferredName,
     email: g.email,
     phone: g.phone,
+    facebookLink: g.facebookLink,
     side: g.side,
     relationship: g.relationship,
     rsvpStatus: g.rsvpStatus,
@@ -69,7 +77,15 @@ export default async function GuestsPage({
         page={page}
         totalPages={totalPages}
         total={total}
-        filter={{ q: filter.q, side: filter.side, rsvpStatus: filter.rsvpStatus }}
+        pageSize={filter.pageSize}
+        filter={{
+          q: filter.q,
+          side: filter.side,
+          rsvpStatus: filter.rsvpStatus,
+          sortBy: filter.sortBy,
+          sortOrder: filter.sortOrder,
+          pageSize: filter.pageSize,
+        }}
       />
     </div>
   );

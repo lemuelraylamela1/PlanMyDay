@@ -6,9 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
   CalendarDays,
   CircleDollarSign,
   Download,
@@ -65,7 +62,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import {
+  SortableTableHead,
+  type SortOrder,
+} from "@/components/shared/sortable-table-head";
+import {
+  TablePagination,
+  useClientPagination,
+} from "@/components/shared/table-pagination";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   supplierPaymentSchema,
   supplierSchema,
@@ -119,7 +124,6 @@ const statusVariant: Record<SupplierRow["status"], "success" | "info" | "warning
 };
 
 type SupplierSortField = "company" | "contact" | "status" | "contract" | "paid" | "balance" | "progress" | "due";
-type SortOrder = "asc" | "desc";
 
 const STATUS_RANK: Record<SupplierRow["status"], number> = {
   PROSPECT: 0,
@@ -182,11 +186,6 @@ function compareSuppliers(a: SupplierRow, b: SupplierRow, field: SupplierSortFie
       return (new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()) * direction;
     }
   }
-}
-
-function SortIcon({ active, order }: { active: boolean; order: SortOrder }) {
-  if (!active) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />;
-  return order === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
 interface Props {
@@ -360,9 +359,17 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
       (categoryFilter === "ALL" || supplier.categoryId === categoryFilter)
     );
   });
-  const visibleSuppliers = sortField
+  const sortedSuppliers = sortField
     ? [...filteredSuppliers].sort((a, b) => compareSuppliers(a, b, sortField, sortOrder))
     : filteredSuppliers;
+  const paginationResetKey = `${search}|${paymentFilter}|${categoryFilter}|${sortField}|${sortOrder}`;
+  const {
+    page,
+    pageSize,
+    pagedItems: visibleSuppliers,
+    setPage,
+    setPageSize,
+  } = useClientPagination(sortedSuppliers, paginationResetKey);
 
   function toggleSort(field: SupplierSortField) {
     if (sortField === field) {
@@ -381,7 +388,7 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
   async function onExportPdf() {
     setExportPending("PDF");
     try {
-      await exportSuppliersToPdf(visibleSuppliers, currency);
+      await exportSuppliersToPdf(sortedSuppliers, currency);
       toast.success("PDF report downloaded.");
     } catch {
       toast.error("Unable to create the PDF report.");
@@ -393,7 +400,7 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
   function onExportExcel() {
     setExportPending("EXCEL");
     try {
-      exportSuppliersToExcel(visibleSuppliers, currency);
+      exportSuppliersToExcel(sortedSuppliers, currency);
       toast.success("Excel report downloaded.");
     } catch {
       toast.error("Unable to create the Excel report.");
@@ -524,33 +531,21 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
                     ["due", "Due", "left"],
                   ] as const
                 ).map(([field, label, align]) => (
-                  <TableHead
+                  <SortableTableHead
                     key={field}
-                    aria-sort={sortField === field ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
-                    className={cn(
-                      align === "right" && "text-right",
-                      field === "contact" && "hidden md:table-cell",
-                    )}
-                  >
-                    <button
-                      type="button"
-                      className={cn(
-                        "inline-flex cursor-pointer items-center gap-1 whitespace-nowrap font-medium hover:text-foreground",
-                        sortField === field ? "text-foreground" : "text-muted-foreground",
-                        align === "right" && "w-full justify-end",
-                      )}
-                      onClick={() => toggleSort(field)}
-                    >
-                      {label}
-                      <SortIcon active={sortField === field} order={sortOrder} />
-                    </button>
-                  </TableHead>
+                    label={label}
+                    align={align}
+                    className={field === "contact" ? "hidden md:table-cell" : undefined}
+                    active={sortField === field}
+                    order={sortOrder}
+                    onSort={() => toggleSort(field)}
+                  />
                 ))}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSuppliers.length === 0 ? (
+              {sortedSuppliers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="py-10 text-center">
                     <p className="font-medium">No suppliers match your filters</p>
@@ -665,6 +660,17 @@ export function SuppliersManager({ suppliers, categories, currency }: Props) {
           </Table>
         </div>
       )}
+
+      {suppliers.length > 0 ? (
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          total={sortedSuppliers.length}
+          noun="supplier"
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      ) : null}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">

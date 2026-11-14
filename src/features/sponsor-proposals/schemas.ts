@@ -42,17 +42,49 @@ export function entourageDefaultMessage(role: EntourageRole) {
   return `Your presence has meant so much to us. Would you honor us by being our ${entourageRoleLabels[role]}?`;
 }
 
+/** Accept CSV role codes or human labels. */
+export function parseEntourageRole(value?: string | null): EntourageRole | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  const normalized = raw.toUpperCase().replace(/[\s-]+/g, "_");
+  if ((entourageRoles as readonly string[]).includes(normalized)) {
+    return normalized as EntourageRole;
+  }
+  const compact = raw.toLowerCase().replace(/[^a-z]/g, "");
+  for (const role of entourageRoles) {
+    const labelCompact = entourageRoleLabels[role].toLowerCase().replace(/[^a-z]/g, "");
+    if (compact === labelCompact || compact === role.toLowerCase().replace(/_/g, "")) {
+      return role;
+    }
+  }
+  return null;
+}
+
 export const sponsorProposalSchema = z.object({
   role: entourageRoleSchema,
   name: z.string().trim().min(1, "Name is required.").max(200),
   email: z.string().trim().email("Enter a valid email.").optional().or(z.literal("")),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
+  facebookLink: z
+    .string()
+    .trim()
+    .max(500, "Facebook link is too long.")
+    .optional()
+    .or(z.literal("")),
   customMessage: z
     .string()
     .trim()
     .min(1, "A personal proposal message is required.")
     .max(5000),
 });
+
+/** Ensure pasted Facebook profile URLs open correctly. */
+export function normalizeExternalUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
 
 export const proposalResponseSchema = z.object({
   token: z.string().min(20, "This proposal link is invalid."),

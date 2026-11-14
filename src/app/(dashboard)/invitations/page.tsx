@@ -24,7 +24,7 @@ export default async function InvitationsPage() {
   const rows: InviteGuestRow[] = guests.map((g) => ({
     id: g.id,
     name: formatGuestDisplayName(g),
-    email: g.email,
+    facebookLink: g.facebookLink,
     invitationStatus: g.invitationStatus === "NOT_SENT" ? "NOT_SENT" : "SENT",
     rsvpStatus: g.rsvpStatus,
     hasToken: Boolean(g.invitationToken),

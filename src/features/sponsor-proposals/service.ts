@@ -10,6 +10,13 @@ export function proposalUrl(token: string) {
   return `${env.appUrl}/proposal/${encodeURIComponent(token)}`;
 }
 
+export async function exportSponsorProposals(weddingId: string) {
+  return db.sponsorProposal.findMany({
+    where: { weddingId, deletedAt: null },
+    orderBy: [{ role: "asc" }, { name: "asc" }],
+  });
+}
+
 export async function issueProposalToken(weddingId: string, proposalId: string) {
   const token = generateToken();
   await db.sponsorProposal.update({

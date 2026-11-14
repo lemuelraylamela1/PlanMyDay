@@ -14,6 +14,12 @@ export const guestSchema = z.object({
   preferredName: z.string().max(80).optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().max(40).optional().or(z.literal("")),
+  facebookLink: z
+    .string()
+    .trim()
+    .max(500, "Facebook link is too long.")
+    .optional()
+    .or(z.literal("")),
   side: guestSideEnum.default("BOTH"),
   relationship: z.string().max(80).optional().or(z.literal("")),
   rsvpStatus: rsvpStatusEnum.default("PENDING"),
@@ -25,13 +31,39 @@ export const guestSchema = z.object({
   notes: z.string().max(1000).optional().or(z.literal("")),
 });
 
+export const guestSortFields = [
+  "name",
+  "title",
+  "side",
+  "group",
+  "rsvpStatus",
+  "invitationStatus",
+  "facebook",
+] as const;
+
+export const guestSortFieldSchema = z.enum(guestSortFields);
+export type GuestSortField = z.infer<typeof guestSortFieldSchema>;
+
 export const guestFilterSchema = z.object({
   q: z.string().optional(),
   side: guestSideEnum.optional(),
   rsvpStatus: rsvpStatusEnum.optional(),
+  sortBy: guestSortFieldSchema.optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(5).max(100).default(20),
+  pageSize: z.coerce
+    .number()
+    .refine((value): value is 10 | 50 | 100 => value === 10 || value === 50 || value === 100)
+    .default(10),
 });
 
 export type GuestInput = z.infer<typeof guestSchema>;
 export type GuestFilter = z.infer<typeof guestFilterSchema>;
+
+/** Ensure pasted profile URLs open correctly. */
+export function normalizeExternalUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}

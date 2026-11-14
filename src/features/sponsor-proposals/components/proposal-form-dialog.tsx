@@ -50,6 +50,7 @@ const emptyProposal: SponsorProposalInput = {
   name: "",
   email: "",
   phone: "",
+  facebookLink: "",
   customMessage: entourageDefaultMessage("NINONG_AND_NINANG"),
 };
 
@@ -150,6 +151,19 @@ export function ProposalFormDialog({
               <Label htmlFor="proposal-phone">Phone (optional)</Label>
               <Input id="proposal-phone" {...register("phone")} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="proposal-facebook">Facebook link (optional)</Label>
+            <Input
+              id="proposal-facebook"
+              type="url"
+              placeholder="https://facebook.com/..."
+              {...register("facebookLink")}
+            />
+            {errors.facebookLink && (
+              <p className="text-xs text-destructive">{errors.facebookLink.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
