@@ -129,7 +129,7 @@ function InvitationExperienceInner({
   const handleOpened = React.useCallback(() => {
     setPhase("revealed");
     window.scrollTo({ top: 0 });
-    // Start "I See the Light" only once the envelope is gone and the site is fully shown.
+    // Start ambient music only once the envelope is gone and the site is fully shown.
     void audio?.start();
   }, [audio, setPhase]);
 

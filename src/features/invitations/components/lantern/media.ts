@@ -116,8 +116,8 @@ export const attireGuideImages = {
   },
 } as const;
 
-/** Ambient background music path. */
-export const AMBIENT_MUSIC_SRC = "/proposal-audio/i-see-the-light.mp3";
+/** Ambient background music path. Temporary stand-in — swap later. */
+export const AMBIENT_MUSIC_SRC = "/proposal-audio/gehlee-closer.mp3";
 
 /** Save-the-date film (2K desktop / 720p phones). */
 export const SAVE_THE_DATE_VIDEO = {

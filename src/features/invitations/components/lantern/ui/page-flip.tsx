@@ -43,6 +43,7 @@ const EASE_CSS: Record<EaseName, string> = {
 };
 
 const DRAG_SLOP = 6;
+const AXIS_LOCK_SLOP = 10; // decide horizontal page-turn vs vertical page-scroll
 const FLICK_VELOCITY = 0.55; // px/ms — commit a turn on a quick flick
 const COMMIT_RATIO = 0.42;
 
@@ -99,6 +100,9 @@ export function PageFlip({
     leafIndex: number;
     mode: "forward" | "back";
     moved: boolean;
+    /** null until gesture axis is known — vertical cancels so the page can scroll. */
+    axis: "horizontal" | "vertical" | null;
+    captured: boolean;
     angle: number;
     tilt: number;
     lastX: number;
@@ -144,14 +148,45 @@ export function PageFlip({
     );
   }, [turned, setTurnedSafe, turnMs, stagger, leafCount]);
 
+  const clearDragUi = React.useCallback(() => {
+    dragRef.current = null;
+    setDragging(false);
+    setDragAngle(0);
+    setDragTilt(0);
+  }, []);
+
   const applyDragFromPointer = React.useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, target: HTMLDivElement) => {
       const drag = dragRef.current;
-      if (!drag) return;
+      if (!drag || drag.axis === "vertical") return;
 
       const now = performance.now();
       const dx = clientX - drag.startX;
       const dy = clientY - drag.startY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      // Wait for a clear axis before capturing — vertical swipes must scroll the invite.
+      if (drag.axis === null) {
+        if (absDx < AXIS_LOCK_SLOP && absDy < AXIS_LOCK_SLOP) return;
+        if (absDy > absDx) {
+          drag.axis = "vertical";
+          clearDragUi();
+          return;
+        }
+        drag.axis = "horizontal";
+        if (!drag.captured) {
+          try {
+            target.setPointerCapture(drag.pointerId);
+            drag.captured = true;
+          } catch {
+            /* pointer already gone */
+          }
+          setDragging(true);
+          setPeeking(false);
+        }
+      }
+
       const dt = Math.max(1, now - drag.lastT);
       const instantVelocity = (clientX - drag.lastX) / dt;
 
@@ -160,7 +195,7 @@ export function PageFlip({
       // EMA so a flick still reads after a short pause at the end.
       drag.velocity = drag.velocity * 0.65 + instantVelocity * 0.35;
 
-      if (Math.abs(dx) > DRAG_SLOP || Math.abs(dy) > DRAG_SLOP) {
+      if (absDx > DRAG_SLOP || absDy > DRAG_SLOP) {
         drag.moved = true;
       }
 
@@ -183,7 +218,7 @@ export function PageFlip({
       setDragAngle(angle);
       setDragTilt(tilt);
     },
-    [pageHeight, pageWidth, turnAngle],
+    [clearDragUi, pageHeight, pageWidth, turnAngle],
   );
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -205,6 +240,7 @@ export function PageFlip({
 
     const leafIndex = mode === "forward" ? turned : turned - 1;
     const angle = mode === "forward" ? 0 : -turnAngle;
+    // Defer capture until the gesture locks horizontal — otherwise touch scrolls are blocked.
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -212,33 +248,40 @@ export function PageFlip({
       leafIndex,
       mode,
       moved: false,
+      axis: null,
+      captured: false,
       angle,
       tilt: 0,
       lastX: event.clientX,
       lastT: performance.now(),
       velocity: 0,
     };
-    setDragging(true);
     setDragAngle(angle);
     setDragTilt(0);
-    setPeeking(false);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    applyDragFromPointer(event.clientX, event.clientY);
+    applyDragFromPointer(event.clientX, event.clientY, event.currentTarget);
   };
 
   const finishDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      /* already released */
+    if (drag.captured) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        /* already released */
+      }
+    }
+
+    // Vertical gesture was handed to the browser for page scrolling.
+    if (drag.axis === "vertical") {
+      clearDragUi();
+      return;
     }
 
     const angle = drag.angle;
@@ -250,20 +293,17 @@ export function PageFlip({
     const draggedForward = drag.mode === "forward" && progress >= COMMIT_RATIO;
     const draggedBack = drag.mode === "back" && progress <= 1 - COMMIT_RATIO;
 
-    if (!drag.moved && trigger === "click") {
+    if (!drag.moved && trigger === "click" && drag.axis !== "vertical") {
       if (drag.mode === "forward") turnForward();
       else turnBack();
-    } else if (flickedForward || draggedForward) {
+    } else if (drag.axis === "horizontal" && (flickedForward || draggedForward)) {
       turnForward();
-    } else if (flickedBack || draggedBack) {
+    } else if (drag.axis === "horizontal" && (flickedBack || draggedBack)) {
       turnBack();
     }
     // else: settle back — CSS transition restores the leaf once dragging ends
 
-    dragRef.current = null;
-    setDragging(false);
-    setDragAngle(0);
-    setDragTilt(0);
+    clearDragUi();
   };
 
   const onPointerEnter = () => {
@@ -344,7 +384,8 @@ export function PageFlip({
         width: pageWidth * 2,
         height: pageHeight,
         perspective: `${perspective}px`,
-        touchAction: "none",
+        // Allow vertical page scroll over the book; horizontal still turns pages.
+        touchAction: "pan-y",
         ...style,
       }}
       onPointerDown={onPointerDown}

@@ -186,7 +186,7 @@ export function MusicPlayer() {
             transition={{ delay: 1.2, duration: 0.8 }}
             className="invite-music-hint fixed z-[120] hidden items-center gap-1.5 rounded-full border border-lantern/30 bg-night/70 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-lantern-soft backdrop-blur-md sm:flex"
           >
-            <Music className="h-3 w-3" />I see the light
+            <Music className="h-3 w-3" />Closer
           </motion.div>
         )}
       </AnimatePresence>

@@ -62,7 +62,7 @@ export function InvitationGate() {
 
   const handleOpen = React.useCallback(() => {
     if (dissolving) return;
-    // Start "I See the Light" in the same user gesture as the click.
+    // Start ambient music in the same user gesture as the click.
     beginMusic();
     if (reducedMotion) {
       open();
