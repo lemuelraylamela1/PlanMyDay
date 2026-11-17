@@ -82,14 +82,14 @@ export const weddingDefaults = {
       roles: [
         {
           role: "Bridesmaids",
-
+          attire: "Light pink",
           swatch: "#f5c0cf",
           imageSrc: "/attire/bridesmaids.jpg",
           imageAlt: "Bridesmaids in light pink gowns",
         },
         {
           role: "Groomsmen",
-
+          attire: "Cream with a pink tie",
           swatch: "#f4ead8",
           imageSrc: "/attire/groomsmen.jpg",
           imageAlt: "Groomsmen in cream suits with pink ties",
