@@ -5,22 +5,30 @@ import { isWeddingInviteSlug } from "@/features/invitations/invite-path";
 import { renderInviteByToken } from "@/features/invitations/invite-page";
 import { env } from "@/lib/env";
 
+const siteUrl =
+  env.inviteAppUrl || "https://lemuelandgrazielle-wedding.vercel.app";
 const inviteTitle = "You're Invited — Lemuel & Grazielle's Wedding";
 const inviteDescription =
   "Join us as we celebrate our wedding day. Open your invitation to view the details and RSVP.";
+/** Dedicated public file — new filename forces Messenger/Instagram to re-scrape. */
+const inviteImageUrl = `${siteUrl.replace(/\/+$/, "")}/og-invite-share.jpg`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(env.inviteAppUrl || "https://lemuelandgrazielle-wedding.vercel.app"),
+  metadataBase: new URL(siteUrl),
   title: { absolute: inviteTitle },
   description: inviteDescription,
   openGraph: {
     type: "website",
+    url: siteUrl,
     title: inviteTitle,
     description: inviteDescription,
     siteName: "Lemuel & Grazielle",
+    locale: "en_PH",
     images: [
       {
-        url: "/og-invite.jpg",
+        url: inviteImageUrl,
+        secureUrl: inviteImageUrl,
+        type: "image/jpeg",
         width: 1200,
         height: 630,
         alt: "Lemuel and Grazielle — You're invited",
@@ -31,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: inviteTitle,
     description: inviteDescription,
-    images: ["/og-invite.jpg"],
+    images: [inviteImageUrl],
   },
 };
 
