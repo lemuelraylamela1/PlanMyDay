@@ -61,7 +61,6 @@ export function OpeningSequence() {
         ],
         { opacity: 0 }
       );
-      gsap.set(".seq-title-card", { xPercent: -50, yPercent: -50 });
       gsap.set(".seq-stage", { scale: 1, force3D: true });
       gsap.set(".seq-constellation-star", { x: 0, y: 0, scale: 0.4, opacity: 0, force3D: true });
       gsap.set(".seq-hero-lantern", { y: 140, scale: 0.72, force3D: true });
@@ -78,13 +77,13 @@ export function OpeningSequence() {
       );
 
       // Phase 2: chapter card appears alone.
+      // Layout centering is flex-based — animate only y/opacity/scale so GSAP
+      // transforms never fight Tailwind translate utilities on mobile.
       tl.add("chapter", 0.22);
       tl.fromTo(
         ".seq-title-card",
-        { xPercent: -50, yPercent: -50, y: 28, opacity: 0, scale: 0.97 },
+        { y: 28, opacity: 0, scale: 0.97 },
         {
-          xPercent: -50,
-          yPercent: -50,
           y: 0,
           opacity: 1,
           scale: 1,
@@ -97,8 +96,6 @@ export function OpeningSequence() {
       tl.to(
         ".seq-title-card",
         {
-          xPercent: -50,
-          yPercent: -50,
           y: -22,
           opacity: 0,
           scale: 0.96,
@@ -233,16 +230,18 @@ export function OpeningSequence() {
       </div>
 
       <div className="seq-stage relative z-10 h-full w-full will-change-transform">
-        <div className="seq-title-card absolute left-1/2 top-1/2 w-[min(90vw,34rem)] -translate-x-1/2 -translate-y-1/2 rounded-[1.5rem] border border-lantern/40 bg-night/55 px-4 py-5 text-center opacity-0 shadow-[0_0_80px_rgba(244,196,68,0.24)] backdrop-blur-md sm:rounded-[2rem] sm:px-10 sm:py-7">
-          <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.32em] text-lantern-rose/90 sm:text-[10px] sm:tracking-[0.42em]">
-            {wedding.invitation.eyebrow}
-          </p>
-          <p className="mt-2 text-gold-foil font-display text-[1.85rem] font-light leading-tight tracking-[-0.02em] sm:mt-4 sm:text-5xl">
-            {coupleNames(wedding, "&")}
-          </p>
-          <p className="mt-3 font-serif text-base italic text-lantern-soft">
-            {wedding.event.dateShort}
-          </p>
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4">
+          <div className="seq-title-card w-full max-w-[34rem] rounded-[1.5rem] border border-lantern/40 bg-night/55 px-4 py-5 text-center opacity-0 shadow-[0_0_80px_rgba(244,196,68,0.24)] backdrop-blur-md sm:rounded-[2rem] sm:px-10 sm:py-7">
+            <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.32em] text-lantern-rose/90 sm:text-[10px] sm:tracking-[0.42em]">
+              {wedding.invitation.eyebrow}
+            </p>
+            <p className="mt-2 text-gold-foil font-display text-[1.85rem] font-light leading-tight tracking-[-0.02em] sm:mt-4 sm:text-5xl">
+              {coupleNames(wedding, "&")}
+            </p>
+            <p className="mt-3 font-serif text-base italic text-lantern-soft">
+              {wedding.event.dateShort}
+            </p>
+          </div>
         </div>
 
         <div className="seq-constellation pointer-events-none absolute left-1/2 top-[42svh] z-20 h-64 w-64 -translate-x-1/2 -translate-y-1/2 opacity-0 sm:h-80 sm:w-80">

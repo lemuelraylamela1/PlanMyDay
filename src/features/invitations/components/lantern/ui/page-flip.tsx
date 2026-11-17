@@ -27,7 +27,8 @@ export type PageFlipProps = {
   stagger?: number;
   ease?: EaseName;
   shadow?: number;
-  trigger?: "click" | "hover";
+  /** `drag` = swipe/drag only (no tap-to-turn). `click` also turns on tap. */
+  trigger?: "click" | "hover" | "drag";
   closeOnLeave?: boolean;
   interactive?: boolean;
   className?: string;
