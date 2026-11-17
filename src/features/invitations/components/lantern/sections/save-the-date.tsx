@@ -180,7 +180,7 @@ export function SaveTheDate() {
     <section
       id="film"
       ref={sectionRef}
-      className="relative flex h-[100vh] h-[100svh] h-[100dvh] w-full max-w-[100vw] shrink-0 flex-col overflow-hidden bg-night"
+      className="relative flex w-full max-w-[100vw] shrink-0 flex-col overflow-hidden bg-night sm:h-[100vh] sm:h-[100svh] sm:h-[100dvh]"
       style={{
         background:
           "linear-gradient(180deg, #0d0720 0%, #160b2e 45%, #0d0720 100%)",
@@ -188,7 +188,7 @@ export function SaveTheDate() {
     >
       <MagicDust count={14} intensity="soft" className="opacity-40" />
 
-      <div className="relative z-10 flex shrink-0 flex-col items-center px-4 pt-[max(1.5rem,env(safe-area-inset-top))] text-center sm:px-6 sm:pt-8">
+      <div className="relative z-10 flex shrink-0 flex-col items-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-center sm:px-6 sm:pt-8">
         <motion.span
           initial={reduceMotion ? false : { opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -204,7 +204,7 @@ export function SaveTheDate() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: LUXURY, delay: 0.06 }}
-          className="mt-3 font-display text-[1.85rem] font-light leading-[1.1] tracking-[-0.02em] text-lantern sm:mt-4 sm:text-4xl lg:text-5xl"
+          className="mt-2 font-display text-[1.85rem] font-light leading-[1.1] tracking-[-0.02em] text-lantern sm:mt-4 sm:text-4xl lg:text-5xl"
         >
           A short film for our forever
         </motion.h2>
@@ -214,7 +214,7 @@ export function SaveTheDate() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: LUXURY, delay: 0.1 }}
-          className="mt-2 max-w-xl font-serif text-sm italic text-cream/80 sm:mt-3 sm:text-base"
+          className="mt-1.5 max-w-xl font-serif text-sm italic text-cream/80 sm:mt-3 sm:text-base"
         >
           Press play and step into the beginning of our happily ever after.
         </motion.p>
@@ -225,7 +225,7 @@ export function SaveTheDate() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.9, ease: LUXURY, delay: 0.12 }}
-        className="relative z-10 mx-auto mt-4 flex min-h-0 w-full flex-1 items-center justify-center px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:mt-6 sm:px-6 lg:px-10"
+        className="relative z-10 mx-auto mt-3 flex w-full items-start justify-center px-3 pb-6 sm:mt-6 sm:min-h-0 sm:flex-1 sm:items-center sm:px-6 sm:pb-[max(1rem,env(safe-area-inset-bottom))] lg:px-10"
       >
         {/* 16:9 stage + object-contain so the full frame fits without cropping. */}
         <div
