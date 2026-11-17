@@ -24,16 +24,28 @@ export function Hero() {
   const { phase } = useExperience();
   const { profile, compact, reduceMotion, quality } = useLanternPerf();
   const revealed = phase === "revealed";
-  // Let the opening overlay finish leaving before WebGL, dust, and lanterns start.
-  const [effectsReady, setEffectsReady] = React.useState(false);
+  // Compile the sky while the opening overlay still covers the hero.
+  const [skyReady, setSkyReady] = React.useState(false);
+  // Dust, extra lanterns, and the light bloom wait until the overlay has left.
+  const [decorReady, setDecorReady] = React.useState(false);
   React.useEffect(() => {
-    if (!revealed) {
-      setEffectsReady(false);
+    if (phase === "invitation") {
+      setSkyReady(false);
+      setDecorReady(false);
       return;
     }
-    const id = window.setTimeout(() => setEffectsReady(true), 300);
+    const skyDelay = phase === "opening" ? 2400 : 0;
+    const skyId = window.setTimeout(() => setSkyReady(true), skyDelay);
+    return () => window.clearTimeout(skyId);
+  }, [phase]);
+  React.useEffect(() => {
+    if (!revealed) {
+      setDecorReady(false);
+      return;
+    }
+    const id = window.setTimeout(() => setDecorReady(true), compact ? 700 : 400);
     return () => window.clearTimeout(id);
-  }, [revealed]);
+  }, [revealed, compact]);
   const wedding = useLanternContent();
   const [firstRole, secondRole] = wedding.couple.order;
   const firstName = wedding.couple[firstRole].first;
@@ -98,8 +110,8 @@ export function Hero() {
       className="relative flex h-[100vh] h-[100svh] h-[100dvh] w-full shrink-0 flex-col overflow-hidden px-0 pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]"
       style={{ background: "#0d0720" }}
     >
-      {effectsReady ? (
-        <MagicDust count={30} intensity="soft" className="z-[2] opacity-40" />
+      {decorReady ? (
+        <MagicDust count={compact ? 12 : 30} intensity="soft" className="z-[2] opacity-40" />
       ) : null}
 
       <motion.div
@@ -109,7 +121,7 @@ export function Hero() {
       >
         {/* Mount WebGL only after reveal — avoids blank canvases from mobile
             GPU context pressure during the invitation/opening sequence. */}
-        {effectsReady ? (
+        {skyReady ? (
           <LanternSky
             lanternColors={LANTERN_SKY_COLORS}
             density={skyDensity}
@@ -158,9 +170,7 @@ export function Hero() {
           }}
         />
         <div
-          className={`absolute left-1/2 top-[38%] h-[48vh] w-[48vh] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 sm:top-[44%] sm:h-[52vh] sm:w-[52vh] sm:opacity-35 ${
-            profile.richFilters || !compact ? "blur-3xl" : "blur-xl"
-          }`}
+          className="absolute left-1/2 top-[38%] h-[48vh] w-[48vh] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 sm:top-[44%] sm:h-[52vh] sm:w-[52vh] sm:opacity-35"
           style={{
             background:
               "radial-gradient(circle, rgba(255,223,112,0.22), rgba(232,130,154,0.12) 42%, transparent 70%)",
@@ -186,9 +196,9 @@ export function Hero() {
       </motion.div>
 
       <motion.div style={{ y: lanternsY }} className="pointer-events-none absolute inset-0 z-[4] opacity-75" aria-hidden>
-        {effectsReady ? (
+        {decorReady ? (
           <FloatingLanterns
-            count={svgLanternCount}
+            count={compact ? Math.min(svgLanternCount, 6) : svgLanternCount}
             intensity="festival"
             sizeScale={compact ? 0.52 : 0.48}
           />
@@ -196,7 +206,7 @@ export function Hero() {
       </motion.div>
 
       <motion.div style={{ y: reflectionY }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]" aria-hidden>
-        {effectsReady ? <LanternReflection className="opacity-80" /> : null}
+        {decorReady ? <LanternReflection className="opacity-80" /> : null}
       </motion.div>
 
       <div
@@ -205,7 +215,7 @@ export function Hero() {
       />
 
       <AnimatePresence>
-        {mounted && effectsReady && (
+        {mounted && decorReady && !compact && (
           <motion.div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-[4]"

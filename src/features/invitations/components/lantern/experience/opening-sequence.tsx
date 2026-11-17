@@ -37,6 +37,7 @@ export function OpeningSequence() {
   const lightOpening = compact || quality !== "high";
   const stageScale = lightOpening ? 1 : profile.openingStageScale;
   const lanternCount = lightOpening ? 8 : 16;
+  const [settled, setSettled] = React.useState(false);
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -46,7 +47,12 @@ export function OpeningSequence() {
 
     const ctx = gsap.context(() => {
       gsap.config({ force3D: true });
-      const tl = gsap.timeline({ onComplete: reveal });
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setSettled(true);
+          reveal();
+        },
+      });
 
       gsap.set(
         [
@@ -219,14 +225,17 @@ export function OpeningSequence() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      exit={{ opacity: 0, transition: { duration: 1.1, ease: [0.22, 1, 0.36, 1] } }}
+      exit={{
+        opacity: 0,
+        transition: { duration: lightOpening ? 0.45 : 0.85, ease: [0.22, 1, 0.36, 1] },
+      }}
     >
       <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #070314 0%, #0d0720 38%, #1e0f3a 70%, #39205f 100%)" }} />
       <div className="seq-moon-glow pointer-events-none absolute left-1/2 top-[42%] h-[78vh] w-[78vh] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,223,112,0.55), rgba(232,130,154,0.24) 42%, transparent 70%)" }} />
-      <MagicDust count={22} intensity="bright" className="opacity-70" active />
+      <MagicDust count={lightOpening ? 10 : 22} intensity="bright" className="opacity-70" active={!settled} />
 
       <div className="seq-lanterns absolute inset-0 opacity-0">
-        <FloatingLanterns count={lanternCount} intensity="festival" active />
+        <FloatingLanterns count={lanternCount} intensity="festival" active={!settled} />
       </div>
       {!lightOpening ? (
         <div className="seq-sparkles absolute inset-0 opacity-0">
@@ -303,7 +312,7 @@ export function OpeningSequence() {
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-night via-night/45 to-transparent" />
         </div>
         <div className="seq-reflection absolute inset-x-0 bottom-0 opacity-0">
-          <LanternReflection active />
+          <LanternReflection active={!settled} />
         </div>
       </div>
 

@@ -56,6 +56,12 @@
   padding-right: env(safe-area-inset-right, 0px);
 }
 
+/* Skip layout and paint for sections below the hero until they near the screen. */
+.invite-root main > :not(#hero) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100dvh;
+}
+
 /* Compact phones: keep type readable without blowing the scroll frame. */
 .invite-root[data-invite-compact="true"] {
   font-size: 15px;

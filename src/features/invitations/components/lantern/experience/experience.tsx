@@ -46,6 +46,21 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
   const { width, height, isMobile, isCompact, isShort } = useInviteViewport();
   const revealed = phase === "revealed";
   const transitionActive = phase === "opening";
+  // Paint the hero while the opening overlay still covers it, so the
+  // handoff is only an overlay fade — not a first paint of the whole page.
+  const [primed, setPrimed] = React.useState(false);
+  React.useEffect(() => {
+    if (phase === "invitation") {
+      setPrimed(false);
+      return;
+    }
+    if (phase === "revealed") {
+      setPrimed(true);
+      return;
+    }
+    const id = window.setTimeout(() => setPrimed(true), 2200);
+    return () => window.clearTimeout(id);
+  }, [phase]);
 
   // Warm the opening-sequence chunk in the background while the guest
   // is still on the invitation gate.
@@ -79,8 +94,10 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
         <div
           aria-hidden={!revealed}
           className={
-            revealed
-              ? "opacity-100 transition-opacity duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            primed
+              ? revealed
+                ? "opacity-100"
+                : "pointer-events-none select-none opacity-100"
               : "pointer-events-none select-none opacity-0"
           }
         >
