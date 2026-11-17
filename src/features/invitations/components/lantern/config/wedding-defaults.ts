@@ -150,30 +150,30 @@ export const weddingDefaults = {
       },
       {
         chapter: "Chapter Two",
-        date: "Golden Hour",
-        title: "Light Between Us",
+        date: "Anniversary",
+        title: "A Table for Two",
         description:
           "Evenings softened into gold—shared glances, unhurried walks, and the quiet certainty that ordinary days felt brighter side by side.",
         imageSrc: "/gallery/our-story/02.jpg",
-        imageAlt: "Golden hour together",
+        imageAlt: "Anniversary dinner together under the city lights",
       },
       {
         chapter: "Chapter Three",
-        date: "Falling",
+        date: "Nights Out",
         title: "Our First Adventure",
         description:
           "Then came the long talks that outlasted evenings, the shared maps of dreams, and laughter that refused to fade. Somewhere between those miles, we knew this was rare.",
         imageSrc: "/gallery/our-story/03.jpg",
-        imageAlt: "Adventures together along the way",
+        imageAlt: "A night out together under glowing blue lights",
       },
       {
         chapter: "Chapter Four",
-        date: "Stillness",
-        title: "Quiet Moments",
+        date: "Milestones",
+        title: "Keys to Forever",
         description:
           "In the soft hours between plans and promises, we found home in silence—hands held, hearts sure, nothing needed but each other.",
         imageSrc: "/gallery/our-story/04.jpg",
-        imageAlt: "Quiet moments shared",
+        imageAlt: "Receiving the keys to our first car together",
       },
       {
         chapter: "Chapter Five",
@@ -182,7 +182,7 @@ export const weddingDefaults = {
         description:
           "Under a sky washed in lantern glow, one question hung in the air. Tears answered before words could—and with a joyful yes, forever finally began.",
         imageSrc: "/gallery/our-story/05.jpg",
-        imageAlt: "The proposal beneath the lantern light",
+        imageAlt: "The proposal at golden hour",
       },
     ] as StoryChapter[],
   },
