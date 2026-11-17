@@ -31,9 +31,12 @@ const CONSTELLATION_STARS = [
 export function OpeningSequence() {
   const { reveal, reducedMotion } = useExperience();
   const wedding = useLanternContent();
-  const { profile } = useLanternPerf();
+  const { profile, compact, quality } = useLanternPerf();
   const root = React.useRef<HTMLDivElement>(null);
-  const stageScale = profile.openingStageScale;
+  // Phones and balanced/low quality skip the full-stage scale — it repaints every layer.
+  const lightOpening = compact || quality !== "high";
+  const stageScale = lightOpening ? 1 : profile.openingStageScale;
+  const lanternCount = lightOpening ? 8 : 16;
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -223,15 +226,21 @@ export function OpeningSequence() {
       <MagicDust count={22} intensity="bright" className="opacity-70" active />
 
       <div className="seq-lanterns absolute inset-0 opacity-0">
-        <FloatingLanterns count={16} intensity="festival" active />
+        <FloatingLanterns count={lanternCount} intensity="festival" active />
       </div>
-      <div className="seq-sparkles absolute inset-0 opacity-0">
-        <ParticleField density={0.0003} />
-      </div>
+      {!lightOpening ? (
+        <div className="seq-sparkles absolute inset-0 opacity-0">
+          <ParticleField density={0.0003} />
+        </div>
+      ) : null}
 
       <div className="seq-stage relative z-10 h-full w-full will-change-transform">
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4">
-          <div className="seq-title-card w-full max-w-[34rem] rounded-[1.5rem] border border-lantern/40 bg-night/55 px-4 py-5 text-center opacity-0 shadow-[0_0_80px_rgba(244,196,68,0.24)] backdrop-blur-md sm:rounded-[2rem] sm:px-10 sm:py-7">
+          <div
+            className={`seq-title-card w-full max-w-[34rem] rounded-[1.5rem] border border-lantern/40 px-4 py-5 text-center opacity-0 shadow-[0_0_80px_rgba(244,196,68,0.24)] sm:rounded-[2rem] sm:px-10 sm:py-7 ${
+              lightOpening ? "bg-night/80" : "bg-night/55 backdrop-blur-md"
+            }`}
+          >
             <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.32em] text-lantern-rose/90 sm:text-[10px] sm:tracking-[0.42em]">
               {wedding.invitation.eyebrow}
             </p>

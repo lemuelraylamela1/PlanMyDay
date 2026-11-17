@@ -34,6 +34,12 @@ export type PageFlipProps = {
   className?: string;
   style?: React.CSSProperties;
   onTurnedChange?: (turnedCount: number) => void;
+  /**
+   * Flat hit target over the settled left page.
+   * Left pages are back faces (`rotateY(180deg)`), which do not receive
+   * pointer events reliably, so vertical reading has to live outside the 3D stage.
+   */
+  leftGesture?: React.ReactNode;
 };
 
 const EASE_CSS: Record<EaseName, string> = {
@@ -84,15 +90,23 @@ export function PageFlip({
   className,
   style,
   onTurnedChange,
+  leftGesture,
 }: PageFlipProps) {
   const reducedMotion = usePrefersReducedMotion();
   const rootRef = React.useRef<HTMLDivElement>(null);
+  const stageRef = React.useRef<HTMLDivElement>(null);
+  const leafRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  const frontFaceRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  const backFaceRefs = React.useRef<Array<HTMLDivElement | null>>([]);
   const [turned, setTurned] = React.useState(0);
   const [peeking, setPeeking] = React.useState(false);
   const [dragging, setDragging] = React.useState(false);
-  const [dragAngle, setDragAngle] = React.useState(0);
-  const [dragTilt, setDragTilt] = React.useState(0);
   const [closing, setClosing] = React.useState(false);
+  /** Leaf mid CSS settle — keep both faces for the flip, then hard-cull. */
+  const [animatingLeaf, setAnimatingLeaf] = React.useState<number | null>(null);
+  const turnedRef = React.useRef(0);
+  const prevTurnedRef = React.useRef(0);
+  turnedRef.current = turned;
 
   const dragRef = React.useRef<{
     pointerId: number;
@@ -129,6 +143,44 @@ export function PageFlip({
     onTurnedChange?.(turned);
   }, [turned, onTurnedChange]);
 
+  React.useEffect(() => {
+    if (dragging) {
+      prevTurnedRef.current = turned;
+      return;
+    }
+    if (prevTurnedRef.current === turned) return;
+    const leaf =
+      turned > prevTurnedRef.current ? turned - 1 : prevTurnedRef.current - 1;
+    prevTurnedRef.current = turned;
+    if (leaf < 0 || leaf >= leafCount) {
+      setAnimatingLeaf(null);
+      return;
+    }
+    setAnimatingLeaf(leaf);
+  }, [turned, dragging, leafCount]);
+
+  // transitionend can miss (tab blur / reduced motion) — always clear the settle flag.
+  React.useEffect(() => {
+    if (animatingLeaf == null) return;
+    const id = window.setTimeout(() => setAnimatingLeaf(null), turnMs + 120);
+    return () => window.clearTimeout(id);
+  }, [animatingLeaf, turnMs]);
+
+  const paintFaceCull = React.useCallback((leafIndex: number, angle: number) => {
+    const front = frontFaceRefs.current[leafIndex];
+    const back = backFaceRefs.current[leafIndex];
+    // Hard-hide the away face — backface-visibility alone fails with lift/tilt.
+    const showFront = angle > -90;
+    if (front) {
+      front.style.visibility = showFront ? "visible" : "hidden";
+      front.style.pointerEvents = showFront ? "auto" : "none";
+    }
+    if (back) {
+      back.style.visibility = showFront ? "hidden" : "visible";
+      back.style.pointerEvents = showFront ? "none" : "auto";
+    }
+  }, []);
+
   const turnForward = React.useCallback(() => {
     setClosing(false);
     setTurnedSafe((n) => Math.min(leafCount, n + 1));
@@ -152,9 +204,46 @@ export function PageFlip({
   const clearDragUi = React.useCallback(() => {
     dragRef.current = null;
     setDragging(false);
-    setDragAngle(0);
-    setDragTilt(0);
   }, []);
+
+  const paintDrag = React.useCallback(
+    (angle: number, tilt: number, leafIndex: number, mode: "forward" | "back") => {
+      const leaf = leafRefs.current[leafIndex];
+      const progress = Math.min(1, Math.abs(angle) / Math.max(1, turnAngle));
+      const midFlip = Math.sin(progress * Math.PI);
+      const lift = 12 + midFlip * 18;
+      if (leaf) {
+        leaf.style.transition = "none";
+        leaf.style.transform = `translateZ(${lift}px) rotateY(${angle}deg) rotateX(${tilt}deg)`;
+        leaf.style.zIndex = String(leafCount + 5);
+      }
+      paintFaceCull(leafIndex, angle);
+
+      const current = turnedRef.current;
+      const endedNow = leafCount > 0 && current >= leafCount;
+      let shift = 0;
+      if (current === 0) shift = -pageWidth / 2;
+      else if (endedNow) shift = pageWidth / 2;
+      else if (spineShift > 0) shift = (current / leafCount) * spineShift;
+
+      if (current === 0 && mode === "forward") {
+        shift = (-pageWidth / 2) * (1 - progress);
+      } else if (endedNow && mode === "back") {
+        shift = (pageWidth / 2) * progress;
+      } else if (!endedNow && current === leafCount - 1 && mode === "forward") {
+        shift = (pageWidth / 2) * progress;
+      } else if (current === 1 && mode === "back") {
+        shift = (-pageWidth / 2) * (1 - progress);
+      }
+
+      const stage = stageRef.current;
+      if (stage) {
+        stage.style.transition = "none";
+        stage.style.transform = `translateX(${shift}px)`;
+      }
+    },
+    [leafCount, pageWidth, paintFaceCull, spineShift, turnAngle],
+  );
 
   const applyDragFromPointer = React.useCallback(
     (clientX: number, clientY: number, target: HTMLDivElement) => {
@@ -216,10 +305,9 @@ export function PageFlip({
 
       drag.angle = angle;
       drag.tilt = tilt;
-      setDragAngle(angle);
-      setDragTilt(tilt);
+      paintDrag(angle, tilt, drag.leafIndex, drag.mode);
     },
-    [clearDragUi, pageHeight, pageWidth, turnAngle],
+    [clearDragUi, pageHeight, pageWidth, paintDrag, turnAngle],
   );
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -257,8 +345,6 @@ export function PageFlip({
       lastT: performance.now(),
       velocity: 0,
     };
-    setDragAngle(angle);
-    setDragTilt(0);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -288,21 +374,41 @@ export function PageFlip({
     const angle = drag.angle;
     const velocity = drag.velocity;
     const progress = Math.abs(angle) / Math.max(1, turnAngle);
+    const leafIndex = drag.leafIndex;
 
     const flickedForward = drag.mode === "forward" && velocity <= -FLICK_VELOCITY;
     const flickedBack = drag.mode === "back" && velocity >= FLICK_VELOCITY;
     const draggedForward = drag.mode === "forward" && progress >= COMMIT_RATIO;
     const draggedBack = drag.mode === "back" && progress <= 1 - COMMIT_RATIO;
 
+    let committed = false;
     if (!drag.moved && trigger === "click") {
       if (drag.mode === "forward") turnForward();
       else turnBack();
+      committed = true;
     } else if (drag.axis === "horizontal" && (flickedForward || draggedForward)) {
       turnForward();
+      committed = true;
     } else if (drag.axis === "horizontal" && (flickedBack || draggedBack)) {
       turnBack();
+      committed = true;
     }
-    // else: settle back — CSS transition restores the leaf once dragging ends
+
+    // Keep both faces during the CSS settle so the flip does not pop.
+    setAnimatingLeaf(leafIndex);
+    if (!committed) {
+      // Restoring — clear imperative cull so backface-visibility can animate.
+      const front = frontFaceRefs.current[leafIndex];
+      const back = backFaceRefs.current[leafIndex];
+      if (front) {
+        front.style.visibility = "";
+        front.style.pointerEvents = "";
+      }
+      if (back) {
+        back.style.visibility = "";
+        back.style.pointerEvents = "";
+      }
+    }
 
     clearDragUi();
   };
@@ -345,6 +451,9 @@ export function PageFlip({
 
   // Closed cover and final end page sit centered; open spreads keep the spine centered.
   const ended = leafCount > 0 && turned >= leafCount;
+  const liveDrag = dragging ? dragRef.current : null;
+  const dragAngle = liveDrag?.angle ?? 0;
+  const dragTilt = liveDrag?.tilt ?? 0;
   const turnProgress = Math.min(1, Math.abs(dragAngle) / Math.max(1, turnAngle));
   let shift = 0;
   if (turned === 0) shift = -pageWidth / 2;
@@ -377,7 +486,7 @@ export function PageFlip({
       aria-valuenow={turned}
       tabIndex={interactive ? 0 : -1}
       className={cn(
-        "page-flip relative outline-none select-none",
+        "page-flip relative isolate outline-none select-none",
         interactive && "cursor-grab active:cursor-grabbing",
         className,
       )}
@@ -398,7 +507,8 @@ export function PageFlip({
       onKeyDown={onKeyDown}
     >
       <div
-        className="page-flip-stage relative h-full w-full"
+        ref={stageRef}
+        className="page-flip-stage relative z-0 h-full w-full"
         style={{
           transformStyle: "preserve-3d",
           transform: `translateX(${shift}px)`,
@@ -442,6 +552,7 @@ export function PageFlip({
           const isActiveDrag = dragging && dragRef.current?.leafIndex === index;
           const isTopUnturned = index === turned && turned < leafCount;
           const showPeek = peeking && isTopUnturned && !dragging;
+          const isAnimating = animatingLeaf === index;
 
           let rotate = 0;
           let tilt = 0;
@@ -464,13 +575,39 @@ export function PageFlip({
           const shadowAlpha = Math.min(0.55, shadow);
           const foldShade = Math.abs(rotate) / Math.max(1, turnAngle);
           const curl = isActiveDrag ? midFlip : Math.sin(foldShade * Math.PI) * (showPeek ? 0.35 : 0);
+          const onSpread = index === turned || index === turned - 1 || isActiveDrag;
+
+          // Cull the away face when settled. Mid-drag uses paintFaceCull (imperative);
+          // mid-CSS settle keeps both faces so the flip can complete without popping.
+          const settledCull = !isActiveDrag && !isAnimating;
+          const hideFront = settledCull && isTurned;
+          const hideBack = settledCull && !isTurned;
+          // During drag, leave visibility unset so paintFaceCull owns it.
+          const frontVisibility = isActiveDrag
+            ? undefined
+            : hideFront
+              ? "hidden"
+              : "visible";
+          const backVisibility = isActiveDrag
+            ? undefined
+            : hideBack
+              ? "hidden"
+              : "visible";
 
           return (
             <div
               key={leaf.id ?? index}
+              ref={(node) => {
+                leafRefs.current[index] = node;
+              }}
               className="page-flip-leaf absolute top-0"
               aria-hidden={leaf.alt ? undefined : true}
               aria-label={leaf.alt}
+              onTransitionEnd={(event) => {
+                if (event.target !== event.currentTarget) return;
+                if (event.propertyName !== "transform") return;
+                if (animatingLeaf === index) setAnimatingLeaf(null);
+              }}
               style={{
                 left: pageWidth,
                 width: pageWidth,
@@ -485,13 +622,25 @@ export function PageFlip({
                     : `transform ${duration}s ${easeCss} ${delay}`,
                 borderRadius: pageRadius,
                 willChange: isActiveDrag ? "transform" : undefined,
+                contentVisibility: onSpread ? "visible" : "auto",
+                containIntrinsicSize: onSpread ? undefined : `${pageWidth}px ${pageHeight}px`,
               }}
             >
               <div
+                ref={(node) => {
+                  frontFaceRefs.current[index] = node;
+                }}
                 className="page-flip-face page-flip-front absolute inset-0 overflow-hidden"
                 style={{
                   backfaceVisibility: "hidden",
                   WebkitBackfaceVisibility: "hidden",
+                  // Tiny thickness + flat contents stops coplanar cover/photo bleed.
+                  transformStyle: "flat",
+                  transform: "translateZ(1px)",
+                  clipPath: "inset(0)",
+                  WebkitClipPath: "inset(0)",
+                  visibility: frontVisibility,
+                  pointerEvents: hideFront ? "none" : "auto",
                   borderRadius: pageRadius,
                   backgroundColor: pageColor,
                   boxShadow:
@@ -518,11 +667,19 @@ export function PageFlip({
                 />
               </div>
               <div
+                ref={(node) => {
+                  backFaceRefs.current[index] = node;
+                }}
                 className="page-flip-face page-flip-back absolute inset-0 overflow-hidden"
                 style={{
                   backfaceVisibility: "hidden",
                   WebkitBackfaceVisibility: "hidden",
-                  transform: "rotateY(180deg)",
+                  transformStyle: "flat",
+                  transform: "rotateY(180deg) translateZ(1px)",
+                  clipPath: "inset(0)",
+                  WebkitClipPath: "inset(0)",
+                  visibility: backVisibility,
+                  pointerEvents: hideBack ? "none" : "auto",
                   borderRadius: pageRadius,
                   backgroundColor: pageColor,
                   boxShadow:
@@ -552,6 +709,14 @@ export function PageFlip({
           );
         })}
       </div>
+      {leftGesture ? (
+        <div
+          className="absolute top-0 z-30 h-full"
+          style={{ left: 0, width: pageWidth }}
+        >
+          {leftGesture}
+        </div>
+      ) : null}
     </div>
   );
 }

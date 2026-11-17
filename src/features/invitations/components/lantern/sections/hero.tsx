@@ -24,6 +24,16 @@ export function Hero() {
   const { phase } = useExperience();
   const { profile, compact, reduceMotion, quality } = useLanternPerf();
   const revealed = phase === "revealed";
+  // Let the opening overlay finish leaving before WebGL, dust, and lanterns start.
+  const [effectsReady, setEffectsReady] = React.useState(false);
+  React.useEffect(() => {
+    if (!revealed) {
+      setEffectsReady(false);
+      return;
+    }
+    const id = window.setTimeout(() => setEffectsReady(true), 300);
+    return () => window.clearTimeout(id);
+  }, [revealed]);
   const wedding = useLanternContent();
   const [firstRole, secondRole] = wedding.couple.order;
   const firstName = wedding.couple[firstRole].first;
@@ -88,7 +98,9 @@ export function Hero() {
       className="relative flex h-[100vh] h-[100svh] h-[100dvh] w-full shrink-0 flex-col overflow-hidden px-0 pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]"
       style={{ background: "#0d0720" }}
     >
-      <MagicDust count={30} intensity="soft" className="z-[2] opacity-40" />
+      {effectsReady ? (
+        <MagicDust count={30} intensity="soft" className="z-[2] opacity-40" />
+      ) : null}
 
       <motion.div
         style={{ y: skyY }}
@@ -97,7 +109,7 @@ export function Hero() {
       >
         {/* Mount WebGL only after reveal — avoids blank canvases from mobile
             GPU context pressure during the invitation/opening sequence. */}
-        {revealed ? (
+        {effectsReady ? (
           <LanternSky
             lanternColors={LANTERN_SKY_COLORS}
             density={skyDensity}
@@ -174,15 +186,17 @@ export function Hero() {
       </motion.div>
 
       <motion.div style={{ y: lanternsY }} className="pointer-events-none absolute inset-0 z-[4] opacity-75" aria-hidden>
-        <FloatingLanterns
-          count={svgLanternCount}
-          intensity="festival"
-          sizeScale={compact ? 0.52 : 0.48}
-        />
+        {effectsReady ? (
+          <FloatingLanterns
+            count={svgLanternCount}
+            intensity="festival"
+            sizeScale={compact ? 0.52 : 0.48}
+          />
+        ) : null}
       </motion.div>
 
       <motion.div style={{ y: reflectionY }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]" aria-hidden>
-        <LanternReflection className="opacity-80" />
+        {effectsReady ? <LanternReflection className="opacity-80" /> : null}
       </motion.div>
 
       <div
@@ -191,7 +205,7 @@ export function Hero() {
       />
 
       <AnimatePresence>
-        {mounted && revealed && (
+        {mounted && effectsReady && (
           <motion.div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-[4]"

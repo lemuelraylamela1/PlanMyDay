@@ -109,13 +109,17 @@ export function InvitationGate() {
       />
 
       <div aria-hidden className="pointer-events-none fixed inset-0">
-        <StarField
-          className="absolute inset-0"
-          count={220}
-          parallaxFactor={0}
-          active
-        />
-        <MagicDust count={14} intensity="soft" className="opacity-60" active />
+        {!dissolving ? (
+          <>
+            <StarField
+              className="absolute inset-0"
+              count={220}
+              parallaxFactor={0}
+              active
+            />
+            <MagicDust count={14} intensity="soft" className="opacity-60" active />
+          </>
+        ) : null}
 
         {/* Soft moon rises as scenery fades — bridges into OpeningSequence. */}
         <motion.div
@@ -149,9 +153,13 @@ export function InvitationGate() {
             }}
           />
 
-          <FloatingLanterns count={10} className="opacity-65" active={!dissolving} />
-          <Fireflies count={12} className="opacity-85" active={!dissolving} />
-          <LanternReflection className="opacity-60" active={!dissolving} />
+          {!dissolving ? (
+            <>
+              <FloatingLanterns count={10} className="opacity-65" active />
+              <Fireflies count={12} className="opacity-85" active />
+              <LanternReflection className="opacity-60" active />
+            </>
+          ) : null}
           <div className="scroll-vignette absolute inset-0" />
         </motion.div>
       </div>
