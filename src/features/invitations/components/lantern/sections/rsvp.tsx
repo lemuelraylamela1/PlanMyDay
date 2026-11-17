@@ -14,6 +14,7 @@ import { FloatingLanterns } from "../effects/floating-lanterns";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { GoldButton } from "../ui/gold-button";
 import { OrnateScroll } from "../ui/ornate-scroll";
+import { scrollToSection } from "../hooks/scroll-to-section";
 import type { InvitationCheckIn, InvitationGuest, InvitationResponse, RsvpStatusValue } from "../types";
 import { GuestCheckInQrCard } from "@/features/check-in/components/guest-check-in-qr-card";
 import {
@@ -24,10 +25,12 @@ import {
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
 const labelCls =
-  "font-cinzel text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6b4810] sm:text-[10px] sm:tracking-[0.28em]";
+  "font-cinzel text-[12px] font-semibold uppercase tracking-[0.14em] text-[#4a2f0c] sm:text-[11px] sm:tracking-[0.22em]";
 const inputCls =
-  "w-full rounded-xl border border-[#b8860b]/30 bg-[#fffaf0]/80 px-3.5 py-3.5 font-serif text-[1.05rem] leading-relaxed text-[#3a2410] outline-none transition placeholder:text-[#3a2410]/45 focus:border-[#b8860b]/60 focus:ring-2 focus:ring-[#b8860b]/20 min-[380px]:px-4";
-const errCls = "mt-1 text-center font-sans text-sm text-[#9b1c1c]";
+  "w-full rounded-xl border border-[#b8860b]/40 bg-[#fffaf0] px-3.5 py-3.5 font-serif text-[1.08rem] leading-relaxed text-[#2a1540] outline-none transition placeholder:text-[#2a1540]/45 focus:border-[#b8860b]/70 focus:ring-2 focus:ring-[#b8860b]/25 min-[380px]:px-4";
+const errCls = "mt-1.5 text-center font-serif text-[0.95rem] font-medium text-[#8b1a1a]";
+const bodyCls = "font-serif text-[1.05rem] leading-[1.75] text-[#2a1540] sm:text-[1.1rem] sm:leading-[1.85]";
+const mutedCls = "font-serif text-[1rem] leading-relaxed text-[#3a2410]";
 
 const statusHeadline: Record<Exclude<RsvpStatusValue, "PENDING">, string> = {
   ACCEPTED: "Joyfully accepted",
@@ -162,6 +165,16 @@ export function Rsvp({ token, guest, response }: Props) {
       setJustSubmitted(true);
       setEditing(false);
       openRsvp();
+
+      // Bring the thank-you / receipt to the top of the viewport after submit.
+      window.requestAnimationFrame(() => {
+        window.setTimeout(() => {
+          scrollToSection("rsvp", {
+            duration: window.matchMedia("(max-width: 639px)").matches ? 900 : 1100,
+            offset: 0,
+          });
+        }, 60);
+      });
     } catch {
       const failure = "We couldn't send your reply. Please check your connection and try again.";
       setError(failure);
@@ -205,16 +218,16 @@ export function Rsvp({ token, guest, response }: Props) {
         >
           <OrnateScroll>
             <header className="mb-6 flex flex-col items-center text-center sm:mb-8">
-              <p className="font-cinzel text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6b4810] sm:text-[10px] sm:tracking-[0.42em]">
+              <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.18em] text-[#5c3a12] sm:text-[11px] sm:tracking-[0.32em]">
                 {wedding.rsvp.eyebrow}
               </p>
-              <h2 className="mt-3 font-display text-[1.85rem] font-light leading-[1.08] tracking-[-0.02em] text-[#3a2410] min-[380px]:text-[2.35rem] sm:text-5xl">
+              <h2 className="mt-3 font-display text-[2rem] font-medium leading-[1.08] tracking-[-0.02em] text-[#2a1540] min-[380px]:text-[2.45rem] sm:text-5xl">
                 {wedding.rsvp.title}
               </h2>
-              <p className="mt-3 max-w-md font-serif text-[0.98rem] italic leading-relaxed text-[#4a3218] sm:text-lg">
+              <p className={cn("mt-3 max-w-md italic", bodyCls)}>
                 {wedding.rsvp.intro}
               </p>
-              <p className="mt-4 font-cinzel text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6b4810] sm:text-[10px] sm:tracking-[0.3em]">
+              <p className="mt-4 font-cinzel text-[12px] font-semibold uppercase tracking-[0.14em] text-[#4a2f0c] sm:text-[11px] sm:tracking-[0.24em]">
                 Kindly respond by {wedding.rsvp.deadline}
               </p>
             </header>
@@ -243,16 +256,16 @@ export function Rsvp({ token, guest, response }: Props) {
                   >
                     <Check className="h-8 w-8 sm:h-9 sm:w-9" />
                   </motion.span>
-                  <h3 className="mt-5 font-display text-3xl font-light text-[#3a2410] sm:text-4xl">
+                  <h3 className="mt-5 font-display text-3xl font-medium text-[#2a1540] sm:text-4xl">
                     {justSubmitted ? "Thank You!" : statusHeadline[status]}
                   </h3>
-                  <p className="mt-3 max-w-md font-serif text-[1.05rem] leading-[1.85] text-[#4a3218]/85">
+                  <p className={cn("mt-3 max-w-md", bodyCls)}>
                     {status === "DECLINED"
                       ? "We'll miss you dearly, but we're so grateful you let us know. Sending love your way."
                       : "Your response has been received. We can't wait to celebrate our happily ever after with you!"}
                   </p>
                   {status === "ACCEPTED" && savedResponse && (
-                    <p className="mt-3 font-sans text-sm text-[#4a3218]/65">
+                    <p className={cn("mt-3", mutedCls)}>
                       {savedResponse.mealPreference
                         ? `Meal: ${savedResponse.mealPreference}`
                         : "Meal to be confirmed"}
@@ -266,14 +279,14 @@ export function Rsvp({ token, guest, response }: Props) {
                       variant="invite"
                     />
                   ) : null}
-                  <div className="mt-6 flex items-center gap-2 font-serif italic text-[#8a5a1e]">
+                  <div className="mt-6 flex items-center gap-2 font-serif text-[1.05rem] italic text-[#5c3a12]">
                     <Heart className="h-4 w-4" />
                     {wedding.meta.hashtag}
                   </div>
                   <button
                     type="button"
                     onClick={startChange}
-                    className="mt-8 font-cinzel text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8a5a1e] underline decoration-[#8a5a1e]/40 underline-offset-8 transition hover:text-[#3a2410]"
+                    className="mt-8 font-cinzel text-[12px] font-semibold uppercase tracking-[0.16em] text-[#5c3a12] underline decoration-[#5c3a12]/50 underline-offset-8 transition hover:text-[#2a1540]"
                   >
                     Change my response
                   </button>
@@ -288,13 +301,13 @@ export function Rsvp({ token, guest, response }: Props) {
                   className="flex flex-col gap-6"
                   noValidate
                 >
-                  <div className="flex items-center justify-center gap-2 text-[#8a5a1e]/75">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <p className="font-serif text-sm italic text-[#4a3218]/75">
+                  <div className="flex items-center justify-center gap-2 text-[#5c3a12]">
+                    <Sparkles className="h-4 w-4 shrink-0" />
+                    <p className={cn("text-center italic", mutedCls)}>
                       {status !== "PENDING" ? (
                         <>
                           Your current reply is{" "}
-                          <span className="text-[#3a2410]">
+                          <span className="font-medium text-[#2a1540]">
                             {statusHeadline[status].toLowerCase()}
                           </span>
                           . Sending this form will replace it.
@@ -303,7 +316,7 @@ export function Rsvp({ token, guest, response }: Props) {
                         <>Dear {guestName}, we&apos;d be honored by your reply.</>
                       )}
                     </p>
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-4 w-4 shrink-0" />
                   </div>
 
                   <Field label="Full Name" htmlFor="guest-name">
@@ -312,7 +325,7 @@ export function Rsvp({ token, guest, response }: Props) {
                       type="text"
                       value={guestName}
                       disabled
-                      className={cn(inputCls, "cursor-not-allowed bg-[#f3e2c0]/70 text-[#3a2410]/75")}
+                      className={cn(inputCls, "cursor-not-allowed bg-[#f0e2c4] text-[#2a1540]")}
                     />
                   </Field>
 
@@ -362,10 +375,10 @@ export function Rsvp({ token, guest, response }: Props) {
                                       setError(null);
                                     }}
                                     className={cn(
-                                      "rounded-full border px-4 py-2 font-serif text-sm transition",
+                                      "rounded-full border px-4 py-2.5 font-serif text-[0.98rem] transition",
                                       selected
-                                        ? "border-[#b8860b]/70 bg-[#d4a840]/20 text-[#3a2410] shadow-[0_0_0_3px_rgba(184,134,11,0.12)]"
-                                        : "border-[#b8860b]/25 bg-[#fffaf0]/75 text-[#3a2410]/75 hover:border-[#b8860b]/45",
+                                        ? "border-[#b8860b]/80 bg-[#d4a840]/25 text-[#2a1540] shadow-[0_0_0_3px_rgba(184,134,11,0.14)]"
+                                        : "border-[#b8860b]/35 bg-[#fffaf0] text-[#2a1540] hover:border-[#b8860b]/55",
                                     )}
                                   >
                                     {meal}
@@ -430,7 +443,7 @@ export function Rsvp({ token, guest, response }: Props) {
 
                   {error && <p className={errCls}>{error}</p>}
                   {!effectiveToken && (
-                    <p className="text-center font-serif text-sm italic text-[#4a3218]/65">
+                    <p className={cn("text-center italic", mutedCls)}>
                       Preview mode: open a personalized invitation link to submit RSVP.
                     </p>
                   )}
@@ -439,7 +452,7 @@ export function Rsvp({ token, guest, response }: Props) {
                     type="submit"
                     size="lg"
                     disabled={pending || attending === null || !effectiveToken}
-                    className="mt-1 w-full"
+                    className="mt-1 w-full text-[0.8rem] tracking-[0.18em] sm:text-sm"
                   >
                     {pending ? (
                       <>
@@ -458,7 +471,7 @@ export function Rsvp({ token, guest, response }: Props) {
                       type="button"
                       onClick={keepCurrentReply}
                       disabled={pending}
-                      className="font-cinzel text-[11px] font-semibold uppercase tracking-[0.28em] text-[#4a3218]/55 transition hover:text-[#3a2410]"
+                      className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.16em] text-[#3a2410] transition hover:text-[#2a1540]"
                     >
                       Keep my current reply
                     </button>
@@ -521,10 +534,10 @@ function RadioCard({
       aria-checked={checked}
       onClick={onSelect}
       className={cn(
-        "flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-4 py-3.5 text-center font-serif text-[0.98rem] transition-all duration-300 sm:text-[1.05rem]",
+        "flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-4 py-3.5 text-center font-serif text-[1.05rem] font-medium transition-all duration-300 sm:text-[1.1rem]",
         checked
-          ? "border-[#b8860b]/70 bg-[#d4a840]/20 text-[#3a2410] shadow-[0_0_0_3px_rgba(184,134,11,0.14)]"
-          : "border-[#b8860b]/25 bg-[#fffaf0]/75 text-[#3a2410]/75 hover:border-[#b8860b]/45",
+          ? "border-[#b8860b]/80 bg-[#d4a840]/25 text-[#2a1540] shadow-[0_0_0_3px_rgba(184,134,11,0.16)]"
+          : "border-[#b8860b]/40 bg-[#fffaf0] text-[#2a1540] hover:border-[#b8860b]/60",
       )}
     >
       {label}

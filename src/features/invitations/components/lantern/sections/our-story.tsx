@@ -26,13 +26,15 @@ export function OurStory() {
         }}
       />
       <FloatingLanterns
-        count={compact ? 10 : 14}
-        intensity="festival"
-        sizeScale={compact ? 0.55 : 0.62}
-        className="z-0 opacity-70 max-sm:opacity-55"
+        count={compact ? 4 : 14}
+        intensity={compact ? "ambient" : "festival"}
+        sizeScale={compact ? 0.48 : 0.62}
+        className="z-0 opacity-70 max-sm:opacity-45"
       />
-      <MagicDust count={20} intensity="soft" className="opacity-40" />
-      <SceneAtmosphere tone="warm" className="opacity-40" />
+      {!compact ? (
+        <MagicDust count={20} intensity="soft" className="opacity-40" />
+      ) : null}
+      <SceneAtmosphere tone="warm" className={compact ? "opacity-25" : "opacity-40"} />
 
       <header className="story-prologue relative z-[1] mx-auto max-w-4xl px-4 pt-4 text-center sm:px-6 sm:pt-6">
         <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.45em] text-[#e8b4bc]">

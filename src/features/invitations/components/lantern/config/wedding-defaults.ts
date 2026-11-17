@@ -78,42 +78,42 @@ export const weddingDefaults = {
       eyebrow: "Dress Code",
       guests: "Lavender or soft pink · formal or semi-formal",
       note: "We would be honored to see our motif come to life through you.",
-      restriction: "Strictly no white",
+      restriction: "Strictly no white and Jeans/Denim",
       roles: [
         {
           role: "Bridesmaids",
-          attire: "Light pink",
+
           swatch: "#f5c0cf",
           imageSrc: "/attire/bridesmaids.jpg",
           imageAlt: "Bridesmaids in light pink gowns",
         },
         {
           role: "Groomsmen",
-          attire: "Cream with a pink tie",
+
           swatch: "#f4ead8",
           imageSrc: "/attire/groomsmen.jpg",
           imageAlt: "Groomsmen in cream suits with pink ties",
         },
         {
           role: "Family",
-          attire: "Darker pink · barong for gentlemen",
+          attire: "Dress and Barong Attire",
           swatch: "#c0607a",
           imageSrc: "/attire/family-barong.jpg",
-          imageAlt: "Family in darker pink with gentlemen in barong",
+          imageAlt: "Dress and Barong Attire",
         },
         {
           role: "Sponsors",
-          attire: "Cream",
+          attire: "Formal Attire",
           swatch: "#efe2c9",
           imageSrc: "/attire/sponsors.jpg",
-          imageAlt: "Sponsors in cream formal wear",
+          imageAlt: "Formal Attire",
         },
         {
           role: "Guests",
           attire: "Lavender or soft pink · formal or semi-formal",
           swatch: "#c5b3d8",
           imageSrc: "/attire/guests-v3.jpg",
-          imageAlt: "Guests in lavender or soft pink formal or semi-formal attire",
+          imageAlt: "Formal and Semi-Formal Attire",
         },
       ],
     },
@@ -224,7 +224,7 @@ export const weddingDefaults = {
       {
         question: "What is the dress code?",
         answer:
-          "Bridesmaids wear light pink, groomsmen wear cream with a pink tie, family wears darker pink with gentlemen in barong, and sponsors wear cream. Guests may wear lavender or soft pink in formal or semi-formal attire. Strictly no white.",
+          "Bridesmaids wear light pink, groomsmen wear cream with a pink tie, family wears dark pink with gentlemen in barong, and sponsors wear cream. Guests may wear lavender or soft pink in formal or semi-formal attire. Strictly no white and Jeans/Denim.",
       },
       {
         question: "Can I bring a plus one or children?",

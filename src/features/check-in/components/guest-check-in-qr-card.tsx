@@ -15,7 +15,11 @@ interface Props {
 }
 
 export function downloadQrPng(qrDataUrl: string, fullName: string) {
-  const safe = fullName.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "guest";
+  const safe =
+    fullName
+      .replace(/[^\w\- ]+/g, "")
+      .trim()
+      .replace(/\s+/g, "-") || "guest";
   const anchor = document.createElement("a");
   anchor.href = qrDataUrl;
   anchor.download = `wedding-id-${safe}.png`;
@@ -42,8 +46,8 @@ export function GuestCheckInQrCard({
       <p
         className={
           isInvite
-            ? "font-cinzel text-[10px] font-semibold uppercase tracking-[0.28em] text-lantern-rose"
-            : "text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            ? "font-cinzel text-[15px] font-bold uppercase tracking-[0.28em] text-lantern-rose"
+            : "text-md font-bold uppercase tracking-wider text-muted-foreground"
         }
       >
         Your wedding ID
@@ -84,7 +88,12 @@ export function GuestCheckInQrCard({
           Download QR
         </button>
       ) : (
-        <Button type="button" variant="secondary" size="sm" onClick={() => downloadQrPng(qrDataUrl, fullName)}>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => downloadQrPng(qrDataUrl, fullName)}
+        >
           <Download className="mr-2 h-4 w-4" />
           Download QR
         </Button>

@@ -16,7 +16,10 @@ export function SiteFooter() {
       }}
     >
       {/* top lantern rule */}
-      <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, #f4c444 50%, transparent)" }} />
+      <div
+        className="absolute inset-x-0 top-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent, #f4c444 50%, transparent)" }}
+      />
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6 text-center">
         <p className="font-display text-3xl font-semibold text-cream">
@@ -25,11 +28,14 @@ export function SiteFooter() {
         <p className="mt-2 font-serif italic" style={{ color: "#e8c880" }}>
           {wedding.event.dateLong}
         </p>
-        <p className="mt-1 font-sans text-sm text-cream/50">
-          {wedding.event.venue.name} · {wedding.event.venue.city}
-        </p>
+        <p className="mt-1 font-sans text-sm text-cream/50">{wedding.event.venue.name}</p>
 
-        <div className="mx-auto my-7 h-px w-32" style={{ background: "linear-gradient(90deg, transparent, rgba(244,196,68,0.5), transparent)" }} />
+        <div
+          className="mx-auto my-7 h-px w-32"
+          style={{
+            background: "linear-gradient(90deg, transparent, rgba(244,196,68,0.5), transparent)",
+          }}
+        />
 
         <p className="flex items-center justify-center gap-2 font-sans text-[11px] uppercase tracking-[0.25em] text-cream/40">
           Made with <Heart className="h-3.5 w-3.5 text-lantern-rose" /> &amp; lots of lanterns

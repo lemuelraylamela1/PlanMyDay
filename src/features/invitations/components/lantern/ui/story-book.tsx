@@ -157,11 +157,15 @@ function ChapterPhoto({ chapter }: { chapter: StoryChapter }) {
 }
 
 /** Slow crawl so guests can read comfortably on phones. */
-const STORY_AUTO_SCROLL_PX_PER_SEC = 9;
+const STORY_AUTO_SCROLL_PX_PER_SEC = 8;
+
+/** Only one chapter crawl loop runs at a time (avoids N RAF loops on mobile). */
+let activeStoryCrawl: symbol | null = null;
 
 /**
  * Whole parchment content (header + body + footer) slowly crawls upward.
  * Guests can drag up/down to re-read anytime.
+ * Mobile-optimized: direct DOM transforms, no React setState per frame.
  */
 function ChapterParchment({
   chapter,
@@ -172,13 +176,19 @@ function ChapterParchment({
   index: number;
   total: number;
 }) {
+  const { compact } = useLanternPerf();
+  const rootRef = React.useRef<HTMLDivElement>(null);
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const thumbRef = React.useRef<HTMLDivElement>(null);
+  const fadeRef = React.useRef<HTMLDivElement>(null);
   const offsetRef = React.useRef(0);
   const maxOffsetRef = React.useRef(0);
   const frameRef = React.useRef<number | null>(null);
   const lastTsRef = React.useRef<number | null>(null);
-  const autoRef = React.useRef(true);
+  const autoRef = React.useRef(false);
+  const visibleRef = React.useRef(false);
+  const crawlIdRef = React.useRef(Symbol(`story-crawl-${index}`));
   const dragRef = React.useRef<{
     pointerId: number;
     startX: number;
@@ -188,16 +198,24 @@ function ChapterParchment({
   } | null>(null);
   const resumeTimerRef = React.useRef<number | null>(null);
 
-  const [offset, setOffset] = React.useState(0);
-  const [maxOffset, setMaxOffset] = React.useState(0);
-  const [dragging, setDragging] = React.useState(false);
-
   const contentKey = `${chapter.chapter}-${chapter.title}-${chapter.description}`;
 
-  const applyOffset = React.useCallback((value: number) => {
+  const paintOffset = React.useCallback((value: number) => {
     const next = Math.min(maxOffsetRef.current, Math.max(0, value));
     offsetRef.current = next;
-    setOffset(next);
+    const content = contentRef.current;
+    if (content) {
+      content.style.transform = `translate3d(0, ${-next}px, 0)`;
+    }
+    const max = maxOffsetRef.current;
+    const progress = max > 0 ? next / max : 0;
+    if (thumbRef.current) {
+      thumbRef.current.style.top = `calc(${progress * 72}% + 8px)`;
+      thumbRef.current.style.opacity = max > 4 ? "1" : "0";
+    }
+    if (fadeRef.current) {
+      fadeRef.current.style.opacity = next < max - 2 && max > 4 ? "1" : "0";
+    }
     return next;
   }, []);
 
@@ -207,9 +225,11 @@ function ChapterParchment({
     if (!viewport || !content) return;
     const max = Math.max(0, content.scrollHeight - viewport.clientHeight);
     maxOffsetRef.current = max;
-    setMaxOffset(max);
-    if (offsetRef.current > max) applyOffset(max);
-  }, [applyOffset]);
+    if (offsetRef.current > max) paintOffset(max);
+    if (thumbRef.current) {
+      thumbRef.current.style.opacity = max > 4 ? "1" : "0";
+    }
+  }, [paintOffset]);
 
   const stopLoop = React.useCallback(() => {
     if (frameRef.current != null) {
@@ -217,16 +237,24 @@ function ChapterParchment({
       frameRef.current = null;
     }
     lastTsRef.current = null;
+    if (activeStoryCrawl === crawlIdRef.current) {
+      activeStoryCrawl = null;
+    }
   }, []);
 
   const tick = React.useCallback(
     (now: number) => {
-      if (!autoRef.current || dragRef.current) {
+      if (!autoRef.current || dragRef.current || !visibleRef.current) {
+        frameRef.current = null;
+        return;
+      }
+      if (activeStoryCrawl !== crawlIdRef.current) {
         frameRef.current = null;
         return;
       }
       if (maxOffsetRef.current <= 0) {
         frameRef.current = null;
+        autoRef.current = false;
         return;
       }
 
@@ -234,7 +262,7 @@ function ChapterParchment({
       const dt = Math.min(48, now - lastTsRef.current) / 1000;
       lastTsRef.current = now;
 
-      const next = applyOffset(
+      const next = paintOffset(
         offsetRef.current + STORY_AUTO_SCROLL_PX_PER_SEC * dt,
       );
 
@@ -243,16 +271,23 @@ function ChapterParchment({
       } else {
         frameRef.current = null;
         autoRef.current = false;
+        if (activeStoryCrawl === crawlIdRef.current) {
+          activeStoryCrawl = null;
+        }
       }
     },
-    [applyOffset],
+    [paintOffset],
   );
 
   const startAuto = React.useCallback(() => {
-    autoRef.current = true;
-    if (frameRef.current != null) return;
+    if (!visibleRef.current) return;
     if (maxOffsetRef.current <= 0) return;
     if (offsetRef.current >= maxOffsetRef.current - 0.5) return;
+    if (activeStoryCrawl && activeStoryCrawl !== crawlIdRef.current) return;
+
+    autoRef.current = true;
+    activeStoryCrawl = crawlIdRef.current;
+    if (frameRef.current != null) return;
     lastTsRef.current = null;
     frameRef.current = requestAnimationFrame(tick);
   }, [tick]);
@@ -278,18 +313,33 @@ function ChapterParchment({
 
   React.useLayoutEffect(() => {
     offsetRef.current = 0;
-    setOffset(0);
-    autoRef.current = true;
+    paintOffset(0);
     measure();
-    const id = window.setTimeout(() => {
-      measure();
-      startAuto();
-    }, 360);
+  }, [contentKey, measure, paintOffset]);
+
+  React.useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        const visible = Boolean(entry?.isIntersecting && (entry.intersectionRatio ?? 0) > 0.35);
+        visibleRef.current = visible;
+        if (!visible) {
+          pauseAuto();
+          return;
+        }
+        measure();
+        startAuto();
+      },
+      { threshold: [0, 0.35, 0.6] },
+    );
+    io.observe(root);
     return () => {
-      window.clearTimeout(id);
+      io.disconnect();
       pauseAuto();
     };
-  }, [contentKey, measure, startAuto, pauseAuto]);
+  }, [measure, pauseAuto, startAuto]);
 
   React.useEffect(() => {
     const viewport = viewportRef.current;
@@ -318,7 +368,6 @@ function ChapterParchment({
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
-    // Do not stopPropagation here — horizontal drags must reach PageFlip to turn pages.
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -339,13 +388,10 @@ function ChapterParchment({
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       drag.axis = Math.abs(dy) > Math.abs(dx) ? "vertical" : "horizontal";
       if (drag.axis === "horizontal") {
-        // Hand the gesture to PageFlip for page turns.
         dragRef.current = null;
-        setDragging(false);
         return;
       }
       pauseAuto();
-      setDragging(true);
       try {
         event.currentTarget.setPointerCapture(event.pointerId);
       } catch {
@@ -356,7 +402,7 @@ function ChapterParchment({
     if (drag.axis !== "vertical") return;
     event.stopPropagation();
     event.preventDefault();
-    applyOffset(drag.startOffset + (drag.startY - event.clientY));
+    paintOffset(drag.startOffset + (drag.startY - event.clientY));
   };
 
   const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -364,9 +410,7 @@ function ChapterParchment({
     if (!drag || drag.pointerId !== event.pointerId) return;
     const wasVertical = drag.axis === "vertical";
     dragRef.current = null;
-    setDragging(false);
     if (!wasVertical) return;
-    // Only swallow the event when we owned a vertical read-drag.
     event.stopPropagation();
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -376,43 +420,41 @@ function ChapterParchment({
     scheduleResume();
   };
 
-  const progress = maxOffset > 0 ? offset / maxOffset : 0;
-
   return (
-    <div className="story-book-page relative h-full w-full min-h-0 overflow-hidden">
-      <span aria-hidden className="parchment-grain pointer-events-none absolute inset-0 opacity-80" />
+    <div
+      ref={rootRef}
+      className="story-book-page relative h-full w-full min-h-0 overflow-hidden"
+    >
+      {!compact ? (
+        <span
+          aria-hidden
+          className="parchment-grain pointer-events-none absolute inset-0 opacity-80"
+        />
+      ) : null}
 
       <div
         ref={viewportRef}
-        className={cn(
-          "story-book-page-scroll absolute inset-0 z-[1] overflow-hidden px-4 py-4 sm:px-6 sm:py-6",
-          dragging ? "cursor-grabbing" : "cursor-grab",
-        )}
+        className="story-book-page-scroll absolute inset-0 z-[1] cursor-grab overflow-hidden px-4 py-4 active:cursor-grabbing sm:px-6 sm:py-6"
         style={{ touchAction: "pan-x pan-y" }}
         role="region"
         aria-label="Chapter story. Drag up or down to read, sideways to turn pages."
-        aria-valuemin={0}
-        aria-valuemax={Math.round(maxOffset)}
-        aria-valuenow={Math.round(offset)}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onWheel={(event) => {
-          // Vertical wheel reads the chapter; don't block horizontal page UX.
           if (Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
           event.stopPropagation();
           pauseAuto();
-          applyOffset(offsetRef.current + event.deltaY * 0.45);
+          paintOffset(offsetRef.current + event.deltaY * 0.45);
           scheduleResume();
         }}
       >
         <div
           ref={contentRef}
-          className="will-change-transform"
           style={{
-            transform: `translate3d(0, ${-offset}px, 0)`,
-            transition: dragging ? "none" : undefined,
+            transform: "translate3d(0, 0, 0)",
+            willChange: compact ? "auto" : "transform",
           }}
         >
           <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.36em] text-[#b06b7a]">
@@ -436,28 +478,21 @@ function ChapterParchment({
         </div>
       </div>
 
-      {maxOffset > 4 ? (
-        <>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-2 right-1.5 z-[2] w-1 rounded-full bg-[#9a6b3a]/15"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute right-1.5 z-[2] w-1 rounded-full bg-[#9a6b3a]/65"
-            style={{
-              top: `calc(${progress * 72}% + 8px)`,
-              height: "22%",
-            }}
-          />
-          {offset < maxOffset - 2 ? (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-8 bg-gradient-to-t from-[#efdcb6] to-transparent"
-            />
-          ) : null}
-        </>
-      ) : null}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-2 right-1.5 z-[2] w-1 rounded-full bg-[#9a6b3a]/15"
+      />
+      <div
+        ref={thumbRef}
+        aria-hidden
+        className="pointer-events-none absolute right-1.5 z-[2] w-1 rounded-full bg-[#9a6b3a]/65 opacity-0"
+        style={{ top: "8px", height: "22%" }}
+      />
+      <div
+        ref={fadeRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-8 bg-gradient-to-t from-[#efdcb6] to-transparent opacity-0"
+      />
     </div>
   );
 }
@@ -546,24 +581,26 @@ export function StoryBook({ className }: { className?: string }) {
         className="relative mx-auto flex w-full max-w-full items-center justify-center overflow-x-clip overflow-y-visible py-6 sm:py-10"
         style={{ minHeight: pageHeight + 24 }}
       >
-        <div
-          aria-hidden
-          className="story-book-glow pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[min(130%,36rem)] -translate-x-1/2 -translate-y-[42%]"
-        />
+        {!compact ? (
+          <div
+            aria-hidden
+            className="story-book-glow pointer-events-none absolute left-1/2 top-1/2 h-[70%] w-[min(130%,36rem)] -translate-x-1/2 -translate-y-[42%]"
+          />
+        ) : null}
         <PageFlip
           pages={pages}
           pageWidth={pageWidth}
           pageHeight={pageHeight}
           pageRadius={6}
           pageColor="#f3e2c0"
-          perspective={compact ? 1000 : 1300}
+          perspective={compact ? 800 : 1300}
           spineShift={0}
           turnAngle={180}
-          peekAngle={8}
-          duration={0.55}
-          stagger={0.07}
+          peekAngle={compact ? 0 : 8}
+          duration={compact ? 0.4 : 0.55}
+          stagger={compact ? 0 : 0.07}
           ease="easeInOut"
-          shadow={0.34}
+          shadow={compact ? 0.12 : 0.34}
           trigger="click"
           closeOnLeave={false}
           interactive
