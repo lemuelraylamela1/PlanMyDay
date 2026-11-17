@@ -69,8 +69,8 @@ export const fairytaleMedia: {
     title: "Fantasy Fairy Tale Music Magical — Ethereal Fantasy (528 Hz)",
   },
   ambientMusic: {
-    src: "/proposal-audio/gehlee-closer.mp3",
-    title: "Closer — GEHLEE",
+    src: "/proposal-audio/i-see-the-light.mp3",
+    title: "I See the Light — Mandy Moore & Zachary Levi",
   },
   rsvpAcceptMusic: {
     src: "/proposal-audio/royal-fanfare.mp3",

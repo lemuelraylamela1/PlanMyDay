@@ -122,12 +122,18 @@ function ClosingEndpaper() {
 }
 
 function ChapterPhoto({ chapter }: { chapter: StoryChapter }) {
+  const zoom = chapter.imageZoom ?? 1;
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#1a0f2e]">
       <img
         src={chapter.imageSrc}
         alt={chapter.imageAlt}
         className="absolute inset-0 h-full w-full object-cover"
+        style={
+          zoom !== 1
+            ? { transform: `scale(${zoom})`, transformOrigin: "center center" }
+            : undefined
+        }
         draggable={false}
       />
       <div

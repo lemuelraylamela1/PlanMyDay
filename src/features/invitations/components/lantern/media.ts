@@ -32,7 +32,7 @@ export interface GalleryImage {
   caption: string;
 }
 
-/** One categorized gallery set (5 photos each). */
+/** One categorized gallery row / set. */
 export interface GallerySet {
   id: string;
   title: string;
@@ -40,50 +40,37 @@ export interface GallerySet {
   images: GalleryImage[];
 }
 
+function galleryRow(
+  id: string,
+  title: string,
+  description: string,
+  count: number,
+): GallerySet {
+  return {
+    id,
+    title,
+    description,
+    images: Array.from({ length: count }, (_, index) => {
+      const n = String(index + 1).padStart(2, "0");
+      return {
+        src: `/gallery/${id}/${n}.jpg`,
+        caption: `${title} · ${n}`,
+      };
+    }),
+  };
+}
+
 /**
- * Our Gallery — 3 sets × 5 images.
- * Replace files in `public/gallery/{set-id}/01.jpg` … `05.jpg` when uploading finals.
+ * Our Gallery — 3 infinite rows from folders `public/gallery/1|2|3`.
+ * Folder 1 → top row, 2 → middle, 3 → bottom.
  */
 export const gallerySets: GallerySet[] = [
-  {
-    id: "our-story",
-    title: "Our Story",
-    description: "Where it all began.",
-    images: [
-      { src: "/gallery/our-story/01.jpg", caption: "The first hello" },
-      { src: "/gallery/our-story/02.jpg", caption: "Golden hour" },
-      { src: "/gallery/our-story/03.jpg", caption: "Adventures together" },
-      { src: "/gallery/our-story/04.jpg", caption: "Quiet moments" },
-      { src: "/gallery/our-story/05.jpg", caption: "The proposal" },
-    ],
-  },
-  {
-    id: "fairytale",
-    title: "Fairytale",
-    description: "A day wrapped in lantern light.",
-    images: [
-      { src: "/gallery/fairytale/01.jpg", caption: "Celebrations" },
-      { src: "/gallery/fairytale/02.jpg", caption: "Family & friends" },
-      { src: "/gallery/fairytale/03.jpg", caption: "Forever begins" },
-      { src: "/gallery/fairytale/04.jpg", caption: "Our story" },
-      { src: "/gallery/fairytale/05.jpg", caption: "The journey" },
-    ],
-  },
-  {
-    id: "forever",
-    title: "Forever",
-    description: "Moments we will always keep.",
-    images: [
-      { src: "/gallery/forever/01.jpg", caption: "Side by side" },
-      { src: "/gallery/forever/02.jpg", caption: "Soft glances" },
-      { src: "/gallery/forever/03.jpg", caption: "Hand in hand" },
-      { src: "/gallery/forever/04.jpg", caption: "Promise kept" },
-      { src: "/gallery/forever/05.jpg", caption: "Always yours" },
-    ],
-  },
+  galleryRow("1", "Row One", "First gallery row.", 17),
+  galleryRow("2", "Row Two", "Second gallery row.", 14),
+  galleryRow("3", "Row Three", "Third gallery row.", 16),
 ];
 
-/** Flat list of all gallery photos (15). */
+/** Flat list of all gallery photos. */
 export const galleryImages: GalleryImage[] = gallerySets.flatMap((set) => set.images);
 
 /** Venue photo for wedding details. */
@@ -116,20 +103,8 @@ export const attireGuideImages = {
   },
 } as const;
 
-/** Monetary gift QR codes (MariBank + GCash). */
-export const giftQrImages = {
-  maribank: {
-    src: "/gifts/maribank.jpg",
-    alt: "MariBank InstaPay QR code for Lemuel Ray Lamela",
-  },
-  gcash: {
-    src: "/gifts/gcash.jpg",
-    alt: "GCash InstaPay QR code",
-  },
-} as const;
-
-/** Ambient background music path. Temporary stand-in — swap later. */
-export const AMBIENT_MUSIC_SRC = "/proposal-audio/gehlee-closer.mp3";
+/** Ambient background music path. */
+export const AMBIENT_MUSIC_SRC = "/proposal-audio/i-see-the-light.mp3";
 
 /** Save-the-date film (2K desktop / 720p phones). */
 export const SAVE_THE_DATE_VIDEO = {

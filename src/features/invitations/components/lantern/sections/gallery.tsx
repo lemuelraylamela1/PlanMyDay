@@ -317,7 +317,8 @@ export function Gallery() {
       id: set.id,
       images: set.images,
       reverse: index % 2 === 1,
-      duration: 28 + index * 4,
+      // Longer rows need more time so pixel speed stays gentle.
+      duration: Math.round(set.images.length * 10) + index * 8,
     })),
   );
   const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
@@ -329,7 +330,7 @@ export function Gallery() {
         id: set.id,
         images: shuffle(set.images),
         reverse: index % 2 === 1,
-        duration: 28 + index * 4,
+        duration: Math.round(set.images.length * 10) + index * 8,
       })),
     );
   }, []);

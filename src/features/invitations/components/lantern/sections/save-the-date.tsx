@@ -122,6 +122,11 @@ export function SaveTheDate() {
   function handleVideoPause() {
     setPlaying(false);
     setAmbientSuspended(false);
+    const video = videoRef.current;
+    // Near the start, restore the thumbnail so mobile doesn't sit on a blank frame.
+    if (video && video.currentTime < 0.35) {
+      setShowPoster(true);
+    }
   }
 
   function handleVideoEnded() {
@@ -222,17 +227,14 @@ export function SaveTheDate() {
         transition={{ duration: 0.9, ease: LUXURY, delay: 0.12 }}
         className="relative z-10 mx-auto mt-4 flex min-h-0 w-full flex-1 items-center justify-center px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:mt-6 sm:px-6 lg:px-10"
       >
-        {/*
-          Keep the stage 16:9 so the film fills the frame. A tall full-bleed stage
-          + object-contain letterboxes oddly on iOS (thumbnail stuck to the bottom).
-        */}
+        {/* 16:9 stage + object-contain so the full frame fits without cropping. */}
         <div
           ref={stageRef}
           className="relative aspect-video w-full max-h-full overflow-hidden rounded-lg bg-night shadow-[0_24px_60px_-28px_rgba(0,0,0,0.65)]"
         >
           <video
             ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="absolute inset-0 z-0 h-full w-full object-contain object-center"
             src={videoSrc}
             poster={SAVE_THE_DATE_VIDEO.posterSrc}
             playsInline
@@ -249,12 +251,12 @@ export function SaveTheDate() {
 
           {showPoster && !playing ? (
             <Image
-              src={SAVE_THE_DATE_VIDEO.posterSrc}
-              alt=""
+              src={`${SAVE_THE_DATE_VIDEO.posterSrc}?v=7`}
+              alt="Save the date film thumbnail"
               fill
               sizes="(max-width: 768px) 100vw, 1200px"
-              className="pointer-events-none absolute inset-0 z-[1] object-cover object-center"
-              priority={compact}
+              className="pointer-events-none absolute inset-0 z-[1] h-full w-full object-contain object-center"
+              priority
               unoptimized
             />
           ) : null}

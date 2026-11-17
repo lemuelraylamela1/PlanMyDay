@@ -7,7 +7,7 @@ import {
   motion,
   type AnimationPlaybackControls,
 } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useMeasure from "react-use-measure";
 
 type InfiniteSliderProps = {
@@ -44,7 +44,8 @@ export function InfiniteSlider({
   draggable = true,
 }: InfiniteSliderProps) {
   const [currentDuration, setCurrentDuration] = useState(duration);
-  const [ref, { width, height }] = useMeasure();
+  const [containerRef, containerBounds] = useMeasure();
+  const [setRef, setBounds] = useMeasure();
   const translation = useMotionValue(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [key, setKey] = useState(0);
@@ -55,26 +56,35 @@ export function InfiniteSlider({
   const startPointerRef = useRef(0);
   const lastPointerRef = useRef(0);
   const loopSizeRef = useRef(0);
-  const rootRef = useRef<HTMLDivElement>(null);
+
+  const isHorizontal = direction === "horizontal";
+  const containerSize = isHorizontal ? containerBounds.width : containerBounds.height;
+  const setSize = isHorizontal ? setBounds.width : setBounds.height;
+
+  // Repeat the set until the track is always ≥ 2× viewport — no visible end/gap.
+  const copies = useMemo(() => {
+    if (!containerSize || !setSize) return 4;
+    const unit = setSize + gap;
+    const needed = Math.ceil((containerSize * 2) / Math.max(1, unit));
+    // Keep an even count so looping by one set stays seamless.
+    return Math.max(4, needed % 2 === 0 ? needed : needed + 1);
+  }, [containerSize, setSize, gap]);
 
   useEffect(() => {
     setCurrentDuration(duration);
   }, [duration]);
 
   useEffect(() => {
-    const size = direction === "horizontal" ? width : height;
-    if (size) loopSizeRef.current = (size + gap) / 2;
-  }, [width, height, gap, direction]);
+    if (setSize) loopSizeRef.current = setSize + gap;
+  }, [setSize, gap]);
 
   useEffect(() => {
     if (isDragging) return;
 
     let controls: AnimationPlaybackControls | undefined;
-    const size = direction === "horizontal" ? width : height;
-    if (!size) return;
+    const loop = setSize + gap;
+    if (!setSize || !loop) return;
 
-    const contentSize = size + gap;
-    const loop = contentSize / 2;
     const from = reverse ? -loop : 0;
     const to = reverse ? 0 : -loop;
 
@@ -82,7 +92,8 @@ export function InfiniteSlider({
       const current = translation.get();
       controls = animate(translation, [current, to], {
         ease: "linear",
-        duration: currentDuration * Math.abs((current - to) / loop),
+        duration:
+          currentDuration * Math.abs((current - to) / Math.max(1, loop)),
         onComplete: () => {
           setIsTransitioning(false);
           setKey((prevKey) => prevKey + 1);
@@ -107,11 +118,9 @@ export function InfiniteSlider({
     key,
     translation,
     currentDuration,
-    width,
-    height,
+    setSize,
     gap,
     isTransitioning,
-    direction,
     reverse,
     isDragging,
   ]);
@@ -141,39 +150,40 @@ export function InfiniteSlider({
 
     if (didDrag) {
       setIsDragging(false);
-      // Resume autoplay from the scrubbed position.
       setIsTransitioning(true);
       setKey((prev) => prev + 1);
     }
   };
 
+  const childSets = useMemo(
+    () => Array.from({ length: copies }, (_, index) => index),
+    [copies],
+  );
+
   return (
     <div
-      ref={rootRef}
+      ref={containerRef}
       className={cn(
-        "overflow-hidden",
+        "relative overflow-hidden",
         draggable && "cursor-grab touch-pan-y active:cursor-grabbing select-none",
         className,
       )}
       style={
         draggable
-          ? { touchAction: direction === "horizontal" ? "pan-y" : "pan-x" }
+          ? { touchAction: isHorizontal ? "pan-y" : "pan-x" }
           : undefined
       }
       onPointerDown={(event) => {
         if (!draggable || event.button !== 0) return;
-        // Don't capture yet — capturing the parent steals desktop clicks from slides.
         pointerActiveRef.current = true;
         dragMovedRef.current = false;
-        const point =
-          direction === "horizontal" ? event.clientX : event.clientY;
+        const point = isHorizontal ? event.clientX : event.clientY;
         startPointerRef.current = point;
         lastPointerRef.current = point;
       }}
       onPointerMove={(event) => {
         if (!pointerActiveRef.current) return;
-        const point =
-          direction === "horizontal" ? event.clientX : event.clientY;
+        const point = isHorizontal ? event.clientX : event.clientY;
         const total = Math.abs(point - startPointerRef.current);
 
         if (!dragMovedRef.current) {
@@ -187,10 +197,7 @@ export function InfiniteSlider({
 
         const delta = point - lastPointerRef.current;
         lastPointerRef.current = point;
-        const next = wrapLoop(
-          translation.get() + delta,
-          loopSizeRef.current,
-        );
+        const next = wrapLoop(translation.get() + delta, loopSizeRef.current);
         translation.set(next);
       }}
       onPointerUp={stopDragging}
@@ -205,17 +212,25 @@ export function InfiniteSlider({
       <motion.div
         className="flex w-max"
         style={{
-          ...(direction === "horizontal"
-            ? { x: translation }
-            : { y: translation }),
+          ...(isHorizontal ? { x: translation } : { y: translation }),
           gap: `${gap}px`,
-          flexDirection: direction === "horizontal" ? "row" : "column",
+          flexDirection: isHorizontal ? "row" : "column",
         }}
-        ref={ref}
         {...hoverProps}
       >
-        {children}
-        {children}
+        {childSets.map((copyIndex) => (
+          <div
+            key={`copy-${copyIndex}`}
+            ref={copyIndex === 0 ? setRef : undefined}
+            className="flex"
+            style={{
+              gap: `${gap}px`,
+              flexDirection: isHorizontal ? "row" : "column",
+            }}
+          >
+            {children}
+          </div>
+        ))}
       </motion.div>
     </div>
   );

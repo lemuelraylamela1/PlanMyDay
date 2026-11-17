@@ -12,6 +12,8 @@ export type StoryChapter = {
   description: string;
   imageSrc: string;
   imageAlt: string;
+  /** Scale the photo to crop letterboxing / pillarboxing (1 = normal). */
+  imageZoom?: number;
 };
 
 export type Hotel = {
@@ -66,8 +68,7 @@ export const weddingDefaults = {
       city: "Tagaytay",
       address: "Neogan, Tagaytay City, Cavite, Philippines",
       mapsQuery: "Fernwood Gardens Tagaytay",
-      mapsUrl:
-        "https://www.google.com/maps/search/?api=1&query=Fernwood%20Gardens%20Tagaytay",
+      mapsUrl: "https://www.google.com/maps/search/?api=1&query=Fernwood%20Gardens%20Tagaytay",
       imageSrc: "/venue/fernwood-gardens.jpg",
       imageAlt: "The grand Fernwood Gardens entrance in Tagaytay",
       parkingNote: "Lots of parking spaces available on site",
@@ -143,8 +144,9 @@ export const weddingDefaults = {
         title: "When We First Met",
         description:
           "It began like a quiet spark—two strangers, one ordinary moment, and a warmth neither of us could name. From that day, the world tilted softly toward light.",
-        imageSrc: "/gallery/our-story/01.jpg",
-        imageAlt: "The first hello — where our story began",
+        imageSrc: "/gallery/our-story/01.gif",
+        imageAlt: "When we first met — jamming together",
+        imageZoom: 1.2,
       },
       {
         chapter: "Chapter Two",
@@ -195,28 +197,7 @@ export const weddingDefaults = {
     eyebrow: "Cherished Moments",
     title: "Our Gallery",
     intro:
-      "Fifteen frames of our story across three flowing rows. Drag any row to find a moment — tap for full size.",
-  },
-
-  gifts: {
-    eyebrow: "Monetary Gifts",
-    title: "A Gift of Love",
-    intro:
-      "Your presence is the greatest gift. If you wish to bless us further, you may send a monetary gift through MariBank or GCash by scanning a QR code below.",
-    methods: [
-      {
-        label: "MariBank",
-        account: "Lemuel Ray Lamela · MariBank",
-        imageSrc: "/gifts/maribank.jpg",
-        imageAlt: "MariBank InstaPay QR code for Lemuel Ray Lamela",
-      },
-      {
-        label: "GCash",
-        account: "GCash",
-        imageSrc: "/gifts/gcash.jpg",
-        imageAlt: "GCash InstaPay QR code",
-      },
-    ],
+      "Forty-seven frames of our story across three flowing rows. Drag any row to find a moment — tap for full size.",
   },
 
   rsvp: {
@@ -226,13 +207,7 @@ export const weddingDefaults = {
     deadline: "December 16, 2026",
     intro:
       "Your presence would make our fairytale complete. Please let us know if you can celebrate beneath the lanterns with us.",
-    mealOptions: [
-      "Beef",
-      "Chicken",
-      "Fish",
-      "Vegetarian",
-      "No preference",
-    ],
+    mealOptions: ["Beef", "Chicken", "Fish", "Vegetarian", "No preference"],
     maxGuests: 6,
   },
 
@@ -263,8 +238,7 @@ export const weddingDefaults = {
       },
       {
         question: "Is there parking available?",
-        answer:
-          "Yes, the venue provides on-site parking for all guests.",
+        answer: "Yes, the venue provides on-site parking for all guests.",
       },
     ] as Faq[],
   },
@@ -286,15 +260,13 @@ export const weddingDefaults = {
       {
         name: "Lakeview Suites",
         distance: "10 minutes from venue",
-        description:
-          "Modern suites overlooking Taal Lake, ideal for families and groups.",
+        description: "Modern suites overlooking Taal Lake, ideal for families and groups.",
         priceNote: "From ₱6,200 / night",
       },
       {
         name: "Garden Boutique Inn",
         distance: "8 minutes from venue",
-        description:
-          "A charming boutique stay surrounded by lush gardens and quiet comfort.",
+        description: "A charming boutique stay surrounded by lush gardens and quiet comfort.",
         priceNote: "From ₱3,800 / night",
       },
     ] as Hotel[],

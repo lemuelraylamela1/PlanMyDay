@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { useExperience } from "./experience-provider";
 import { FloatingLanterns } from "../effects/floating-lanterns";
 import { ParticleField } from "../effects/particle-field";
-import { CastleSilhouette } from "../effects/castle-silhouette";
 import { HillSilhouette } from "../effects/hill-silhouette";
 import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
@@ -293,7 +292,6 @@ export function OpeningSequence() {
 
         <div className="seq-kingdom absolute inset-x-0 bottom-0 opacity-0">
           <HillSilhouette className="absolute bottom-0 w-full opacity-75" />
-          <CastleSilhouette className="absolute bottom-0 left-1/2 w-[150%] max-w-none -translate-x-1/2 opacity-85 sm:w-full" />
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-night via-night/45 to-transparent" />
         </div>
         <div className="seq-reflection absolute inset-x-0 bottom-0 opacity-0">

@@ -4,7 +4,6 @@ import * as React from "react";
 import { motion, type Variants } from "framer-motion";
 import { useExperience } from "./experience-provider";
 import { StarField } from "../effects/star-field";
-import { CastleSilhouette } from "../effects/castle-silhouette";
 import { GoldButton } from "../ui/gold-button";
 import { FloatingLanterns } from "../effects/floating-lanterns";
 import { MagicDust } from "../effects/magic-dust";
@@ -69,8 +68,7 @@ export function InvitationGate() {
       return;
     }
     setDissolving(true);
-    // Let parchment + castle scenery melt into night before OpeningSequence
-    // crossfades in — avoids the ~0:03 castle flash / hard cut.
+    // Let parchment melt into night before OpeningSequence crossfades in.
     window.setTimeout(open, 980);
   }, [dissolving, reducedMotion, open, beginMusic]);
 
@@ -92,7 +90,7 @@ export function InvitationGate() {
         transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
       }}
     >
-      {/* Match OpeningSequence sky during dissolve so the handoff has no castle flash. */}
+      {/* Match OpeningSequence sky during dissolve for a soft handoff. */}
       <motion.div
         aria-hidden
         className="pointer-events-none fixed inset-0"
@@ -130,7 +128,7 @@ export function InvitationGate() {
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         />
 
-        {/* Fade castle / lantern scenery with the scroll — do not leave a castle flash. */}
+        {/* Fade lantern scenery with the scroll. */}
         <motion.div
           className="absolute inset-0"
           animate={dissolving ? { opacity: 0 } : { opacity: 1 }}
@@ -149,7 +147,6 @@ export function InvitationGate() {
           <FloatingLanterns count={10} className="opacity-65" active={!dissolving} />
           <Fireflies count={12} className="opacity-85" active={!dissolving} />
           <LanternReflection className="opacity-60" active={!dissolving} />
-          <CastleSilhouette className="absolute bottom-0 left-1/2 w-[180%] max-w-none -translate-x-1/2 opacity-28 sm:w-[140%]" />
           <div className="scroll-vignette absolute inset-0" />
         </motion.div>
       </div>
