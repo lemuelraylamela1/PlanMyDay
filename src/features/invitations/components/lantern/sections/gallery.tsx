@@ -3,12 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  type PanInfo,
-} from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, type PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
@@ -16,10 +11,7 @@ import { SectionHeading } from "../ui/section-heading";
 import { MagicDust } from "../effects/magic-dust";
 import { SceneAtmosphere } from "../effects/scene-atmosphere";
 import { useLanternContent } from "../content-context";
-import {
-  useLanternPerf,
-  useMainEffectsActive,
-} from "../performance/lantern-perf-provider";
+import { useLanternPerf, useMainEffectsActive } from "../performance/lantern-perf-provider";
 import { useNearViewport } from "../hooks/use-near-viewport";
 import { galleryImages, gallerySets, type GalleryImage } from "../media";
 
@@ -110,10 +102,7 @@ function GalleryLightbox({
   // Prefetch neighbors for snappy swipes.
   React.useEffect(() => {
     if (count < 2) return;
-    const neighbors = [
-      images[wrapIndex(index - 1, count)],
-      images[wrapIndex(index + 1, count)],
-    ];
+    const neighbors = [images[wrapIndex(index - 1, count)], images[wrapIndex(index + 1, count)]];
     for (const neighbor of neighbors) {
       if (!neighbor) continue;
       const img = new window.Image();
@@ -270,12 +259,12 @@ function GallerySlide({
 }: {
   image: GalleryImage;
   size: number;
-  onOpen: (image: GalleryImage) => void;
+  onOpen: () => void;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onOpen(image)}
+      onClick={onOpen}
       className="group relative shrink-0 overflow-hidden rounded-xl border border-[#2a1540]/10 bg-white/40 text-left shadow-[0_10px_28px_rgb(42_21_64_/_0.12)] outline-none transition hover:border-[#2a1540]/25 focus-visible:ring-2 focus-visible:ring-[#2a1540]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7efe8]"
       style={{ width: size, height: Math.round(size * (2 / 3)) }}
       aria-label={`View ${image.caption}`}
@@ -305,6 +294,13 @@ type GalleryRow = {
   duration: number;
 };
 
+type LightboxState = {
+  /** Row / layer the guest opened — swipe stays inside this set only. */
+  rowId: string;
+  images: GalleryImage[];
+  index: number;
+};
+
 export function Gallery() {
   const wedding = useLanternContent();
   const reduceMotion = useReducedMotion();
@@ -321,7 +317,7 @@ export function Gallery() {
       duration: Math.round(set.images.length * 10) + index * 8,
     })),
   );
-  const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
+  const [lightbox, setLightbox] = React.useState<LightboxState | null>(null);
   const showGallery = effectsActive && near;
 
   React.useEffect(() => {
@@ -335,37 +331,29 @@ export function Gallery() {
     );
   }, []);
 
-  const photos = React.useMemo(() => {
-    const seen = new Set<string>();
-    const list: GalleryImage[] = [];
-    for (const row of rows) {
-      for (const image of row.images) {
-        if (seen.has(image.src)) continue;
-        seen.add(image.src);
-        list.push(image);
-      }
-    }
-    return list.length > 0 ? list : galleryImages;
-  }, [rows]);
+  const totalPhotos = React.useMemo(
+    () => rows.reduce((sum, row) => sum + row.images.length, 0) || galleryImages.length,
+    [rows],
+  );
 
   const cardSize = compact ? 168 : 220;
   const gap = compact ? 12 : 16;
 
-  const openPhoto = React.useCallback(
-    (image: GalleryImage) => {
-      const found = photos.findIndex((photo) => photo.src === image.src);
-      setLightboxIndex(found >= 0 ? found : 0);
-    },
-    [photos],
-  );
+  const openPhoto = React.useCallback((row: GalleryRow, image: GalleryImage) => {
+    const found = row.images.findIndex((photo) => photo.src === image.src);
+    setLightbox({
+      rowId: row.id,
+      images: row.images,
+      index: found >= 0 ? found : 0,
+    });
+  }, []);
 
   return (
     <section
       id="gallery"
       className="relative overflow-hidden lantern-section cream-section"
       style={{
-        background:
-          "linear-gradient(180deg, #f7efe8 0%, #f3e4ea 48%, #f8f1eb 100%)",
+        background: "linear-gradient(180deg, #f7efe8 0%, #f3e4ea 48%, #f8f1eb 100%)",
         color: "#2a1540",
       }}
     >
@@ -381,11 +369,7 @@ export function Gallery() {
         />
       </div>
 
-      <div
-        ref={stageRef}
-        className="relative z-10 mt-8 w-full sm:mt-10"
-        aria-label="Photo gallery"
-      >
+      <div ref={stageRef} className="relative z-10 mt-8 w-full sm:mt-10" aria-label="Photo gallery">
         {showGallery ? (
           <div className="flex flex-col justify-center gap-3 sm:gap-4">
             {rows.map((row) => (
@@ -404,7 +388,7 @@ export function Gallery() {
                     key={`${row.id}-${image.src}`}
                     image={image}
                     size={cardSize}
-                    onOpen={openPhoto}
+                    onOpen={() => openPhoto(row, image)}
                   />
                 ))}
               </InfiniteSlider>
@@ -419,17 +403,18 @@ export function Gallery() {
         )}
       </div>
 
-      <p className="relative z-10 mt-5 text-center font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-[#2a1540]/45 sm:mt-6">
-        Drag to find · tap to open · swipe in fullscreen · {photos.length}{" "}
-        photographs
+      <p className="relative z-10 mt-5 text-center font-cinzel text-[12px] font-bold uppercase tracking-[0.28em] text-[#2a1540]/45 sm:mt-6">
+        Drag to find · Tap to open · Swipe stays in that row ·
       </p>
 
-      {lightboxIndex !== null ? (
+      {lightbox ? (
         <GalleryLightbox
-          images={photos}
-          index={lightboxIndex}
-          onIndexChange={setLightboxIndex}
-          onClose={() => setLightboxIndex(null)}
+          images={lightbox.images}
+          index={lightbox.index}
+          onIndexChange={(index) =>
+            setLightbox((current) => (current ? { ...current, index } : current))
+          }
+          onClose={() => setLightbox(null)}
         />
       ) : null}
     </section>

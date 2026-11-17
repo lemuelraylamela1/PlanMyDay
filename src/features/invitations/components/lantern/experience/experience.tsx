@@ -11,6 +11,7 @@ import {
   LanternPerfProvider,
   MainEffectsProvider,
 } from "../performance/lantern-perf-provider";
+import { useInviteViewport } from "../hooks/use-is-mobile";
 
 function OpeningFallback() {
   return (
@@ -42,6 +43,7 @@ const SmoothScroll = dynamic(
 
 function ExperienceShell({ children }: { children: React.ReactNode }) {
   const { phase } = useExperience();
+  const { width, height, isMobile, isCompact, isShort } = useInviteViewport();
   const revealed = phase === "revealed";
   const transitionActive = phase === "opening";
 
@@ -52,6 +54,19 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
       void import("./opening-sequence");
     }
   }, [phase]);
+
+  // Broadcast live phone screen metrics so section CSS can keep alignment intact.
+  React.useEffect(() => {
+    const root = document.querySelector(".invite-root") as HTMLElement | null;
+    if (!root) return;
+    const vvW = width || window.innerWidth;
+    const vvH = height || window.innerHeight;
+    root.style.setProperty("--invite-vvw", `${vvW}px`);
+    root.style.setProperty("--invite-vvh", `${vvH}px`);
+    root.dataset.inviteMobile = isMobile ? "true" : "false";
+    root.dataset.inviteCompact = isCompact ? "true" : "false";
+    root.dataset.inviteShort = isShort ? "true" : "false";
+  }, [width, height, isMobile, isCompact, isShort]);
 
   return (
     <LanternPerfProvider transitionActive={transitionActive}>

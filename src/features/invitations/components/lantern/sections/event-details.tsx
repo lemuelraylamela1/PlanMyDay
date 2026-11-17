@@ -92,11 +92,7 @@ export function EventDetails() {
           </p>
           <h3 className="mt-2 font-display text-2xl font-light text-cream sm:text-4xl">
             {venue.name}
-            {venue.city ? `, ${venue.city}` : ""}
           </h3>
-          <p className="mt-2 font-serif text-sm italic text-cream/80 sm:text-base">
-            {venue.address}
-          </p>
         </motion.div>
 
         <motion.figure
@@ -139,12 +135,7 @@ export function EventDetails() {
             {venue.parkingNote ?? "Lots of parking spaces available on site"}
           </p>
 
-          <a
-            href={mapsLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex"
-          >
+          <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex">
             <GoldButton variant="outline" size="sm" className="gap-2">
               Open in Google Maps
               <ExternalLink className="h-3.5 w-3.5" />

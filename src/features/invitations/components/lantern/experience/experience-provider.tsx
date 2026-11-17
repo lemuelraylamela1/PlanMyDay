@@ -19,8 +19,8 @@ type ExperienceContextValue = {
   ambientSuspended: boolean;
   setAmbientSuspended: (suspended: boolean) => void;
   /**
-   * Start ambient music in the same user gesture as "Open Invitation".
-   * Must be called synchronously from the click handler.
+   * Start ambient music unmuted in the same user gesture as "Open Invitation".
+   * Clears any prior mute preference. Must be called synchronously from the click handler.
    */
   beginMusic: () => void;
   /** MusicPlayer registers the real starter so beginMusic can unlock audio. */
@@ -119,6 +119,13 @@ export function ExperienceProvider({
   );
 
   const beginMusic = React.useCallback(() => {
+    // Always unmute when the guest opens the invitation (same gesture).
+    setMuted(false);
+    try {
+      window.localStorage.setItem(MUTE_KEY, "false");
+    } catch {
+      /* private mode / blocked storage */
+    }
     setMusicEnabled(true);
     musicStarterRef.current?.();
   }, []);

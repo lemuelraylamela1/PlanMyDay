@@ -1,30 +1,44 @@
-/** Full-bleed rotating hero after the lantern sky section. */
-export const portraitHeroImages = [
-  {
-    src: "/proposal-photos/hero-01.jpg",
-    alt: "A quiet moment inside the carriage",
-    objectPosition: "50% 42%",
-    mobileObjectPosition: "50% 36%",
-  },
-  {
-    src: "/proposal-photos/hero-08.jpg",
-    alt: "Beside the royal carriage at Fernwood Gardens",
-    objectPosition: "55% 48%",
-    mobileObjectPosition: "62% 40%",
-  },
-  {
-    src: "/proposal-photos/hero-10.jpg",
-    alt: "Walking hand in hand before Fernwood Gardens",
-    objectPosition: "50% 48%",
-    mobileObjectPosition: "52% 40%",
-  },
-  {
-    src: "/proposal-photos/hero-09.jpg",
-    alt: "Together beside their carriage",
-    objectPosition: "50% 40%",
-    mobileObjectPosition: "52% 34%",
-  },
-] as const;
+/** One full-bleed portrait-hero slide. */
+export interface PortraitHeroImage {
+  src: string;
+  alt: string;
+  objectPosition: string;
+  mobileObjectPosition: string;
+}
+
+/**
+ * Full-bleed rotating hero after the lantern sky section.
+ * Pulls every photo from `public/gallery/1`, `2`, and `3`.
+ */
+export const portraitHeroImages: PortraitHeroImage[] = [
+  ...Array.from({ length: 17 }, (_, index) => {
+    const n = String(index + 1).padStart(2, "0");
+    return {
+      src: `/gallery/1/${n}.jpg`,
+      alt: `Gallery moment ${n}`,
+      objectPosition: "50% 42%",
+      mobileObjectPosition: "50% 36%",
+    };
+  }),
+  ...Array.from({ length: 14 }, (_, index) => {
+    const n = String(index + 1).padStart(2, "0");
+    return {
+      src: `/gallery/2/${n}.jpg`,
+      alt: `Gallery moment ${n}`,
+      objectPosition: "50% 45%",
+      mobileObjectPosition: "50% 38%",
+    };
+  }),
+  ...Array.from({ length: 16 }, (_, index) => {
+    const n = String(index + 1).padStart(2, "0");
+    return {
+      src: `/gallery/3/${n}.jpg`,
+      alt: `Gallery moment ${n}`,
+      objectPosition: "50% 44%",
+      mobileObjectPosition: "50% 37%",
+    };
+  }),
+];
 
 /** Single gallery photo. */
 export interface GalleryImage {
@@ -44,30 +58,104 @@ function galleryRow(
   id: string,
   title: string,
   description: string,
-  count: number,
+  captions: readonly string[],
 ): GallerySet {
   return {
     id,
     title,
     description,
-    images: Array.from({ length: count }, (_, index) => {
+    images: captions.map((caption, index) => {
       const n = String(index + 1).padStart(2, "0");
       return {
         src: `/gallery/${id}/${n}.jpg`,
-        caption: `${title} · ${n}`,
+        caption,
       };
     }),
   };
 }
 
+/** Fairytale blue gown + prince whites at Fernwood. */
+const FAIRYTALE_CAPTIONS = [
+  "At the Fernwood Gates",
+  "A Promise in Gold Light",
+  "Royal Courtyard",
+  "Hand in Hand",
+  "Carriage Awaits",
+  "Once Upon Fernwood",
+  "Twirl of the Blue Gown",
+  "Looking Back Together",
+  "Beneath the Crest",
+  "Prince and His Love",
+  "Steps Toward Forever",
+  "Fairytale Portrait",
+  "Golden Hour Royalty",
+  "The Ball Begins",
+  "Spinning Into Forever",
+  "Side by Side",
+  "Happily Ever After",
+] as const;
+
+/** Blush gown + garden conservatory romance. */
+const GARDEN_CAPTIONS = [
+  "Through the Conservatory",
+  "Among the Ferns",
+  "Soft Peach Light",
+  "Glasshouse Vows",
+  "Lush and In Love",
+  "Staircase Serenade",
+  "Seated in Bloom",
+  "Emerald Embrace",
+  "Botanical Romance",
+  "Quiet Glance",
+  "Under Glass Skies",
+  "Garden Whispers",
+  "Petals and Promises",
+  "Forever in Bloom",
+] as const;
+
+/** Twilight, night, and intimate outdoor frames. */
+const TWILIGHT_CAPTIONS = [
+  "Under the Night Sky",
+  "Golden Deck Light",
+  "Soft Evening Glow",
+  "Close Enough to Dream",
+  "Lantern Hour",
+  "Whispered Forever",
+  "Sunset Between Us",
+  "Eyes Only for You",
+  "Warm Against the Dusk",
+  "Held in Twilight",
+  "A Quiet Promise",
+  "Stars Above Fernwood",
+  "Nightfall Romance",
+  "Stillness and You",
+  "Moonlit Softness",
+  "Our Forever Night",
+] as const;
+
 /**
  * Our Gallery — 3 infinite rows from folders `public/gallery/1|2|3`.
- * Folder 1 → top row, 2 → middle, 3 → bottom.
+ * Folder 1 → fairytale, 2 → garden, 3 → twilight.
  */
 export const gallerySets: GallerySet[] = [
-  galleryRow("1", "Row One", "First gallery row.", 17),
-  galleryRow("2", "Row Two", "Second gallery row.", 14),
-  galleryRow("3", "Row Three", "Third gallery row.", 16),
+  galleryRow(
+    "1",
+    "Fairytale",
+    "Royal moments at Fernwood Gardens.",
+    FAIRYTALE_CAPTIONS,
+  ),
+  galleryRow(
+    "2",
+    "Garden",
+    "Romance in the conservatory.",
+    GARDEN_CAPTIONS,
+  ),
+  galleryRow(
+    "3",
+    "Twilight",
+    "Evening light and quiet vows.",
+    TWILIGHT_CAPTIONS,
+  ),
 ];
 
 /** Flat list of all gallery photos. */

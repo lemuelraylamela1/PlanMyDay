@@ -62,7 +62,8 @@ export function MusicPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.muted = muted;
+    // Open Invitation always starts audible; mute toggle can silence afterward.
+    audio.muted = false;
     if (!startedRef.current) {
       audio.currentTime = 0;
       startedRef.current = true;
@@ -75,6 +76,7 @@ export function MusicPlayer() {
         .then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS))
         .catch(() => {
           const resume = () => {
+            audio.muted = false;
             audio
               .play()
               .then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS))
@@ -84,7 +86,7 @@ export function MusicPlayer() {
           window.addEventListener("pointerdown", resume, { once: true });
         });
     }
-  }, [fadeTo, muted]);
+  }, [fadeTo]);
 
   // Register starter so Open Invitation can unlock audio in the same gesture.
   React.useEffect(() => {

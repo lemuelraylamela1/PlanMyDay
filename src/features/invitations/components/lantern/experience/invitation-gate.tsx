@@ -10,8 +10,10 @@ import { MagicDust } from "../effects/magic-dust";
 import { LanternReflection } from "../effects/lantern-reflection";
 import { Fireflies } from "../effects/fireflies";
 import { useMounted } from "../hooks/use-mounted";
+import { useInviteViewport } from "../hooks/use-is-mobile";
 import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
+import { cn } from "@/lib/utils";
 import {
   OrnateFiligreeBanner,
   OrnateScrollRod,
@@ -51,6 +53,7 @@ export function InvitationGate() {
   const { guestName, open, beginMusic, reducedMotion } = useExperience();
   const mounted = useMounted();
   const wedding = useLanternContent();
+  const { isMobile, isCompact, isShort, height } = useInviteViewport();
 
   const [unrolled, setUnrolled] = React.useState(false);
   const [dissolving, setDissolving] = React.useState(false);
@@ -61,7 +64,7 @@ export function InvitationGate() {
 
   const handleOpen = React.useCallback(() => {
     if (dissolving) return;
-    // Start ambient music in the same user gesture as the click.
+    // Start ambient music unmuted in the same user gesture as the click.
     beginMusic();
     if (reducedMotion) {
       open();
@@ -83,6 +86,8 @@ export function InvitationGate() {
         WebkitOverflowScrolling: "touch",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         paddingTop: "env(safe-area-inset-top, 0px)",
+        // Prefer live visual viewport height on mobile browsers.
+        minHeight: height ? `${height}px` : undefined,
       }}
       initial={{ opacity: 1 }}
       exit={{
@@ -151,9 +156,29 @@ export function InvitationGate() {
         </motion.div>
       </div>
 
-      <div className="relative z-10 flex min-h-[100svh] min-h-[100dvh] w-full items-center justify-center px-3 py-[max(1.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-10">
+      <div
+        className={cn(
+          "relative z-10 flex w-full items-center justify-center",
+          isCompact ? "px-2.5" : isMobile ? "px-3.5" : "px-5",
+          isShort
+            ? "py-[max(0.85rem,env(safe-area-inset-top))]"
+            : "py-[max(1.5rem,env(safe-area-inset-top))] sm:py-10",
+        )}
+        style={{
+          minHeight: height
+            ? `${height}px`
+            : "100svh",
+        }}
+      >
         <motion.div
-          className="relative w-full max-w-[min(100%,20.5rem)] min-[380px]:max-w-[min(100%,22rem)] sm:max-w-md"
+          className={cn(
+            "relative w-full",
+            isCompact
+              ? "max-w-[min(100%,19.25rem)]"
+              : isMobile
+                ? "max-w-[min(100%,21.5rem)]"
+                : "max-w-md",
+          )}
           initial={mounted ? { opacity: 0, y: -28, scale: 0.94 } : false}
           animate={
             mounted
@@ -171,7 +196,7 @@ export function InvitationGate() {
         >
           <motion.div
             animate={
-              mounted && !reducedMotion && !dissolving
+              mounted && !reducedMotion && !dissolving && !isShort
                 ? { y: [0, -6, 0] }
                 : undefined
             }
@@ -185,7 +210,16 @@ export function InvitationGate() {
             <OrnateScrollRod position="top" />
 
             <motion.div
-              className="parchment parchment-edges ornate-scroll-body relative overflow-hidden px-5 py-8 text-center min-[380px]:px-7 min-[380px]:py-10 sm:px-10 sm:py-12"
+              className={cn(
+                "parchment parchment-edges ornate-scroll-body relative overflow-hidden text-center",
+                isCompact
+                  ? "px-4 py-6"
+                  : isShort
+                    ? "px-5 py-7"
+                    : isMobile
+                      ? "px-6 py-8"
+                      : "px-10 py-12",
+              )}
               style={{ transformOrigin: "center", willChange: "transform" }}
               initial={mounted ? { scaleY: reducedMotion ? 1 : 0 } : false}
               animate={mounted ? { scaleY: 1 } : false}
@@ -211,27 +245,50 @@ export function InvitationGate() {
               >
                 <OrnateFiligreeBanner position="top" />
 
-                <motion.div variants={item} className="mb-3 flex justify-center sm:mb-4">
-                  <OrnateWaxSeal />
+                <motion.div
+                  variants={item}
+                  className={cn(
+                    "flex justify-center",
+                    isShort ? "mb-2" : "mb-3 sm:mb-4",
+                  )}
+                >
+                  <OrnateWaxSeal
+                    className={isCompact ? "h-12 w-12 sm:h-16 sm:w-16" : undefined}
+                  />
                 </motion.div>
 
                 <motion.p
                   variants={item}
-                  className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.36em] text-[#9c6b1a] sm:text-[10px] sm:tracking-[0.42em]"
+                  className={cn(
+                    "font-cinzel font-semibold uppercase text-[#7a5210]",
+                    isCompact
+                      ? "text-[10px] tracking-[0.28em]"
+                      : "text-[10px] tracking-[0.32em] sm:text-[11px] sm:tracking-[0.42em]",
+                  )}
                 >
                   {wedding.invitation.eyebrow}
                 </motion.p>
 
                 <motion.h1
                   variants={item}
-                  className="mt-3 font-display text-[1.85rem] font-light leading-tight tracking-[-0.02em] text-[#3a2410] min-[380px]:text-4xl sm:mt-4 sm:text-5xl"
+                  className={cn(
+                    "font-display font-light leading-tight tracking-[-0.02em] text-[#3a2410]",
+                    isCompact
+                      ? "mt-2 text-[1.65rem]"
+                      : isShort
+                        ? "mt-2.5 text-[1.85rem]"
+                        : "mt-3 text-[1.95rem] min-[380px]:text-4xl sm:mt-4 sm:text-5xl",
+                  )}
                 >
                   {coupleNames(wedding, "&")}
                 </motion.h1>
 
                 <motion.div
                   variants={item}
-                  className="my-4 flex items-center justify-center gap-3 sm:my-5"
+                  className={cn(
+                    "flex items-center justify-center gap-3",
+                    isShort ? "my-3" : "my-4 sm:my-5",
+                  )}
                 >
                   <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#b8860b]/70 sm:w-12" />
                   <svg
@@ -246,23 +303,39 @@ export function InvitationGate() {
 
                 <motion.p
                   variants={item}
-                  className="mt-4 font-script text-[1.85rem] leading-none text-[#3a2410] sm:mt-5 sm:text-[2.35rem]"
+                  className={cn(
+                    "font-script leading-none text-[#3a2410]",
+                    isCompact
+                      ? "mt-3 text-[1.55rem]"
+                      : "mt-4 text-[1.85rem] sm:mt-5 sm:text-[2.35rem]",
+                  )}
                 >
                   {guestName}
                 </motion.p>
 
                 <motion.p
                   variants={item}
-                  className="mt-3 font-serif text-[0.92rem] leading-[1.7] text-[#4a3218]/90 sm:mt-4 sm:text-[1.02rem] sm:leading-[1.85]"
+                  className={cn(
+                    "font-serif leading-[1.7] text-[#4a3218]",
+                    isCompact
+                      ? "mt-2.5 text-[0.9rem]"
+                      : "mt-3 text-[0.95rem] sm:mt-4 sm:text-[1.02rem] sm:leading-[1.85]",
+                  )}
                 >
                   {wedding.invitation.body}
                 </motion.p>
 
-                <motion.div variants={item} className="mt-7 sm:mt-9">
+                <motion.div
+                  variants={item}
+                  className={cn(isShort ? "mt-5" : "mt-7 sm:mt-9")}
+                >
                   <GoldButton
                     size="lg"
                     onClick={handleOpen}
-                    className="h-12 px-8 text-xs sm:h-14 sm:px-10 sm:text-sm"
+                    className={cn(
+                      "text-xs sm:text-sm",
+                      isCompact ? "h-11 px-7" : "h-12 px-8 sm:h-14 sm:px-10",
+                    )}
                   >
                     Open Invitation
                   </GoldButton>
@@ -270,12 +343,17 @@ export function InvitationGate() {
 
                 <motion.p
                   variants={item}
-                  className="mt-3 font-sans text-[9px] uppercase tracking-[0.24em] text-[#9c6b1a]/70 sm:mt-4 sm:text-[10px] sm:tracking-[0.28em]"
+                  className={cn(
+                    "mx-auto max-w-[18rem] font-sans font-semibold uppercase leading-snug text-[#5c3a12]",
+                    isCompact
+                      ? "mt-3 px-1 text-[11px] tracking-[0.12em]"
+                      : "mt-3.5 px-2 text-[11px] tracking-[0.14em] sm:mt-4 sm:max-w-none sm:text-xs sm:tracking-[0.18em]",
+                  )}
                 >
-                  Tap to release the lanterns - music will play
+                  Tap to release the lanterns — music will play
                 </motion.p>
 
-                <div className="mt-5">
+                <div className={cn(isShort ? "mt-3" : "mt-5")}>
                   <OrnateFiligreeBanner position="bottom" />
                 </div>
               </motion.div>

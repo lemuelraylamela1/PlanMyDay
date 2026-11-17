@@ -156,6 +156,13 @@ function ChapterPhoto({ chapter }: { chapter: StoryChapter }) {
   );
 }
 
+/** Slow crawl so guests can read comfortably on phones. */
+const STORY_AUTO_SCROLL_PX_PER_SEC = 9;
+
+/**
+ * Whole parchment content (header + body + footer) slowly crawls upward.
+ * Guests can drag up/down to re-read anytime.
+ */
 function ChapterParchment({
   chapter,
   index,
@@ -165,22 +172,292 @@ function ChapterParchment({
   index: number;
   total: number;
 }) {
+  const viewportRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const offsetRef = React.useRef(0);
+  const maxOffsetRef = React.useRef(0);
+  const frameRef = React.useRef<number | null>(null);
+  const lastTsRef = React.useRef<number | null>(null);
+  const autoRef = React.useRef(true);
+  const dragRef = React.useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startOffset: number;
+    axis: null | "vertical" | "horizontal";
+  } | null>(null);
+  const resumeTimerRef = React.useRef<number | null>(null);
+
+  const [offset, setOffset] = React.useState(0);
+  const [maxOffset, setMaxOffset] = React.useState(0);
+  const [dragging, setDragging] = React.useState(false);
+
+  const contentKey = `${chapter.chapter}-${chapter.title}-${chapter.description}`;
+
+  const applyOffset = React.useCallback((value: number) => {
+    const next = Math.min(maxOffsetRef.current, Math.max(0, value));
+    offsetRef.current = next;
+    setOffset(next);
+    return next;
+  }, []);
+
+  const measure = React.useCallback(() => {
+    const viewport = viewportRef.current;
+    const content = contentRef.current;
+    if (!viewport || !content) return;
+    const max = Math.max(0, content.scrollHeight - viewport.clientHeight);
+    maxOffsetRef.current = max;
+    setMaxOffset(max);
+    if (offsetRef.current > max) applyOffset(max);
+  }, [applyOffset]);
+
+  const stopLoop = React.useCallback(() => {
+    if (frameRef.current != null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    lastTsRef.current = null;
+  }, []);
+
+  const tick = React.useCallback(
+    (now: number) => {
+      if (!autoRef.current || dragRef.current) {
+        frameRef.current = null;
+        return;
+      }
+      if (maxOffsetRef.current <= 0) {
+        frameRef.current = null;
+        return;
+      }
+
+      if (lastTsRef.current == null) lastTsRef.current = now;
+      const dt = Math.min(48, now - lastTsRef.current) / 1000;
+      lastTsRef.current = now;
+
+      const next = applyOffset(
+        offsetRef.current + STORY_AUTO_SCROLL_PX_PER_SEC * dt,
+      );
+
+      if (next < maxOffsetRef.current - 0.5) {
+        frameRef.current = requestAnimationFrame(tick);
+      } else {
+        frameRef.current = null;
+        autoRef.current = false;
+      }
+    },
+    [applyOffset],
+  );
+
+  const startAuto = React.useCallback(() => {
+    autoRef.current = true;
+    if (frameRef.current != null) return;
+    if (maxOffsetRef.current <= 0) return;
+    if (offsetRef.current >= maxOffsetRef.current - 0.5) return;
+    lastTsRef.current = null;
+    frameRef.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  const pauseAuto = React.useCallback(() => {
+    autoRef.current = false;
+    stopLoop();
+    if (resumeTimerRef.current != null) {
+      window.clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
+  }, [stopLoop]);
+
+  const scheduleResume = React.useCallback(() => {
+    if (resumeTimerRef.current != null) {
+      window.clearTimeout(resumeTimerRef.current);
+    }
+    resumeTimerRef.current = window.setTimeout(() => {
+      resumeTimerRef.current = null;
+      startAuto();
+    }, 1800);
+  }, [startAuto]);
+
+  React.useLayoutEffect(() => {
+    offsetRef.current = 0;
+    setOffset(0);
+    autoRef.current = true;
+    measure();
+    const id = window.setTimeout(() => {
+      measure();
+      startAuto();
+    }, 360);
+    return () => {
+      window.clearTimeout(id);
+      pauseAuto();
+    };
+  }, [contentKey, measure, startAuto, pauseAuto]);
+
+  React.useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            measure();
+            if (autoRef.current) startAuto();
+          })
+        : null;
+    ro?.observe(viewport);
+    if (contentRef.current) ro?.observe(contentRef.current);
+    return () => ro?.disconnect();
+  }, [measure, startAuto]);
+
+  React.useEffect(
+    () => () => {
+      stopLoop();
+      if (resumeTimerRef.current != null) {
+        window.clearTimeout(resumeTimerRef.current);
+      }
+    },
+    [stopLoop],
+  );
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    // Do not stopPropagation here — horizontal drags must reach PageFlip to turn pages.
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffset: offsetRef.current,
+      axis: null,
+    };
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+
+    if (drag.axis === null) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      drag.axis = Math.abs(dy) > Math.abs(dx) ? "vertical" : "horizontal";
+      if (drag.axis === "horizontal") {
+        // Hand the gesture to PageFlip for page turns.
+        dragRef.current = null;
+        setDragging(false);
+        return;
+      }
+      pauseAuto();
+      setDragging(true);
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        /* already released */
+      }
+    }
+
+    if (drag.axis !== "vertical") return;
+    event.stopPropagation();
+    event.preventDefault();
+    applyOffset(drag.startOffset + (drag.startY - event.clientY));
+  };
+
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const wasVertical = drag.axis === "vertical";
+    dragRef.current = null;
+    setDragging(false);
+    if (!wasVertical) return;
+    // Only swallow the event when we owned a vertical read-drag.
+    event.stopPropagation();
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* already released */
+    }
+    scheduleResume();
+  };
+
+  const progress = maxOffset > 0 ? offset / maxOffset : 0;
+
   return (
-    <div className="story-book-page relative flex h-full w-full flex-col overflow-hidden px-5 py-5 sm:px-6 sm:py-6">
+    <div className="story-book-page relative h-full w-full min-h-0 overflow-hidden">
       <span aria-hidden className="parchment-grain pointer-events-none absolute inset-0 opacity-80" />
-      <p className="relative font-cinzel text-[9px] font-semibold uppercase tracking-[0.36em] text-[#b06b7a]">
-        {chapter.chapter}
-      </p>
-      <h4 className="relative mt-2 font-display text-[1.35rem] font-semibold leading-tight tracking-[-0.02em] text-[#2a1540] sm:text-[1.5rem]">
-        {chapter.title}
-      </h4>
-      <p className="relative mt-1 font-serif text-sm italic text-[#9a6b3a]">{chapter.date}</p>
-      <p className="relative mt-3 flex-1 font-serif text-[0.86rem] leading-[1.7] text-[#4a3218] sm:text-[0.92rem] sm:leading-[1.75]">
-        {chapter.description}
-      </p>
-      <p className="relative mt-3 font-cinzel text-[8px] uppercase tracking-[0.32em] text-[#9a6b3a]/70">
-        {index + 1} / {total}
-      </p>
+
+      <div
+        ref={viewportRef}
+        className={cn(
+          "story-book-page-scroll absolute inset-0 z-[1] overflow-hidden px-4 py-4 sm:px-6 sm:py-6",
+          dragging ? "cursor-grabbing" : "cursor-grab",
+        )}
+        style={{ touchAction: "pan-x pan-y" }}
+        role="region"
+        aria-label="Chapter story. Drag up or down to read, sideways to turn pages."
+        aria-valuemin={0}
+        aria-valuemax={Math.round(maxOffset)}
+        aria-valuenow={Math.round(offset)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onWheel={(event) => {
+          // Vertical wheel reads the chapter; don't block horizontal page UX.
+          if (Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+          event.stopPropagation();
+          pauseAuto();
+          applyOffset(offsetRef.current + event.deltaY * 0.45);
+          scheduleResume();
+        }}
+      >
+        <div
+          ref={contentRef}
+          className="will-change-transform"
+          style={{
+            transform: `translate3d(0, ${-offset}px, 0)`,
+            transition: dragging ? "none" : undefined,
+          }}
+        >
+          <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.36em] text-[#b06b7a]">
+            {chapter.chapter}
+          </p>
+          <h4 className="mt-2 font-display text-[1.25rem] font-semibold leading-tight tracking-[-0.02em] text-[#2a1540] sm:text-[1.5rem]">
+            {chapter.title}
+          </h4>
+          <p className="mt-1 font-serif text-sm italic text-[#9a6b3a]">
+            {chapter.date}
+          </p>
+          <p className="mt-3 font-serif text-[0.86rem] leading-[1.7] text-[#4a3218] sm:text-[0.92rem] sm:leading-[1.75]">
+            {chapter.description}
+          </p>
+          <p className="mt-4 pb-2 font-cinzel text-[8px] uppercase tracking-[0.32em] text-[#9a6b3a]/70">
+            {index + 1} / {total}
+            <span className="ml-2 normal-case tracking-normal text-[#9a6b3a]/55">
+              · drag to read
+            </span>
+          </p>
+        </div>
+      </div>
+
+      {maxOffset > 4 ? (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-2 right-1.5 z-[2] w-1 rounded-full bg-[#9a6b3a]/15"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute right-1.5 z-[2] w-1 rounded-full bg-[#9a6b3a]/65"
+            style={{
+              top: `calc(${progress * 72}% + 8px)`,
+              height: "22%",
+            }}
+          />
+          {offset < maxOffset - 2 ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-8 bg-gradient-to-t from-[#efdcb6] to-transparent"
+            />
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }
@@ -247,8 +524,8 @@ export function StoryBook({ className }: { className?: string }) {
   const [turned, setTurned] = React.useState(0);
   const hasTurned = turned > 0;
 
-  const pageWidth = compact ? 168 : 290;
-  const pageHeight = compact ? 248 : 410;
+  const pageWidth = compact ? 172 : 290;
+  const pageHeight = compact ? 280 : 410;
 
   const pages = React.useMemo(
     () =>

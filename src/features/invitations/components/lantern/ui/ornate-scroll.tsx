@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useInviteViewport } from "../hooks/use-is-mobile";
 
 export function OrnateScrollRod({ position }: { position: "top" | "bottom" }) {
   return (
@@ -108,18 +109,41 @@ export function OrnateScroll({
   children: React.ReactNode;
   className?: string;
 }) {
+  const { isCompact, isMobile, isShort } = useInviteViewport();
+
   return (
-    <div className={cn("relative mx-auto w-full max-w-xl", className)}>
+    <div
+      className={cn(
+        "relative mx-auto w-full",
+        isCompact ? "max-w-[22rem]" : "max-w-xl",
+        className,
+      )}
+    >
       <OrnateScrollRod position="top" />
 
-      <div className="parchment parchment-edges ornate-scroll-body relative overflow-hidden px-5 py-8 sm:px-9 sm:py-11">
+      <div
+        className={cn(
+          "parchment parchment-edges ornate-scroll-body relative overflow-hidden",
+          isCompact
+            ? "px-4 py-6"
+            : isShort
+              ? "px-5 py-7"
+              : isMobile
+                ? "px-5 py-8"
+                : "px-9 py-11",
+        )}
+      >
         <span aria-hidden className="parchment-grain pointer-events-none absolute inset-0" />
         <OrnateSideFiligree side="left" />
         <OrnateSideFiligree side="right" />
 
         <div className="relative z-10">
           <OrnateFiligreeBanner position="top" />
-          <OrnateWaxSeal className="mb-4 sm:mb-5" />
+          <OrnateWaxSeal
+            className={cn(
+              isCompact ? "mb-3 h-12 w-12" : "mb-4 sm:mb-5",
+            )}
+          />
           {children}
           <OrnateFiligreeBanner position="bottom" />
         </div>

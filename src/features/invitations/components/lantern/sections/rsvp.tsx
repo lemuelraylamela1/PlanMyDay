@@ -24,9 +24,9 @@ import {
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
 const labelCls =
-  "font-cinzel text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8a5a1e]";
+  "font-cinzel text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6b4810] sm:text-[10px] sm:tracking-[0.28em]";
 const inputCls =
-  "w-full rounded-xl border border-[#b8860b]/30 bg-[#fffaf0]/80 px-4 py-3.5 font-serif text-[1.05rem] leading-relaxed text-[#3a2410] outline-none transition placeholder:text-[#3a2410]/40 focus:border-[#b8860b]/60 focus:ring-2 focus:ring-[#b8860b]/20";
+  "w-full rounded-xl border border-[#b8860b]/30 bg-[#fffaf0]/80 px-3.5 py-3.5 font-serif text-[1.05rem] leading-relaxed text-[#3a2410] outline-none transition placeholder:text-[#3a2410]/45 focus:border-[#b8860b]/60 focus:ring-2 focus:ring-[#b8860b]/20 min-[380px]:px-4";
 const errCls = "mt-1 text-center font-sans text-sm text-[#9b1c1c]";
 
 const statusHeadline: Record<Exclude<RsvpStatusValue, "PENDING">, string> = {
@@ -195,7 +195,7 @@ export function Rsvp({ token, guest, response }: Props) {
       />
       <div aria-hidden className="scroll-vignette pointer-events-none absolute inset-0 opacity-80" />
 
-      <div className="relative z-10 mx-auto max-w-2xl px-3 sm:px-6">
+      <div className="relative z-10 mx-auto max-w-2xl px-2.5 min-[380px]:px-3 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -204,17 +204,17 @@ export function Rsvp({ token, guest, response }: Props) {
           className="relative"
         >
           <OrnateScroll>
-            <header className="mb-7 flex flex-col items-center text-center sm:mb-8">
-              <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.42em] text-[#8a5a1e]">
+            <header className="mb-6 flex flex-col items-center text-center sm:mb-8">
+              <p className="font-cinzel text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6b4810] sm:text-[10px] sm:tracking-[0.42em]">
                 {wedding.rsvp.eyebrow}
               </p>
-              <h2 className="mt-3 font-display text-[2rem] font-light leading-[1.08] tracking-[-0.02em] text-[#3a2410] min-[380px]:text-[2.35rem] sm:text-5xl">
+              <h2 className="mt-3 font-display text-[1.85rem] font-light leading-[1.08] tracking-[-0.02em] text-[#3a2410] min-[380px]:text-[2.35rem] sm:text-5xl">
                 {wedding.rsvp.title}
               </h2>
-              <p className="mt-3 max-w-md font-serif text-[0.98rem] italic leading-relaxed text-[#4a3218]/85 sm:text-lg">
+              <p className="mt-3 max-w-md font-serif text-[0.98rem] italic leading-relaxed text-[#4a3218] sm:text-lg">
                 {wedding.rsvp.intro}
               </p>
-              <p className="mt-4 font-cinzel text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8a5a1e]/85">
+              <p className="mt-4 font-cinzel text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6b4810] sm:text-[10px] sm:tracking-[0.3em]">
                 Kindly respond by {wedding.rsvp.deadline}
               </p>
             </header>
