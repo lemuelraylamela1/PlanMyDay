@@ -194,22 +194,28 @@ export function FloatingLanterns({
 
   const lanterns = React.useMemo<Lantern[]>(
     () =>
-      Array.from({ length: safeCount }, (_, i) => ({
-        left: (i / Math.max(safeCount, 1)) * 100 + (seededUnit(i, 1) * 6 - 3),
-        size:
-          (seededUnit(i, 2) * (intensity === "festival" ? 22 : 18) +
-            (intensity === "festival" ? 14 : 16)) *
-          sizeScale,
-        delay: seededUnit(i, 3) * (intensity === "festival" ? 6 : 9),
-        duration: seededUnit(i, 4) * 8 + (intensity === "festival" ? 16 : 18),
-        drift:
-          seededUnit(i, 5) * (intensity === "festival" ? 48 : 36) -
-          (intensity === "festival" ? 24 : 18),
-        sway: seededUnit(i, 6) * 5 + 2.5,
-        swayDuration: seededUnit(i, 8) * 3 + 4.5,
-        opacity:
-          seededUnit(i, 7) * 0.28 + (intensity === "festival" ? 0.58 : 0.52),
-      })),
+      Array.from({ length: safeCount }, (_, i) => {
+        const duration =
+          seededUnit(i, 4) * 8 + (intensity === "festival" ? 16 : 18);
+        // Negative delay = already mid-rise on first paint (no bottom pop-in).
+        const delay = -(seededUnit(i, 3) * duration);
+        return {
+          left: (i / Math.max(safeCount, 1)) * 100 + (seededUnit(i, 1) * 6 - 3),
+          size:
+            (seededUnit(i, 2) * (intensity === "festival" ? 22 : 18) +
+              (intensity === "festival" ? 14 : 16)) *
+            sizeScale,
+          delay,
+          duration,
+          drift:
+            seededUnit(i, 5) * (intensity === "festival" ? 48 : 36) -
+            (intensity === "festival" ? 24 : 18),
+          sway: seededUnit(i, 6) * 5 + 2.5,
+          swayDuration: seededUnit(i, 8) * 3 + 4.5,
+          opacity:
+            seededUnit(i, 7) * 0.28 + (intensity === "festival" ? 0.58 : 0.52),
+        };
+      }),
     [safeCount, intensity, sizeScale],
   );
 
@@ -226,7 +232,7 @@ export function FloatingLanterns({
           className="absolute bottom-0 will-change-transform"
           style={{
             left: `${l.left}%`,
-            animation: `lantern-rise ${l.duration}s linear ${l.delay}s infinite`,
+            animation: `lantern-rise ${l.duration}s linear ${l.delay}s infinite both`,
             "--lantern-drift": `${l.drift}px`,
             "--lantern-opacity": String(l.opacity),
           } as React.CSSProperties}
@@ -234,7 +240,7 @@ export function FloatingLanterns({
           <div
             className="will-change-transform"
             style={{
-              animation: `lantern-sway ${l.swayDuration}s ease-in-out ${l.delay}s infinite`,
+              animation: `lantern-sway ${l.swayDuration}s ease-in-out ${l.delay}s infinite both`,
               "--lantern-sway": `${l.sway}deg`,
             } as React.CSSProperties}
           >
