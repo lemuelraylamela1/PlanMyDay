@@ -23,7 +23,7 @@ function CoverFront({ title, names }: { title: string; names: string }) {
       <span aria-hidden className="story-book-corner story-book-corner-br" />
 
       <div className="relative z-[1] flex w-full flex-col items-center px-2">
-        <p className="font-cinzel text-[8px] font-semibold uppercase tracking-[0.46em] text-[#f0c4cc] sm:text-[9px] sm:tracking-[0.5em]">
+        <p className="hidden font-cinzel text-[8px] font-semibold uppercase tracking-[0.46em] text-[#f0c4cc] sm:block sm:text-[9px] sm:tracking-[0.5em]">
           Once upon a time
         </p>
 
@@ -99,7 +99,7 @@ function CoverFront({ title, names }: { title: string; names: string }) {
           className="story-book-ornament mt-4 h-3 w-[3.25rem] opacity-80 sm:mt-5 sm:w-16"
         />
 
-        <p className="mt-4 font-cinzel text-[7.5px] uppercase tracking-[0.4em] text-[#fdf6ec]/62 sm:mt-5 sm:text-[8px] sm:tracking-[0.42em]">
+        <p className="mt-4 hidden font-cinzel text-[7.5px] uppercase tracking-[0.4em] text-[#fdf6ec]/62 sm:mt-5 sm:block sm:text-[8px] sm:tracking-[0.42em]">
           Open &amp; turn the pages
         </p>
       </div>

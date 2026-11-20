@@ -28,25 +28,37 @@ export function Hero() {
   // and layout is settled so they fade in once instead of snapping mid-handoff.
   const [lanternsReady, setLanternsReady] = React.useState(false);
   const [decorReady, setDecorReady] = React.useState(false);
+  // Latch phone layout once from the live media query — context `compact`
+  // starts false before the perf provider publishes and must not remount the sky.
+  const phoneRef = React.useRef<boolean | null>(null);
+  if (phoneRef.current === null) {
+    phoneRef.current =
+      typeof window !== "undefined"
+        ? window.matchMedia("(max-width: 639px)").matches
+        : compact;
+  }
+  const onPhone = phoneRef.current;
+
   React.useEffect(() => {
     if (phase !== "revealed") {
       setLanternsReady(false);
       setDecorReady(false);
       return;
     }
+    const phone = phoneRef.current;
     const lanternId = window.setTimeout(
       () => setLanternsReady(true),
-      compact ? 800 : 500,
+      phone ? 900 : 500,
     );
     const decorId = window.setTimeout(
       () => setDecorReady(true),
-      compact ? 1000 : 700,
+      phone ? 1100 : 700,
     );
     return () => {
       window.clearTimeout(lanternId);
       window.clearTimeout(decorId);
     };
-  }, [phase, compact]);
+  }, [phase]);
   const lanternFade = reduceMotion
     ? { duration: 0 }
     : { duration: 1, ease: [0.22, 1, 0.36, 1] as const };
@@ -74,9 +86,35 @@ export function Hero() {
   const contentY = useTransform(scrollYProgress, [0, 1], ["0%", `${-22 * p}%`]);
   const contentOp = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
 
-  // Festive Tangled lantern sky under castle — denser on high, lighter on low.
-  const skyDensity = quality === "high" ? 0.95 : quality === "balanced" ? 0.75 : 0.5;
-  const skyLayers = quality === "high" ? 4 : quality === "balanced" ? 3 : 2;
+  // Freeze sky budget for this hero session. Live FPS downgrades used to
+  // change density/layers/DPR mid-view and flash the canvas on phones.
+  type SkyLock = {
+    density: number;
+    layers: number;
+    dpr: number;
+    glow: number;
+    size: number;
+  };
+  const skyLockRef = React.useRef<SkyLock | null>(null);
+  if (phase !== "revealed") {
+    skyLockRef.current = null;
+  } else if (!skyLockRef.current) {
+    const q = quality === "high" ? "high" : quality === "balanced" ? "balanced" : "low";
+    skyLockRef.current = {
+      density: q === "high" ? 0.95 : q === "balanced" ? 0.75 : 0.5,
+      layers: q === "high" ? 4 : q === "balanced" ? 3 : 2,
+      dpr: profile.maxDpr,
+      glow: onPhone ? 0.7 : 0.55,
+      size: onPhone ? 0.42 : 0.38,
+    };
+  }
+  const sky = skyLockRef.current ?? {
+    density: 0.75,
+    layers: 3,
+    dpr: profile.maxDpr,
+    glow: onPhone ? 0.7 : 0.55,
+    size: onPhone ? 0.42 : 0.38,
+  };
   const svgLanternCount = quality === "high" ? 10 : quality === "balanced" ? 8 : 5;
   const [storyVeil, setStoryVeil] = React.useState(0);
   const storyBusy = React.useRef(false);
@@ -115,7 +153,7 @@ export function Hero() {
       style={{ background: "#0d0720" }}
     >
       {decorReady ? (
-        <MagicDust count={compact ? 12 : 30} intensity="soft" className="z-[2] opacity-40" />
+        <MagicDust count={onPhone ? 12 : 30} intensity="soft" className="z-[2] opacity-40" />
       ) : null}
 
       <motion.div
@@ -123,24 +161,26 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -top-[10%] z-[1] h-[120%] overflow-hidden"
         aria-hidden
       >
-        {/* Deferred mount; LanternSky fades itself after the first GL paint. */}
-        {lanternsReady ? (
+        {/* Phones: prewarm WebGL as soon as the hero is revealed (hidden), then
+            fade once after settle + first paint. Desktop waits for the defer. */}
+        {revealed && (onPhone || lanternsReady) ? (
           <LanternSky
             lanternColors={LANTERN_SKY_COLORS}
-            density={skyDensity}
-            layers={skyLayers}
-            glowIntensity={compact ? 0.7 : 0.55}
-            lanternSize={compact ? 0.42 : 0.38}
+            density={sky.density}
+            layers={sky.layers}
+            glowIntensity={sky.glow}
+            lanternSize={sky.size}
             twinkleIntensity={0.22}
             speed={0.95}
             mouseRepulsion={false}
             mouseInteraction={false}
             intro={false}
+            reveal={lanternsReady}
             disableAnimation={reduceMotion}
             transparent={false}
             backgroundColor="#0d0720"
             opacity={1}
-            dpr={profile.maxDpr}
+            dpr={sky.dpr}
           />
         ) : null}
         {/* Warm horizon twist — sunset wash over the lantern sky toward the castle */}
@@ -199,7 +239,7 @@ export function Hero() {
       </motion.div>
 
       {/* Phones: WebGL sky only — SVG lanterns remount on quality dips and snap. */}
-      {!compact ? (
+      {!onPhone ? (
         <motion.div
           style={{ y: lanternsY }}
           className="pointer-events-none absolute inset-0 z-[4]"
@@ -218,7 +258,7 @@ export function Hero() {
         </motion.div>
       ) : null}
 
-      {!compact ? (
+      {!onPhone ? (
         <motion.div
           style={{ y: reflectionY }}
           className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]"
@@ -237,7 +277,7 @@ export function Hero() {
       />
 
       <AnimatePresence>
-        {mounted && decorReady && !compact && (
+        {mounted && decorReady && !onPhone && (
           <motion.div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-[4]"

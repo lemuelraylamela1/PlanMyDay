@@ -264,6 +264,8 @@ const LanternSky = ({
   lanternSize = 1,
   layers = 4,
   intro = true,
+  /** When false, keep the canvas hidden even after the first GL paint (prewarm). */
+  reveal = true,
   backgroundColor = '#0d0720',
   opacity = 1,
   dpr,
@@ -296,14 +298,22 @@ const LanternSky = ({
     intro,
     backgroundColor,
     opacity: clamp(opacity, 0, 1),
+    // Latch DPR for this GL session — live quality drops must not resize the canvas mid-scene.
     dpr
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const dprLockRef = useRef(null);
+  const densityLockRef = useRef(null);
+  const layersLockRef = useRef(null);
+  if (dprLockRef.current == null && dpr != null) dprLockRef.current = dpr;
 
   useEffect(() => {
     paintedRef.current = false;
     setPainted(false);
+    dprLockRef.current = settingsRef.current.dpr ?? null;
+    densityLockRef.current = null;
+    layersLockRef.current = null;
     const container = containerRef.current;
     const canvas = canvasRef.current;
     const gl = canvas?.getContext('webgl2', {
@@ -401,7 +411,9 @@ const LanternSky = ({
       gl.uniform2f(u.uResolution, canvas.width, canvas.height);
       gl.uniform2f(u.uFocal, s.focal[0], s.focal[1]);
       gl.uniform1f(u.uDepth, state.depth);
-      gl.uniform1f(u.uDensity, s.density);
+      if (densityLockRef.current == null) densityLockRef.current = s.density;
+      if (layersLockRef.current == null) layersLockRef.current = s.layers;
+      gl.uniform1f(u.uDensity, densityLockRef.current);
       gl.uniform1f(u.uSpeed, s.speed);
       gl.uniform2f(u.uMouse, state.mx, state.my);
       gl.uniform1f(u.uGlow, Math.max(0.15, s.glowIntensity));
@@ -411,7 +423,7 @@ const LanternSky = ({
       gl.uniform1f(u.uRepulsionStrength, s.repulsionStrength);
       gl.uniform1f(u.uMouseActiveFactor, state.active);
       gl.uniform1f(u.uAutoCenterRepulsion, s.autoCenterRepulsion);
-      gl.uniform1i(u.uLayers, s.layers);
+      gl.uniform1i(u.uLayers, layersLockRef.current ?? s.layers);
       gl.uniform3fv(u.uColors, colors);
       gl.uniform1i(u.uColorCount, s.palette.length);
       const fade = Math.min(1, state.reveal / 0.35);
@@ -466,14 +478,35 @@ const LanternSky = ({
       const s = settingsRef.current;
       const width = Math.max(1, container.clientWidth);
       const height = Math.max(1, container.clientHeight);
-      const ratio = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
+      // Prefer the session-locked DPR so FPS quality policy cannot clear the buffer.
+      const locked = dprLockRef.current;
+      const ratio = Math.min(
+        locked != null ? locked : s.dpr || window.devicePixelRatio || 1,
+        2,
+      );
+      if (dprLockRef.current == null) dprLockRef.current = ratio;
       const nextW = Math.max(1, Math.round(width * ratio));
       const nextH = Math.max(1, Math.round(height * ratio));
-      // Rewriting width/height clears the buffer — skip no-op resizes (Messenger WebView flash).
-      if (canvas.width !== nextW || canvas.height !== nextH) {
-        canvas.width = nextW;
-        canvas.height = nextH;
+      // Rewriting width/height clears the buffer. After the first paint, ignore
+      // phone chrome height churn (URL bar / dvh) and only accept a real
+      // orientation-scale width change — that flash is what phones still saw.
+      const dw = Math.abs(canvas.width - nextW);
+      const dh = Math.abs(canvas.height - nextH);
+      if (dw === 0 && dh === 0) {
+        render();
+        wake();
+        return;
       }
+      if (paintedRef.current) {
+        const widthShift = dw / Math.max(canvas.width, 1);
+        if (widthShift < 0.12) {
+          render();
+          wake();
+          return;
+        }
+      }
+      canvas.width = nextW;
+      canvas.height = nextH;
       render();
       wake();
     };
@@ -524,14 +557,8 @@ const LanternSky = ({
     const repelling = initial.autoCenterRepulsion > 0 || (initial.mouseInteraction && initial.mouseRepulsion);
     if (repelling) entry(initial.palette.length > 0, true);
 
-    let lastDpr = settingsRef.current.dpr;
     wakeRef.current = () => {
-      const s = settingsRef.current;
-      if (s.dpr !== lastDpr) {
-        lastDpr = s.dpr;
-        resize();
-        return;
-      }
+      // Density/layer uniforms update in place; never resize from live dpr changes.
       if (!raf) render();
       wake();
     };
@@ -557,10 +584,12 @@ const LanternSky = ({
     wakeRef.current?.();
   });
 
+  const show = painted && reveal;
+
   return (
     <div
       ref={containerRef}
-      className={`lantern-sky-container${painted ? ' is-painted' : ''}${className ? ` ${className}` : ''}`}
+      className={`lantern-sky-container${show ? ' is-painted' : ''}${className ? ` ${className}` : ''}`}
       style={style}
       {...rest}
     >

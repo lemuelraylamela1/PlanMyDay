@@ -5,7 +5,12 @@
   height: 100%;
   overflow: hidden;
   opacity: 0;
-  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Longer ease on phones so a late compositor paint cannot read as a snap. */
+  transition: opacity 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Isolate the canvas so browser chrome resizes don't flash the layer. */
+  contain: paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .lantern-sky-container.is-painted {

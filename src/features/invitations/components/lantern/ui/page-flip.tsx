@@ -30,7 +30,7 @@ export type PageFlipProps = {
   /** `drag` = swipe/drag only (no tap-to-turn). `click` also turns on tap. */
   trigger?: "click" | "hover" | "drag";
   /**
-   * Phone path: one rotating leaf, faces swapped at 90°, no stacked 3D scene.
+   * Phone path: one rotating leaf with dual faces (no multi-leaf stack).
    * Desktop keeps the multi-leaf stack.
    */
   flat?: boolean;
@@ -848,7 +848,6 @@ function FlatPageFlip({
     mode: "forward" | "back";
   } | null>(null);
   const [angle, setAngle] = React.useState(0);
-  const [tilt, setTilt] = React.useState(0);
   const glidingRef = React.useRef(false);
   const glideFrame = React.useRef<number | null>(null);
   const dragRef = React.useRef<{
@@ -861,7 +860,6 @@ function FlatPageFlip({
     axis: "horizontal" | "vertical" | null;
     captured: boolean;
     angle: number;
-    tilt: number;
     lastX: number;
     lastT: number;
     velocity: number;
@@ -899,7 +897,6 @@ function FlatPageFlip({
           );
         }
         setFlip(null);
-        setTilt(0);
       };
       glideFrame.current = requestAnimationFrame(step);
     },
@@ -916,7 +913,6 @@ function FlatPageFlip({
       const from = mode === "forward" ? 0 : -turnAngle;
       setFlip({ leafIndex, mode });
       setAngle(from);
-      setTilt(0);
       startGlide(from, mode === "forward" ? -turnAngle : 0, mode, true);
     },
     [leafCount, startGlide, turnAngle],
@@ -937,7 +933,6 @@ function FlatPageFlip({
       const tapTurn = !drag.moved && trigger === "click";
       if (drag.axis !== "horizontal" && !tapTurn) {
         setFlip(null);
-        setTilt(0);
         return;
       }
       const progress = Math.abs(drag.angle) / Math.max(1, turnAngle);
@@ -991,7 +986,6 @@ function FlatPageFlip({
       axis: null,
       captured: false,
       angle: mode === "forward" ? 0 : -turnAngle,
-      tilt: 0,
       lastX: event.clientX,
       lastT: performance.now(),
       velocity: 0,
@@ -1027,15 +1021,14 @@ function FlatPageFlip({
     drag.lastT = now;
     if (Math.abs(dx) > DRAG_SLOP || Math.abs(dy) > DRAG_SLOP) drag.moved = true;
 
+    // No rotateX tilt on the flat/mobile path — tilt opens wedge gaps that
+    // let the under/static page ghost through the turning leaf.
     const travel = pageWidth * 0.92;
     let next = drag.mode === "forward" ? 0 : -turnAngle;
     if (drag.mode === "forward") next = -clamp(-dx / travel, 0, 1) * turnAngle;
     else next = -turnAngle + clamp(dx / travel, 0, 1) * turnAngle;
-    const nextTilt = clamp((-dy / pageHeight) * 7, -7, 7);
     drag.angle = next;
-    drag.tilt = nextTilt;
     setAngle(next);
-    setTilt(nextTilt);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1062,9 +1055,12 @@ function FlatPageFlip({
   };
 
   const progress = Math.min(1, Math.abs(angle) / Math.max(1, turnAngle));
+  const showFront = angle > -90;
   const shift = flip
     ? dragShift(turned, leafCount, pageWidth, spineShift, flip.mode, progress)
     : spreadShift(turned, leafCount, pageWidth, spineShift);
+  // Keep the resting page on the side that is not turning for the whole flip.
+  // Hiding it at halfway left an empty half while the leaf was still edge-on.
   const showStaticLeft = turned > 0 && flip?.mode !== "back";
   const showStaticRight = turned < leafCount && flip?.mode !== "forward";
   const underRight =
@@ -1072,7 +1068,8 @@ function FlatPageFlip({
   const underLeft =
     flip?.mode === "back" && flip.leafIndex > 0 ? pages[flip.leafIndex - 1]?.back : null;
   const flipLeaf = flip ? pages[flip.leafIndex] : null;
-  const showFront = angle > -90;
+  const faceShadow =
+    shadow > 0 ? `0 16px 28px rgba(0,0,0,${Math.min(0.45, shadow)})` : undefined;
   const slot = (side: "left" | "right"): React.CSSProperties => ({
     left: side === "left" ? 0 : pageWidth,
     width: pageWidth,
@@ -1109,9 +1106,11 @@ function FlatPageFlip({
       onPointerCancel={(event) => endDrag(event.pointerId)}
       onKeyDown={onKeyDown}
     >
+      {/* Flat under/static pages stay outside preserve-3d so mobile GPUs
+          cannot drop them while the leaf rotates. */}
       <div
         className="relative h-full w-full"
-        style={{ transform: `translateX(${shift}px)`, transformStyle: "preserve-3d" }}
+        style={{ transform: `translateX(${shift}px)` }}
       >
         {underLeft ? (
           <div className="absolute top-0 z-[1] overflow-hidden" style={slot("left")}>
@@ -1140,25 +1139,53 @@ function FlatPageFlip({
               left: pageWidth,
               width: pageWidth,
               height: pageHeight,
-              transformOrigin: "left center",
+              perspective: `${perspective}px`,
               transformStyle: "preserve-3d",
-              transform: `rotateY(${angle}deg) rotateX(${tilt}deg)`,
-              borderRadius: pageRadius,
             }}
           >
             <div
-              className="absolute inset-0 overflow-hidden"
+              className="absolute inset-0"
               style={{
+                transformOrigin: "left center",
+                transformStyle: "preserve-3d",
+                transform: `rotateY(${angle}deg)`,
                 borderRadius: pageRadius,
-                backgroundColor: pageColor,
-                transform: showFront ? undefined : "rotateY(180deg)",
-                boxShadow:
-                  shadow > 0
-                    ? `0 16px 28px rgba(0,0,0,${Math.min(0.45, shadow)})`
-                    : undefined,
               }}
             >
-              {showFront ? flipLeaf.front : flipLeaf.back}
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  transformStyle: "flat",
+                  transform: "translateZ(1px)",
+                  clipPath: "inset(0)",
+                  WebkitClipPath: "inset(0)",
+                  visibility: showFront ? "visible" : "hidden",
+                  borderRadius: pageRadius,
+                  backgroundColor: pageColor,
+                  boxShadow: faceShadow,
+                }}
+              >
+                {flipLeaf.front}
+              </div>
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  transformStyle: "flat",
+                  transform: "rotateY(180deg) translateZ(1px)",
+                  clipPath: "inset(0)",
+                  WebkitClipPath: "inset(0)",
+                  visibility: showFront ? "hidden" : "visible",
+                  borderRadius: pageRadius,
+                  backgroundColor: pageColor,
+                  boxShadow: faceShadow,
+                }}
+              >
+                {flipLeaf.back}
+              </div>
             </div>
           </div>
         ) : null}
