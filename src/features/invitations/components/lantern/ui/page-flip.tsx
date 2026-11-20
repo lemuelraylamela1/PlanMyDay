@@ -29,6 +29,11 @@ export type PageFlipProps = {
   shadow?: number;
   /** `drag` = swipe/drag only (no tap-to-turn). `click` also turns on tap. */
   trigger?: "click" | "hover" | "drag";
+  /**
+   * Phone path: one rotating leaf, faces swapped at 90°, no stacked 3D scene.
+   * Desktop keeps the multi-leaf stack.
+   */
+  flat?: boolean;
   closeOnLeave?: boolean;
   interactive?: boolean;
   className?: string;
@@ -70,7 +75,39 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-export function PageFlip({
+function spreadShift(turned: number, leafCount: number, pageWidth: number, spineShift: number) {
+  if (leafCount <= 0 || turned <= 0) return -pageWidth / 2;
+  if (turned >= leafCount) return pageWidth / 2;
+  if (spineShift > 0) return (turned / leafCount) * spineShift;
+  return 0;
+}
+
+function dragShift(
+  turned: number,
+  leafCount: number,
+  pageWidth: number,
+  spineShift: number,
+  mode: "forward" | "back",
+  progress: number,
+) {
+  const ended = leafCount > 0 && turned >= leafCount;
+  if (turned === 0 && mode === "forward") return (-pageWidth / 2) * (1 - progress);
+  if (ended && mode === "back") return (pageWidth / 2) * progress;
+  if (!ended && turned === leafCount - 1 && mode === "forward") return (pageWidth / 2) * progress;
+  if (turned === 1 && mode === "back") return (-pageWidth / 2) * (1 - progress);
+  return spreadShift(turned, leafCount, pageWidth, spineShift);
+}
+
+function easeInOut(t: number) {
+  return t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2;
+}
+
+export function PageFlip(props: PageFlipProps) {
+  if (props.flat) return <FlatPageFlip {...props} />;
+  return <StackPageFlip {...props} />;
+}
+
+function StackPageFlip({
   pages,
   pageWidth = 220,
   pageHeight = 320,
@@ -104,6 +141,7 @@ export function PageFlip({
   const [closing, setClosing] = React.useState(false);
   /** Leaf mid CSS settle — keep both faces for the flip, then hard-cull. */
   const [animatingLeaf, setAnimatingLeaf] = React.useState<number | null>(null);
+  const [animatingMode, setAnimatingMode] = React.useState<"forward" | "back" | null>(null);
   const turnedRef = React.useRef(0);
   const prevTurnedRef = React.useRef(0);
   turnedRef.current = turned;
@@ -149,20 +187,25 @@ export function PageFlip({
       return;
     }
     if (prevTurnedRef.current === turned) return;
-    const leaf =
-      turned > prevTurnedRef.current ? turned - 1 : prevTurnedRef.current - 1;
+    const forward = turned > prevTurnedRef.current;
+    const leaf = forward ? turned - 1 : prevTurnedRef.current - 1;
     prevTurnedRef.current = turned;
     if (leaf < 0 || leaf >= leafCount) {
       setAnimatingLeaf(null);
+      setAnimatingMode(null);
       return;
     }
     setAnimatingLeaf(leaf);
+    setAnimatingMode(forward ? "forward" : "back");
   }, [turned, dragging, leafCount]);
 
   // transitionend can miss (tab blur / reduced motion) — always clear the settle flag.
   React.useEffect(() => {
     if (animatingLeaf == null) return;
-    const id = window.setTimeout(() => setAnimatingLeaf(null), turnMs + 120);
+    const id = window.setTimeout(() => {
+      setAnimatingLeaf(null);
+      setAnimatingMode(null);
+    }, turnMs + 120);
     return () => window.clearTimeout(id);
   }, [animatingLeaf, turnMs]);
 
@@ -312,6 +355,8 @@ export function PageFlip({
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!interactive || event.button !== 0 || leafCount === 0) return;
+    // One swipe, one page — a leaf already turning must finish first.
+    if (animatingLeaf != null || dragRef.current) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     // Closed / fully ended books are visually centered; map presses to the only valid turn.
@@ -353,27 +398,27 @@ export function PageFlip({
     applyDragFromPointer(event.clientX, event.clientY, event.currentTarget);
   };
 
-  const finishDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+  const endDrag = (pointerId: number) => {
     const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag || drag.pointerId !== pointerId) return;
 
-    if (drag.captured) {
+    if (drag.captured && rootRef.current) {
       try {
-        event.currentTarget.releasePointerCapture(event.pointerId);
+        rootRef.current.releasePointerCapture(pointerId);
       } catch {
         /* already released */
       }
     }
 
-    // Vertical gesture was handed to the browser for page scrolling.
-    if (drag.axis === "vertical") {
+    const tapTurn = !drag.moved && trigger === "click";
+    // Vertical or undecided gestures belong to the page scroll, not the book.
+    if (drag.axis !== "horizontal" && !tapTurn) {
       clearDragUi();
       return;
     }
 
-    const angle = drag.angle;
     const velocity = drag.velocity;
-    const progress = Math.abs(angle) / Math.max(1, turnAngle);
+    const progress = Math.abs(drag.angle) / Math.max(1, turnAngle);
     const leafIndex = drag.leafIndex;
 
     const flickedForward = drag.mode === "forward" && velocity <= -FLICK_VELOCITY;
@@ -382,35 +427,64 @@ export function PageFlip({
     const draggedBack = drag.mode === "back" && progress <= 1 - COMMIT_RATIO;
 
     let committed = false;
-    if (!drag.moved && trigger === "click") {
+    if (tapTurn) {
       if (drag.mode === "forward") turnForward();
       else turnBack();
       committed = true;
-    } else if (drag.axis === "horizontal" && (flickedForward || draggedForward)) {
+    } else if (flickedForward || draggedForward) {
       turnForward();
       committed = true;
-    } else if (drag.axis === "horizontal" && (flickedBack || draggedBack)) {
+    } else if (flickedBack || draggedBack) {
       turnBack();
       committed = true;
     }
 
-    // Keep both faces during the CSS settle so the flip does not pop.
-    setAnimatingLeaf(leafIndex);
-    if (!committed) {
-      // Restoring — clear imperative cull so backface-visibility can animate.
-      const front = frontFaceRefs.current[leafIndex];
-      const back = backFaceRefs.current[leafIndex];
-      if (front) {
-        front.style.visibility = "";
-        front.style.pointerEvents = "";
-      }
-      if (back) {
-        back.style.visibility = "";
-        back.style.pointerEvents = "";
-      }
+    // React skips a style write when the virtual transform string did not change,
+    // which left the imperative drag angle stuck in the gutter. Always paint the rest pose.
+    const settledAngle = committed
+      ? drag.mode === "forward"
+        ? -turnAngle
+        : 0
+      : drag.mode === "forward"
+        ? 0
+        : -turnAngle;
+    const nextTurned = committed
+      ? drag.mode === "forward"
+        ? Math.min(leafCount, turnedRef.current + 1)
+        : Math.max(0, turnedRef.current - 1)
+      : turnedRef.current;
+    const leaf = leafRefs.current[leafIndex];
+    if (leaf) {
+      leaf.style.transition = reducedMotion ? "none" : `transform ${duration}s ${easeCss}`;
+      leaf.style.transform = `translateZ(0px) rotateY(${settledAngle}deg) rotateX(0deg)`;
+    }
+    paintFaceCull(leafIndex, settledAngle);
+    const stage = stageRef.current;
+    if (stage) {
+      stage.style.transition = reducedMotion ? "none" : `transform ${duration}s ${easeCss}`;
+      stage.style.transform = `translateX(${spreadShift(nextTurned, leafCount, pageWidth, spineShift)}px)`;
     }
 
+    setAnimatingLeaf(leafIndex);
+    setAnimatingMode(drag.mode);
     clearDragUi();
+  };
+
+  const endDragRef = React.useRef(endDrag);
+  endDragRef.current = endDrag;
+
+  React.useEffect(() => {
+    const onUp = (event: PointerEvent) => endDragRef.current(event.pointerId);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
+  const finishDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    endDrag(event.pointerId);
   };
 
   const onPointerEnter = () => {
@@ -474,6 +548,29 @@ export function PageFlip({
 
   // Mid-flip shade peaks near 90° for a paper curl feel.
   const midFlip = Math.sin(turnProgress * Math.PI);
+
+  const visibleLeaves = new Set<number>();
+  if (turned > 0) visibleLeaves.add(turned - 1);
+  if (turned < leafCount) visibleLeaves.add(turned);
+  const liveLeaf = dragging ? dragRef.current : null;
+  if (liveLeaf) {
+    visibleLeaves.add(liveLeaf.leafIndex);
+    if (liveLeaf.mode === "forward" && liveLeaf.leafIndex + 1 < leafCount) {
+      visibleLeaves.add(liveLeaf.leafIndex + 1);
+    }
+    if (liveLeaf.mode === "back" && liveLeaf.leafIndex - 1 >= 0) {
+      visibleLeaves.add(liveLeaf.leafIndex - 1);
+    }
+  }
+  if (animatingLeaf != null) {
+    visibleLeaves.add(animatingLeaf);
+    if (animatingMode === "forward" && animatingLeaf + 1 < leafCount) {
+      visibleLeaves.add(animatingLeaf + 1);
+    }
+    if (animatingMode === "back" && animatingLeaf - 1 >= 0) {
+      visibleLeaves.add(animatingLeaf - 1);
+    }
+  }
 
   return (
     <div
@@ -548,6 +645,7 @@ export function PageFlip({
         ) : null}
 
         {pages.map((leaf, index) => {
+          if (!visibleLeaves.has(index)) return null;
           const isTurned = index < turned;
           const isActiveDrag = dragging && dragRef.current?.leafIndex === index;
           const isTopUnturned = index === turned && turned < leafCount;
@@ -575,7 +673,6 @@ export function PageFlip({
           const shadowAlpha = Math.min(0.55, shadow);
           const foldShade = Math.abs(rotate) / Math.max(1, turnAngle);
           const curl = isActiveDrag ? midFlip : Math.sin(foldShade * Math.PI) * (showPeek ? 0.35 : 0);
-          const onSpread = index === turned || index === turned - 1 || isActiveDrag;
 
           // Cull the away face when settled. Mid-drag uses paintFaceCull (imperative);
           // mid-CSS settle keeps both faces so the flip can complete without popping.
@@ -606,7 +703,10 @@ export function PageFlip({
               onTransitionEnd={(event) => {
                 if (event.target !== event.currentTarget) return;
                 if (event.propertyName !== "transform") return;
-                if (animatingLeaf === index) setAnimatingLeaf(null);
+                if (animatingLeaf === index) {
+                  setAnimatingLeaf(null);
+                  setAnimatingMode(null);
+                }
               }}
               style={{
                 left: pageWidth,
@@ -622,8 +722,6 @@ export function PageFlip({
                     : `transform ${duration}s ${easeCss} ${delay}`,
                 borderRadius: pageRadius,
                 willChange: isActiveDrag ? "transform" : undefined,
-                contentVisibility: onSpread ? "visible" : "auto",
-                containIntrinsicSize: onSpread ? undefined : `${pageWidth}px ${pageHeight}px`,
               }}
             >
               <div
@@ -714,6 +812,359 @@ export function PageFlip({
           className="absolute top-0 z-30 h-full"
           style={{ left: 0, width: pageWidth }}
         >
+          {leftGesture}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function FlatPageFlip({
+  pages,
+  pageWidth = 220,
+  pageHeight = 320,
+  pageRadius = 4,
+  pageColor = "#f4f4f4",
+  perspective = 1200,
+  spineShift = 110,
+  turnAngle = 180,
+  duration = 0.55,
+  shadow = 0.3,
+  trigger = "click",
+  interactive = true,
+  className,
+  style,
+  onTurnedChange,
+  leftGesture,
+}: PageFlipProps) {
+  const reducedMotion = usePrefersReducedMotion();
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const [turned, setTurned] = React.useState(0);
+  const turnedRef = React.useRef(0);
+  turnedRef.current = turned;
+  const leafCount = pages.length;
+  const [flip, setFlip] = React.useState<{
+    leafIndex: number;
+    mode: "forward" | "back";
+  } | null>(null);
+  const [angle, setAngle] = React.useState(0);
+  const [tilt, setTilt] = React.useState(0);
+  const glidingRef = React.useRef(false);
+  const glideFrame = React.useRef<number | null>(null);
+  const dragRef = React.useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    leafIndex: number;
+    mode: "forward" | "back";
+    moved: boolean;
+    axis: "horizontal" | "vertical" | null;
+    captured: boolean;
+    angle: number;
+    tilt: number;
+    lastX: number;
+    lastT: number;
+    velocity: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    onTurnedChange?.(turned);
+  }, [turned, onTurnedChange]);
+
+  React.useEffect(
+    () => () => {
+      if (glideFrame.current != null) cancelAnimationFrame(glideFrame.current);
+    },
+    [],
+  );
+
+  const startGlide = React.useCallback(
+    (from: number, to: number, mode: "forward" | "back", commit: boolean) => {
+      if (glideFrame.current != null) cancelAnimationFrame(glideFrame.current);
+      glidingRef.current = true;
+      const t0 = performance.now();
+      const ms = reducedMotion ? 0 : duration * 1000;
+      const step = (now: number) => {
+        const t = ms <= 0 ? 1 : Math.min(1, (now - t0) / ms);
+        setAngle(from + (to - from) * easeInOut(t));
+        if (t < 1) {
+          glideFrame.current = requestAnimationFrame(step);
+          return;
+        }
+        glideFrame.current = null;
+        glidingRef.current = false;
+        if (commit) {
+          setTurned((n) =>
+            mode === "forward" ? Math.min(leafCount, n + 1) : Math.max(0, n - 1),
+          );
+        }
+        setFlip(null);
+        setTilt(0);
+      };
+      glideFrame.current = requestAnimationFrame(step);
+    },
+    [duration, leafCount, reducedMotion],
+  );
+
+  const beginFlip = React.useCallback(
+    (mode: "forward" | "back") => {
+      if (glidingRef.current || dragRef.current) return;
+      const current = turnedRef.current;
+      if (mode === "forward" && current >= leafCount) return;
+      if (mode === "back" && current <= 0) return;
+      const leafIndex = mode === "forward" ? current : current - 1;
+      const from = mode === "forward" ? 0 : -turnAngle;
+      setFlip({ leafIndex, mode });
+      setAngle(from);
+      setTilt(0);
+      startGlide(from, mode === "forward" ? -turnAngle : 0, mode, true);
+    },
+    [leafCount, startGlide, turnAngle],
+  );
+
+  const endDrag = React.useCallback(
+    (pointerId: number) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== pointerId) return;
+      dragRef.current = null;
+      if (drag.captured && rootRef.current) {
+        try {
+          rootRef.current.releasePointerCapture(pointerId);
+        } catch {
+          /* already released */
+        }
+      }
+      const tapTurn = !drag.moved && trigger === "click";
+      if (drag.axis !== "horizontal" && !tapTurn) {
+        setFlip(null);
+        setTilt(0);
+        return;
+      }
+      const progress = Math.abs(drag.angle) / Math.max(1, turnAngle);
+      const commit =
+        drag.mode === "forward"
+          ? tapTurn || drag.velocity <= -FLICK_VELOCITY || progress >= COMMIT_RATIO
+          : tapTurn || drag.velocity >= FLICK_VELOCITY || progress <= 1 - COMMIT_RATIO;
+      const to = commit
+        ? drag.mode === "forward"
+          ? -turnAngle
+          : 0
+        : drag.mode === "forward"
+          ? 0
+          : -turnAngle;
+      setFlip({ leafIndex: drag.leafIndex, mode: drag.mode });
+      startGlide(drag.angle, to, drag.mode, commit);
+    },
+    [startGlide, trigger, turnAngle],
+  );
+
+  const endDragRef = React.useRef(endDrag);
+  endDragRef.current = endDrag;
+
+  React.useEffect(() => {
+    const onUp = (event: PointerEvent) => endDragRef.current(event.pointerId);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!interactive || event.button !== 0 || leafCount === 0) return;
+    if (glidingRef.current || dragRef.current) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const mode: "forward" | "back" =
+      turned === 0 ? "forward" : turned >= leafCount ? "back" : x >= pageWidth ? "forward" : "back";
+    if (mode === "forward" && turned >= leafCount) return;
+    if (mode === "back" && turned <= 0) return;
+    const leafIndex = mode === "forward" ? turned : turned - 1;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      leafIndex,
+      mode,
+      moved: false,
+      axis: null,
+      captured: false,
+      angle: mode === "forward" ? 0 : -turnAngle,
+      tilt: 0,
+      lastX: event.clientX,
+      lastT: performance.now(),
+      velocity: 0,
+    };
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || glidingRef.current) return;
+    const now = performance.now();
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (drag.axis === null) {
+      if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        drag.axis = "vertical";
+        dragRef.current = null;
+        return;
+      }
+      drag.axis = "horizontal";
+      setFlip({ leafIndex: drag.leafIndex, mode: drag.mode });
+      try {
+        event.currentTarget.setPointerCapture(drag.pointerId);
+        drag.captured = true;
+      } catch {
+        /* pointer already gone */
+      }
+    }
+    if (drag.axis !== "horizontal") return;
+    const dt = Math.max(1, now - drag.lastT);
+    drag.velocity = drag.velocity * 0.65 + ((event.clientX - drag.lastX) / dt) * 0.35;
+    drag.lastX = event.clientX;
+    drag.lastT = now;
+    if (Math.abs(dx) > DRAG_SLOP || Math.abs(dy) > DRAG_SLOP) drag.moved = true;
+
+    const travel = pageWidth * 0.92;
+    let next = drag.mode === "forward" ? 0 : -turnAngle;
+    if (drag.mode === "forward") next = -clamp(-dx / travel, 0, 1) * turnAngle;
+    else next = -turnAngle + clamp(dx / travel, 0, 1) * turnAngle;
+    const nextTilt = clamp((-dy / pageHeight) * 7, -7, 7);
+    drag.angle = next;
+    drag.tilt = nextTilt;
+    setAngle(next);
+    setTilt(nextTilt);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!interactive) return;
+    if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+      event.preventDefault();
+      beginFlip("forward");
+    } else if (event.key === "ArrowLeft" || event.key === "PageUp" || event.key === "Backspace") {
+      event.preventDefault();
+      beginFlip("back");
+    } else     if (event.key === "Home") {
+      event.preventDefault();
+      if (glideFrame.current != null) cancelAnimationFrame(glideFrame.current);
+      glidingRef.current = false;
+      setFlip(null);
+      setTurned(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      if (glideFrame.current != null) cancelAnimationFrame(glideFrame.current);
+      glidingRef.current = false;
+      setFlip(null);
+      setTurned(leafCount);
+    }
+  };
+
+  const progress = Math.min(1, Math.abs(angle) / Math.max(1, turnAngle));
+  const shift = flip
+    ? dragShift(turned, leafCount, pageWidth, spineShift, flip.mode, progress)
+    : spreadShift(turned, leafCount, pageWidth, spineShift);
+  const showStaticLeft = turned > 0 && flip?.mode !== "back";
+  const showStaticRight = turned < leafCount && flip?.mode !== "forward";
+  const underRight =
+    flip?.mode === "forward" && flip.leafIndex + 1 < leafCount ? pages[flip.leafIndex + 1]?.front : null;
+  const underLeft =
+    flip?.mode === "back" && flip.leafIndex > 0 ? pages[flip.leafIndex - 1]?.back : null;
+  const flipLeaf = flip ? pages[flip.leafIndex] : null;
+  const showFront = angle > -90;
+  const slot = (side: "left" | "right"): React.CSSProperties => ({
+    left: side === "left" ? 0 : pageWidth,
+    width: pageWidth,
+    height: pageHeight,
+    borderRadius: pageRadius,
+    backgroundColor: pageColor,
+  });
+
+  return (
+    <div
+      ref={rootRef}
+      role="region"
+      aria-roledescription="book"
+      aria-label="Story book"
+      aria-valuemin={0}
+      aria-valuemax={leafCount}
+      aria-valuenow={turned}
+      tabIndex={interactive ? 0 : -1}
+      className={cn(
+        "page-flip relative isolate outline-none select-none",
+        interactive && "cursor-grab active:cursor-grabbing",
+        className,
+      )}
+      style={{
+        width: pageWidth * 2,
+        height: pageHeight,
+        perspective: `${perspective}px`,
+        touchAction: "pan-y",
+        ...style,
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={(event) => endDrag(event.pointerId)}
+      onPointerCancel={(event) => endDrag(event.pointerId)}
+      onKeyDown={onKeyDown}
+    >
+      <div
+        className="relative h-full w-full"
+        style={{ transform: `translateX(${shift}px)`, transformStyle: "preserve-3d" }}
+      >
+        {underLeft ? (
+          <div className="absolute top-0 z-[1] overflow-hidden" style={slot("left")}>
+            {underLeft}
+          </div>
+        ) : null}
+        {underRight ? (
+          <div className="absolute top-0 z-[1] overflow-hidden" style={slot("right")}>
+            {underRight}
+          </div>
+        ) : null}
+        {showStaticLeft ? (
+          <div className="absolute top-0 z-[2] overflow-hidden" style={slot("left")}>
+            {pages[turned - 1]?.back}
+          </div>
+        ) : null}
+        {showStaticRight ? (
+          <div className="absolute top-0 z-[2] overflow-hidden" style={slot("right")}>
+            {pages[turned]?.front}
+          </div>
+        ) : null}
+        {flip && flipLeaf ? (
+          <div
+            className="absolute top-0 z-[5]"
+            style={{
+              left: pageWidth,
+              width: pageWidth,
+              height: pageHeight,
+              transformOrigin: "left center",
+              transformStyle: "preserve-3d",
+              transform: `rotateY(${angle}deg) rotateX(${tilt}deg)`,
+              borderRadius: pageRadius,
+            }}
+          >
+            <div
+              className="absolute inset-0 overflow-hidden"
+              style={{
+                borderRadius: pageRadius,
+                backgroundColor: pageColor,
+                transform: showFront ? undefined : "rotateY(180deg)",
+                boxShadow:
+                  shadow > 0
+                    ? `0 16px 28px rgba(0,0,0,${Math.min(0.45, shadow)})`
+                    : undefined,
+              }}
+            >
+              {showFront ? flipLeaf.front : flipLeaf.back}
+            </div>
+          </div>
+        ) : null}
+      </div>
+      {leftGesture ? (
+        <div className="absolute top-0 z-30 h-full" style={{ left: 0, width: pageWidth }}>
           {leftGesture}
         </div>
       ) : null}

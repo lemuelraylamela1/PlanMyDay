@@ -14,27 +14,29 @@ export function OurStory() {
   return (
     <section
       id="story"
-      className="relative overflow-x-clip lantern-section"
+      className="relative lantern-section"
       style={{ backgroundColor: "var(--color-night)" }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 55% at 50% 18%, rgba(244,196,68,0.12) 0%, transparent 55%), linear-gradient(180deg, rgba(30,15,58,0.9) 0%, rgba(13,7,32,1) 42%, rgba(13,7,32,1) 100%)",
-        }}
-      />
-      <FloatingLanterns
-        count={compact ? 4 : 14}
-        intensity={compact ? "ambient" : "festival"}
-        sizeScale={compact ? 0.48 : 0.62}
-        className="z-0 opacity-70 max-sm:opacity-45"
-      />
-      {!compact ? (
-        <MagicDust count={20} intensity="soft" className="opacity-40" />
-      ) : null}
-      <SceneAtmosphere tone="warm" className={compact ? "opacity-25" : "opacity-40"} />
+      {/* Clip scenery here, not on the section — overflow on an ancestor flattens the book. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 55% at 50% 18%, rgba(244,196,68,0.12) 0%, transparent 55%), linear-gradient(180deg, rgba(30,15,58,0.9) 0%, rgba(13,7,32,1) 42%, rgba(13,7,32,1) 100%)",
+          }}
+        />
+        <FloatingLanterns
+          count={compact ? 4 : 14}
+          intensity={compact ? "ambient" : "festival"}
+          sizeScale={compact ? 0.48 : 0.62}
+          className="z-0 opacity-70 max-sm:opacity-45"
+        />
+        {!compact ? (
+          <MagicDust count={20} intensity="soft" className="opacity-40" />
+        ) : null}
+        <SceneAtmosphere tone="warm" className={compact ? "opacity-25" : "opacity-40"} />
+      </div>
 
       <header className="story-prologue relative z-[1] mx-auto max-w-4xl px-4 pt-4 text-center sm:px-6 sm:pt-6">
         <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.45em] text-[#e8b4bc]">

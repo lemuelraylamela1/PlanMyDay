@@ -46,7 +46,6 @@ export function OpeningSequence() {
     }
 
     const ctx = gsap.context(() => {
-      gsap.config({ force3D: true });
       const tl = gsap.timeline({
         onComplete: () => {
           setSettled(true);
@@ -85,10 +84,19 @@ export function OpeningSequence() {
         "dreamSky"
       );
 
+      // Phones overlap the card with the constellation so the sky never goes empty.
+      const chapterAt = lightOpening ? 0.12 : 0.22;
+      const titleOutAt = lightOpening ? 0.92 : 1.57;
+      const starsAt = lightOpening ? 0.78 : 2.1;
+      const starsOutAt = starsAt + (lightOpening ? 1.05 : 1.5);
+      const lanternAt = lightOpening ? 1.95 : 3.55;
+      const worldAt = lightOpening ? 2.85 : 4.55;
+      const pushAt = lightOpening ? 3.75 : 5.85;
+
       // Phase 2: chapter card appears alone.
       // Layout centering is flex-based — animate only y/opacity/scale so GSAP
       // transforms never fight Tailwind translate utilities on mobile.
-      tl.add("chapter", 0.22);
+      tl.add("chapter", chapterAt);
       tl.fromTo(
         ".seq-title-card",
         { y: 28, opacity: 0, scale: 0.97 },
@@ -108,14 +116,14 @@ export function OpeningSequence() {
           y: -22,
           opacity: 0,
           scale: 0.96,
-          duration: 0.7,
+          duration: lightOpening ? 0.45 : 0.7,
           ease: "power2.inOut",
         },
-        "chapter+=1.35"
+        titleOutAt
       );
 
       // Phase 3: stars gather into a constellation.
-      tl.add("starsForm", 2.1);
+      tl.add("starsForm", starsAt);
       tl.to(".seq-constellation", { opacity: 1, duration: 0.25 }, "starsForm");
       tl.fromTo(
         ".seq-constellation-star",
@@ -149,12 +157,12 @@ export function OpeningSequence() {
       );
       tl.to(
         ".seq-constellation",
-        { scale: 1.08, opacity: 0, duration: 0.8, ease: "power2.inOut" },
-        "starsForm+=1.5"
+        { scale: 1.08, opacity: 0, duration: lightOpening ? 0.55 : 0.8, ease: "power2.inOut" },
+        starsOutAt
       );
 
       // Phase 4: lantern rise.
-      tl.add("lanternRise", 3.55);
+      tl.add("lanternRise", lanternAt);
       tl.to(
         ".seq-hero-lantern",
         { y: -24, opacity: 1, scale: 1, duration: 1.45, ease: "power1.out" },
@@ -169,7 +177,7 @@ export function OpeningSequence() {
       );
 
       // Phase 5: the world opens.
-      tl.add("worldOpen", 4.55);
+      tl.add("worldOpen", worldAt);
       tl.fromTo(
         ".seq-lanterns",
         { opacity: 0 },
@@ -199,7 +207,7 @@ export function OpeningSequence() {
       );
 
       // Phase 6: soft camera push into the site.
-      tl.add("pushReveal", 5.85);
+      tl.add("pushReveal", pushAt);
       tl.to(
         ".seq-stage",
         { scale: stageScale, duration: 1.05, ease: "power2.inOut" },
@@ -216,7 +224,7 @@ export function OpeningSequence() {
     }, root);
 
     return () => ctx.revert();
-  }, [reducedMotion, reveal, stageScale]);
+  }, [lightOpening, reducedMotion, reveal, stageScale]);
 
   return (
     <motion.div

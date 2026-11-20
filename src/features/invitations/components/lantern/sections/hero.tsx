@@ -24,20 +24,19 @@ export function Hero() {
   const { phase } = useExperience();
   const { profile, compact, reduceMotion, quality } = useLanternPerf();
   const revealed = phase === "revealed";
-  // Compile the sky while the opening overlay still covers the hero.
+  // WebGL waits until the opening overlay is gone. The section gradient
+  // stays painted so the handoff is not a black frame.
   const [skyReady, setSkyReady] = React.useState(false);
   // Dust, extra lanterns, and the light bloom wait until the overlay has left.
   const [decorReady, setDecorReady] = React.useState(false);
   React.useEffect(() => {
-    if (phase === "invitation") {
+    if (phase !== "revealed") {
       setSkyReady(false);
-      setDecorReady(false);
       return;
     }
-    const skyDelay = phase === "opening" ? 2400 : 0;
-    const skyId = window.setTimeout(() => setSkyReady(true), skyDelay);
+    const skyId = window.setTimeout(() => setSkyReady(true), compact ? 280 : 160);
     return () => window.clearTimeout(skyId);
-  }, [phase]);
+  }, [phase, compact]);
   React.useEffect(() => {
     if (!revealed) {
       setDecorReady(false);

@@ -662,7 +662,15 @@ export function StoryBook({ className }: { className?: string }) {
   const [turned, setTurned] = React.useState(0);
   const hasTurned = turned > 0;
 
-  const pageWidth = compact ? 172 : 290;
+  const [frameWidth, setFrameWidth] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    const read = () => setFrameWidth(window.innerWidth);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  }, []);
+  const fitted = Math.floor(((frameWidth ?? 390) - 28) / 2);
+  const pageWidth = compact ? Math.max(136, Math.min(172, fitted)) : 290;
   const pageHeight = compact ? 280 : 410;
 
   const pages = React.useMemo(
@@ -687,7 +695,7 @@ export function StoryBook({ className }: { className?: string }) {
     <StoryReaderRegistryContext.Provider value={readerRegistry}>
     <div className={cn("story-book relative mx-auto flex w-full flex-col items-center", className)}>
       <div
-        className="relative mx-auto flex w-full max-w-full items-center justify-center overflow-x-clip overflow-y-visible py-6 sm:py-10"
+        className="relative mx-auto flex w-full max-w-full items-center justify-center overflow-visible py-6 sm:py-10"
         style={{ minHeight: pageHeight + 24 }}
       >
         {!compact ? (
@@ -713,6 +721,7 @@ export function StoryBook({ className }: { className?: string }) {
           trigger="drag"
           closeOnLeave={false}
           interactive
+          flat={compact}
           onTurnedChange={setTurned}
           leftGesture={textOnLeft ? <LeftPageReader chapterIndex={activeChapter} /> : null}
           className="relative z-[1] mx-auto shrink-0"

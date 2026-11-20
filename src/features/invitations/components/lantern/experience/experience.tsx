@@ -46,21 +46,26 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
   const { width, height, isMobile, isCompact, isShort } = useInviteViewport();
   const revealed = phase === "revealed";
   const transitionActive = phase === "opening";
-  // Paint the hero while the opening overlay still covers it, so the
-  // handoff is only an overlay fade — not a first paint of the whole page.
+  // Paint the page while the guest is still reading the gate, so the
+  // opening timeline never shares the main thread with a first layout.
+  // If they tap before that idle paint, wait until the overlay is gone.
   const [primed, setPrimed] = React.useState(false);
   React.useEffect(() => {
-    if (phase === "invitation") {
-      setPrimed(false);
-      return;
-    }
+    if (primed || phase === "opening") return;
     if (phase === "revealed") {
       setPrimed(true);
       return;
     }
-    const id = window.setTimeout(() => setPrimed(true), 2200);
-    return () => window.clearTimeout(id);
-  }, [phase]);
+    let idleId = 0;
+    const timeoutId = window.setTimeout(() => setPrimed(true), 1100);
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(() => setPrimed(true), { timeout: 1600 });
+    }
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (idleId) window.cancelIdleCallback(idleId);
+    };
+  }, [phase, primed]);
 
   // Warm the opening-sequence chunk in the background while the guest
   // is still on the invitation gate.
@@ -89,19 +94,18 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
       <BackToTop />
       <SmoothScroll />
 
-      {/* Full site stays in the DOM for SEO; effects pause until revealed. */}
+      {/* Mount early for layout, but stay invisible until reveal so the hero
+          cannot peek through the opening overlay (which looked like a double pop). */}
       <MainEffectsProvider active={revealed}>
         <div
           aria-hidden={!revealed}
           className={
-            primed
-              ? revealed
-                ? "opacity-100"
-                : "pointer-events-none select-none opacity-100"
+            primed && revealed
+              ? "opacity-100"
               : "pointer-events-none select-none opacity-0"
           }
         >
-          {children}
+          {primed ? children : null}
         </div>
       </MainEffectsProvider>
 

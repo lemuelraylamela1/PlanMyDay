@@ -191,8 +191,8 @@ export function InvitationGate() {
           animate={
             mounted
               ? dissolving
-                ? { opacity: 0, scale: 1.015, y: -8, filter: "blur(6px)" }
-                : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }
+                ? { opacity: 0, scale: 1.015, y: -8 }
+                : { opacity: 1, y: 0, scale: 1 }
               : false
           }
           transition={
