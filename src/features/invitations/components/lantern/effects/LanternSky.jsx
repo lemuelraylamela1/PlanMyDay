@@ -580,9 +580,21 @@ const LanternSky = ({
     };
   }, []);
 
+  // Only wake when live knobs change — a bare effect re-ran every React
+  // render and kept the GL loop thrashing under Framer Motion scroll updates.
   useEffect(() => {
     wakeRef.current?.();
-  });
+  }, [
+    density,
+    layers,
+    glowIntensity,
+    lanternSize,
+    speed,
+    twinkleIntensity,
+    disableAnimation,
+    reveal,
+    opacity,
+  ]);
 
   const show = painted && reveal;
 

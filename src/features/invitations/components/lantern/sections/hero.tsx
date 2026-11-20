@@ -46,13 +46,14 @@ export function Hero() {
       return;
     }
     const phone = phoneRef.current;
+    // Phones skip WebGL — bring CSS lanterns in quickly once the overlay is gone.
     const lanternId = window.setTimeout(
       () => setLanternsReady(true),
-      phone ? 900 : 500,
+      phone ? 280 : 500,
     );
     const decorId = window.setTimeout(
       () => setDecorReady(true),
-      phone ? 1100 : 700,
+      phone ? 700 : 700,
     );
     return () => {
       window.clearTimeout(lanternId);
@@ -61,7 +62,7 @@ export function Hero() {
   }, [phase]);
   const lanternFade = reduceMotion
     ? { duration: 0 }
-    : { duration: 1, ease: [0.22, 1, 0.36, 1] as const };
+    : { duration: onPhone ? 0.7 : 1, ease: [0.22, 1, 0.36, 1] as const };
   const wedding = useLanternContent();
   const [firstRole, secondRole] = wedding.couple.order;
   const firstName = wedding.couple[firstRole].first;
@@ -72,11 +73,11 @@ export function Hero() {
     offset: ["start start", "end start"],
   });
 
-  const p = reduceMotion ? 0 : profile.parallax;
-  // Keep castle parallax readable even on "balanced" (p ~ 0.45); off when reduced-motion.
-  const castleP = reduceMotion ? 0 : Math.max(p, 0.55);
+  // Phones: light parallax only — scroll-linked transforms + WebGL was freezing
+  // Messenger / Android WebViews right as the hero appeared.
+  const p = reduceMotion || onPhone ? 0 : profile.parallax;
+  const castleP = reduceMotion || onPhone ? 0 : Math.max(p, 0.55);
   const skyY = useTransform(scrollYProgress, [0, 1], ["0%", `${30 * p}%`]);
-  // Hills stay mid-distance; castle is nearer so it drifts farther + scales.
   const hillsY = useTransform(scrollYProgress, [0, 1], ["0%", `${14 * p}%`]);
   const castleY = useTransform(scrollYProgress, [0, 1], ["0%", `${42 * castleP}%`]);
   const castleScale = useTransform(scrollYProgress, [0, 1], [1, 1 + 0.14 * castleP]);
@@ -86,8 +87,8 @@ export function Hero() {
   const contentY = useTransform(scrollYProgress, [0, 1], ["0%", `${-22 * p}%`]);
   const contentOp = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
 
-  // Freeze sky budget for this hero session. Live FPS downgrades used to
-  // change density/layers/DPR mid-view and flash the canvas on phones.
+  // Desktop-only WebGL budget. Phones use CSS lanterns — compiling this shader
+  // on Messenger was locking the main thread after Open Invitation.
   type SkyLock = {
     density: number;
     layers: number;
@@ -98,24 +99,35 @@ export function Hero() {
   const skyLockRef = React.useRef<SkyLock | null>(null);
   if (phase !== "revealed") {
     skyLockRef.current = null;
-  } else if (!skyLockRef.current) {
+  } else if (!onPhone && !skyLockRef.current) {
     const q = quality === "high" ? "high" : quality === "balanced" ? "balanced" : "low";
     skyLockRef.current = {
       density: q === "high" ? 0.95 : q === "balanced" ? 0.75 : 0.5,
       layers: q === "high" ? 4 : q === "balanced" ? 3 : 2,
       dpr: profile.maxDpr,
-      glow: onPhone ? 0.7 : 0.55,
-      size: onPhone ? 0.42 : 0.38,
+      glow: 0.55,
+      size: 0.38,
     };
   }
   const sky = skyLockRef.current ?? {
     density: 0.75,
     layers: 3,
     dpr: profile.maxDpr,
-    glow: onPhone ? 0.7 : 0.55,
-    size: onPhone ? 0.42 : 0.38,
+    glow: 0.55,
+    size: 0.38,
   };
-  const svgLanternCount = quality === "high" ? 10 : quality === "balanced" ? 8 : 5;
+  // Lock phone SVG count so FPS quality dips cannot remount lanterns mid-view.
+  const phoneLanternLock = React.useRef<number | null>(null);
+  if (onPhone && phoneLanternLock.current == null) {
+    phoneLanternLock.current = 6;
+  }
+  const svgLanternCount = onPhone
+    ? (phoneLanternLock.current ?? 6)
+    : quality === "high"
+      ? 10
+      : quality === "balanced"
+        ? 8
+        : 5;
   const [storyVeil, setStoryVeil] = React.useState(0);
   const storyBusy = React.useRef(false);
 
@@ -152,8 +164,8 @@ export function Hero() {
       className="relative flex h-[100vh] h-[100svh] h-[100dvh] w-full shrink-0 flex-col overflow-hidden px-0 pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]"
       style={{ background: "#0d0720" }}
     >
-      {decorReady ? (
-        <MagicDust count={onPhone ? 12 : 30} intensity="soft" className="z-[2] opacity-40" />
+      {!onPhone && decorReady ? (
+        <MagicDust count={30} intensity="soft" className="z-[2] opacity-40" />
       ) : null}
 
       <motion.div
@@ -161,9 +173,8 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -top-[10%] z-[1] h-[120%] overflow-hidden"
         aria-hidden
       >
-        {/* Phones: prewarm WebGL as soon as the hero is revealed (hidden), then
-            fade once after settle + first paint. Desktop waits for the defer. */}
-        {revealed && (onPhone || lanternsReady) ? (
+        {/* Desktop only — phone WebGL compile froze Messenger right after reveal. */}
+        {!onPhone && revealed && lanternsReady ? (
           <LanternSky
             lanternColors={LANTERN_SKY_COLORS}
             density={sky.density}
@@ -238,25 +249,23 @@ export function Hero() {
         <CastleSilhouette className="h-[30vh] w-full min-[400px]:h-[32vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
       </motion.div>
 
-      {/* Phones: WebGL sky only — SVG lanterns remount on quality dips and snap. */}
-      {!onPhone ? (
-        <motion.div
-          style={{ y: lanternsY }}
-          className="pointer-events-none absolute inset-0 z-[4]"
-          aria-hidden
-          initial={false}
-          animate={{ opacity: lanternsReady ? 0.75 : 0 }}
-          transition={lanternFade}
-        >
-          {lanternsReady ? (
-            <FloatingLanterns
-              count={svgLanternCount}
-              intensity="festival"
-              sizeScale={0.48}
-            />
-          ) : null}
-        </motion.div>
-      ) : null}
+      <motion.div
+        style={{ y: lanternsY }}
+        className="pointer-events-none absolute inset-0 z-[4]"
+        aria-hidden
+        initial={false}
+        animate={{ opacity: lanternsReady ? (onPhone ? 0.7 : 0.75) : 0 }}
+        transition={lanternFade}
+      >
+        {lanternsReady ? (
+          <FloatingLanterns
+            count={svgLanternCount}
+            intensity={onPhone ? "ambient" : "festival"}
+            sizeScale={onPhone ? 0.42 : 0.48}
+            exactCount={onPhone}
+          />
+        ) : null}
+      </motion.div>
 
       {!onPhone ? (
         <motion.div

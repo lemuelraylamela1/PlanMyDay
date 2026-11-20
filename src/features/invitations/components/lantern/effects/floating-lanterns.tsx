@@ -173,12 +173,15 @@ export function FloatingLanterns({
   intensity = "ambient",
   sizeScale = 1,
   active: activeProp,
+  /** Skip perf scaling — used on phones so quality dips cannot remount lanterns. */
+  exactCount = false,
 }: {
   count?: number;
   className?: string;
   intensity?: "ambient" | "festival";
   sizeScale?: number;
   active?: boolean;
+  exactCount?: boolean;
 }) {
   const mounted = useMounted();
   const instanceId = React.useId();
@@ -187,10 +190,12 @@ export function FloatingLanterns({
   const active = activeProp ?? mainActive;
 
   const maxCount = intensity === "festival" ? 20 : 12;
-  const safeCount = Math.min(
-    scaleEffectCount(count, profile.lanternScale, compact, 3),
-    maxCount,
-  );
+  const safeCount = exactCount
+    ? Math.min(Math.max(1, count), maxCount)
+    : Math.min(
+        scaleEffectCount(count, profile.lanternScale, compact, 3),
+        maxCount,
+      );
 
   const lanterns = React.useMemo<Lantern[]>(
     () =>

@@ -48,7 +48,8 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
   const transitionActive = phase === "opening";
   // Paint the page while the guest is still reading the gate, so the
   // opening timeline never shares the main thread with a first layout.
-  // If they tap before that idle paint, wait until the overlay is gone.
+  // Phones prime sooner — Messenger WebViews stall if the whole invite
+  // mounts in the same frame the hero becomes interactive.
   const [primed, setPrimed] = React.useState(false);
   React.useEffect(() => {
     if (primed || phase === "opening") return;
@@ -56,10 +57,15 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
       setPrimed(true);
       return;
     }
+    const phone =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 639px)").matches;
     let idleId = 0;
-    const timeoutId = window.setTimeout(() => setPrimed(true), 1100);
+    const timeoutId = window.setTimeout(() => setPrimed(true), phone ? 450 : 1100);
     if (typeof window.requestIdleCallback === "function") {
-      idleId = window.requestIdleCallback(() => setPrimed(true), { timeout: 1600 });
+      idleId = window.requestIdleCallback(() => setPrimed(true), {
+        timeout: phone ? 700 : 1600,
+      });
     }
     return () => {
       window.clearTimeout(timeoutId);
