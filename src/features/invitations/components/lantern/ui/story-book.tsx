@@ -125,17 +125,12 @@ function displayStill(src: string) {
   return src.replace(/\.gif$/i, ".jpg").replace(/\.(jpe?g|png)$/i, ".webp");
 }
 
-function ChapterPhoto({ chapter, index }: { chapter: StoryChapter; index: number }) {
-  const active = React.useContext(StoryActiveChapterContext) === index;
-  const animated = /\.gif$/i.test(chapter.imageSrc);
+function ChapterPhoto({ chapter }: { chapter: StoryChapter }) {
   const [useOriginal, setUseOriginal] = React.useState(false);
   const zoom = chapter.imageZoom ?? 1;
-  const src =
-    useOriginal
-      ? chapter.imageSrc.replace(/\.gif$/i, ".jpg")
-      : animated && active
-        ? chapter.imageSrc
-        : displayStill(chapter.imageSrc);
+  const src = useOriginal
+    ? chapter.imageSrc.replace(/\.gif$/i, ".jpg")
+    : displayStill(chapter.imageSrc);
   // Size/position zoom — never transform:scale. Scale escapes overflow clipping
   // inside PageFlip's preserve-3d leaves and ghosts across the spine.
   const zoomInset = zoom !== 1 ? `${(-(zoom - 1) / 2) * 100}%` : undefined;
@@ -185,47 +180,12 @@ function ChapterPhoto({ chapter, index }: { chapter: StoryChapter; index: number
   );
 }
 
-/** Slow crawl so guests can read comfortably on phones. */
-const STORY_AUTO_SCROLL_PX_PER_SEC = 10;
 const STORY_DRAG_AXIS_SLOP = 8;
 
-/** Open chapter index from PageFlip (`-1` while the cover or endpaper is showing). */
-const StoryActiveChapterContext = React.createContext(-1);
-
-type StoryReaderApi = {
-  onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerCancel: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onWheel: (event: WheelEvent) => void;
-};
-
-/** Chapter parchment gesture handlers, keyed by chapter index. */
-const StoryReaderRegistryContext = React.createContext<{
-  register: (index: number, api: StoryReaderApi | null) => void;
-  get: (index: number) => StoryReaderApi | null;
-} | null>(null);
-
-function useStoryReaderRegistry() {
-  const mapRef = React.useRef(new Map<number, StoryReaderApi>());
-  return React.useMemo(
-    () => ({
-      register(index: number, api: StoryReaderApi | null) {
-        if (api) mapRef.current.set(index, api);
-        else mapRef.current.delete(index);
-      },
-      get(index: number) {
-        return mapRef.current.get(index) ?? null;
-      },
-    }),
-    [],
-  );
-}
-
 /**
- * Clipped parchment viewport with transform-based crawl.
- * Native overflow scroll is unreliable inside PageFlip's preserve-3d faces,
- * so we translate the content and keep vertical drag local to this page.
+ * Transform-based vertical reading (native overflow is flaky inside PageFlip
+ * transforms). Never capture pointers or stopPropagation — those blocked
+ * horizontal page turns after the first vertical scroll on mobile.
  */
 function ChapterParchment({
   chapter,
@@ -237,20 +197,10 @@ function ChapterParchment({
   total: number;
 }) {
   const { compact } = useLanternPerf();
-  const active = React.useContext(StoryActiveChapterContext) === index;
-  const readerRegistry = React.useContext(StoryReaderRegistryContext);
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
-  const frameRef = React.useRef<number | null>(null);
-  const lastTsRef = React.useRef<number | null>(null);
   const offsetRef = React.useRef(0);
   const maxOffsetRef = React.useRef(0);
-  const pausedRef = React.useRef(false);
-  const resumeTimerRef = React.useRef<number | null>(null);
-  const onScreenRef = React.useRef(false);
-  const activeRef = React.useRef(active);
-  activeRef.current = active;
-
   const dragRef = React.useRef<{
     pointerId: number;
     startY: number;
@@ -264,169 +214,30 @@ function ChapterParchment({
     const clamped = Math.max(0, Math.min(max, next));
     offsetRef.current = clamped;
     const content = contentRef.current;
-    if (content) {
-      content.style.transform = `translate3d(0, ${-clamped}px, 0)`;
-    }
+    if (content) content.style.transform = `translate3d(0, ${-clamped}px, 0)`;
     return clamped;
   }, []);
 
   const measure = React.useCallback(() => {
     const viewport = viewportRef.current;
     const content = contentRef.current;
-    if (!viewport || !content) return 0;
-    const max = Math.max(0, content.scrollHeight - viewport.clientHeight);
-    maxOffsetRef.current = max;
+    if (!viewport || !content) return;
+    maxOffsetRef.current = Math.max(0, content.scrollHeight - viewport.clientHeight);
     applyOffset(offsetRef.current);
-    return max;
   }, [applyOffset]);
 
-  const stopLoop = React.useCallback(() => {
-    if (frameRef.current != null) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
-    }
-    lastTsRef.current = null;
-  }, []);
-
-  const tick = React.useCallback(
-    (now: number) => {
-      if (pausedRef.current || !activeRef.current || !onScreenRef.current) {
-        frameRef.current = null;
-        return;
-      }
-      const max = maxOffsetRef.current;
-      if (max <= 1) {
-        frameRef.current = null;
-        return;
-      }
-      if (lastTsRef.current == null) lastTsRef.current = now;
-      const dt = Math.min(48, now - lastTsRef.current) / 1000;
-      lastTsRef.current = now;
-      const next = applyOffset(offsetRef.current + STORY_AUTO_SCROLL_PX_PER_SEC * dt);
-      if (next < max - 0.5) {
-        frameRef.current = requestAnimationFrame(tick);
-      } else {
-        frameRef.current = null;
-      }
-    },
-    [applyOffset],
-  );
-
-  const startAuto = React.useCallback(() => {
-    if (!activeRef.current || pausedRef.current || !onScreenRef.current) return;
-    const max = measure();
-    if (max <= 1) return;
-    if (offsetRef.current >= max - 0.5) return;
-    if (frameRef.current != null) return;
-    lastTsRef.current = null;
-    frameRef.current = requestAnimationFrame(tick);
-  }, [measure, tick]);
-
-  const pauseAuto = React.useCallback(() => {
-    pausedRef.current = true;
-    stopLoop();
-    if (resumeTimerRef.current != null) {
-      window.clearTimeout(resumeTimerRef.current);
-      resumeTimerRef.current = null;
-    }
-  }, [stopLoop]);
-
-  const scheduleResume = React.useCallback(() => {
-    if (resumeTimerRef.current != null) {
-      window.clearTimeout(resumeTimerRef.current);
-    }
-    resumeTimerRef.current = window.setTimeout(() => {
-      resumeTimerRef.current = null;
-      pausedRef.current = false;
-      startAuto();
-    }, 1400);
-  }, [startAuto]);
-
   React.useEffect(() => {
-    if (!active) {
-      stopLoop();
-      return;
-    }
-    pausedRef.current = false;
-    offsetRef.current = 0;
-    applyOffset(0);
-    // Wait for the page-turn settle + layout inside the 3D face.
-    const kick = window.setTimeout(() => {
-      measure();
-      startAuto();
-    }, 420);
-    const retry = window.setTimeout(() => {
-      measure();
-      startAuto();
-    }, 900);
-    return () => {
-      window.clearTimeout(kick);
-      window.clearTimeout(retry);
-      stopLoop();
-    };
-  }, [active, applyOffset, measure, startAuto, stopLoop]);
-
-  React.useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport || typeof IntersectionObserver === "undefined") {
-      onScreenRef.current = true;
-      if (activeRef.current && !pausedRef.current) startAuto();
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        onScreenRef.current = Boolean(entry?.isIntersecting);
-        if (!onScreenRef.current) {
-          stopLoop();
-          return;
-        }
-        if (activeRef.current && !pausedRef.current) startAuto();
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(viewport);
-    return () => io.disconnect();
-  }, [startAuto, stopLoop]);
-
-  React.useEffect(() => {
+    measure();
     const viewport = viewportRef.current;
     if (!viewport || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => {
-      measure();
-      if (activeRef.current && !pausedRef.current) startAuto();
-    });
+    const ro = new ResizeObserver(() => measure());
     ro.observe(viewport);
     if (contentRef.current) ro.observe(contentRef.current);
     return () => ro.disconnect();
-  }, [measure, startAuto]);
-
-  React.useEffect(
-    () => () => {
-      stopLoop();
-      if (resumeTimerRef.current != null) {
-        window.clearTimeout(resumeTimerRef.current);
-      }
-    },
-    [stopLoop],
-  );
-
-  React.useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const onWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-      event.preventDefault();
-      pauseAuto();
-      applyOffset(offsetRef.current + event.deltaY);
-      scheduleResume();
-    };
-    viewport.addEventListener("wheel", onWheel, { passive: false });
-    return () => viewport.removeEventListener("wheel", onWheel);
-  }, [applyOffset, pauseAuto, scheduleResume]);
+  }, [measure, chapter.description, chapter.title]);
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
-    pauseAuto();
     dragRef.current = {
       pointerId: event.pointerId,
       startY: event.clientY,
@@ -447,71 +258,23 @@ function ChapterParchment({
       if (Math.abs(dx) < STORY_DRAG_AXIS_SLOP && Math.abs(dy) < STORY_DRAG_AXIS_SLOP) {
         return;
       }
-      // Horizontal motion belongs to PageFlip page turns.
+      // Horizontal motion belongs to PageFlip — release and let events bubble.
       if (Math.abs(dx) >= Math.abs(dy)) {
-        drag.axis = "horizontal";
         dragRef.current = null;
-        scheduleResume();
         return;
       }
       drag.axis = "vertical";
-      try {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } catch {
-        /* pointer already gone */
-      }
     }
 
     if (drag.axis !== "vertical") return;
-    event.stopPropagation();
     applyOffset(drag.origin - dy);
   };
 
   const endPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) {
-      scheduleResume();
-      return;
-    }
-    if (drag.axis === "vertical") {
-      try {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      } catch {
-        /* already released */
-      }
-      event.stopPropagation();
-    }
+    if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    scheduleResume();
   };
-
-  const handlersRef = React.useRef<StoryReaderApi | null>(null);
-  handlersRef.current = {
-    onPointerDown,
-    onPointerMove,
-    onPointerUp: endPointer,
-    onPointerCancel: endPointer,
-    onWheel: (event) => {
-      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-      event.preventDefault();
-      pauseAuto();
-      applyOffset(offsetRef.current + event.deltaY);
-      scheduleResume();
-    },
-  };
-
-  React.useEffect(() => {
-    if (!readerRegistry) return;
-    const proxy: StoryReaderApi = {
-      onPointerDown: (event) => handlersRef.current?.onPointerDown(event),
-      onPointerMove: (event) => handlersRef.current?.onPointerMove(event),
-      onPointerUp: (event) => handlersRef.current?.onPointerUp(event),
-      onPointerCancel: (event) => handlersRef.current?.onPointerCancel(event),
-      onWheel: (event) => handlersRef.current?.onWheel(event),
-    };
-    readerRegistry.register(index, proxy);
-    return () => readerRegistry.register(index, null);
-  }, [index, readerRegistry]);
 
   return (
     <div className="story-book-page relative h-full w-full min-h-0 overflow-hidden">
@@ -531,6 +294,10 @@ function ChapterParchment({
         onPointerMove={onPointerMove}
         onPointerUp={endPointer}
         onPointerCancel={endPointer}
+        onWheel={(event) => {
+          if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+          applyOffset(offsetRef.current + event.deltaY);
+        }}
       >
         <div
           ref={contentRef}
@@ -553,49 +320,10 @@ function ChapterParchment({
               · drag to read
             </span>
           </p>
-          {/* Extra room so phone pages always have crawl distance past the last line. */}
           <div aria-hidden className="h-16 sm:h-10" />
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Left-page text sits on a flipped 3D back face, which does not receive
- * pointer events. This flat layer sits over that page and drives the same reader.
- */
-function LeftPageReader({ chapterIndex }: { chapterIndex: number }) {
-  const registry = React.useContext(StoryReaderRegistryContext);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const node = ref.current;
-    if (!node || !registry) return;
-    const onWheel = (event: WheelEvent) => {
-      registry.get(chapterIndex)?.onWheel(event);
-    };
-    node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
-  }, [chapterIndex, registry]);
-
-  const call =
-    (method: "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel") =>
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      registry?.get(chapterIndex)?.[method](event);
-    };
-
-  return (
-    <div
-      ref={ref}
-      className="h-full w-full cursor-grab"
-      style={{ touchAction: "none" }}
-      aria-hidden
-      onPointerDown={call("onPointerDown")}
-      onPointerMove={call("onPointerMove")}
-      onPointerUp={call("onPointerUp")}
-      onPointerCancel={call("onPointerCancel")}
-    />
   );
 }
 
@@ -608,7 +336,7 @@ function buildStoryLeaves(
   // Even chapters (2,4): text left, image right
   const sides = chapters.map((chapter, index) => {
     const imageLeft = index % 2 === 0;
-    const photo = <ChapterPhoto chapter={chapter} index={index} />;
+    const photo = <ChapterPhoto chapter={chapter} />;
     const text = (
       <ChapterParchment chapter={chapter} index={index} total={chapters.length} />
     );
@@ -658,7 +386,6 @@ export function StoryBook({ className }: { className?: string }) {
   const wedding = useLanternContent();
   const { compact } = useLanternPerf();
   const chapters = wedding.story.chapters;
-  const readerRegistry = useStoryReaderRegistry();
   const [turned, setTurned] = React.useState(0);
   const hasTurned = turned > 0;
 
@@ -685,14 +412,8 @@ export function StoryBook({ className }: { className?: string }) {
   const chapterView = turned === 0 ? 0 : Math.min(chapters.length, turned);
   const atEnd = pages.length > 0 && turned >= pages.length;
   const hintQuiet = hasTurned;
-  const activeChapter =
-    turned > 0 && turned <= chapters.length ? turned - 1 : -1;
-  // Even chapters place the story on the left page (a flipped back face).
-  const textOnLeft = activeChapter >= 0 && activeChapter % 2 === 1;
 
   return (
-    <StoryActiveChapterContext.Provider value={activeChapter}>
-    <StoryReaderRegistryContext.Provider value={readerRegistry}>
     <div className={cn("story-book relative mx-auto flex w-full flex-col items-center", className)}>
       <div
         className="relative mx-auto flex w-full max-w-full items-center justify-center overflow-visible py-6 sm:py-10"
@@ -713,17 +434,16 @@ export function StoryBook({ className }: { className?: string }) {
           perspective={compact ? 800 : 1300}
           spineShift={0}
           turnAngle={180}
-          peekAngle={compact ? 0 : 8}
+          peekAngle={0}
           duration={compact ? 0.4 : 0.55}
-          stagger={compact ? 0 : 0.07}
+          stagger={0}
           ease="easeInOut"
           shadow={compact ? 0.12 : 0.34}
           trigger="drag"
           closeOnLeave={false}
           interactive
-          flat={compact}
+          flat
           onTurnedChange={setTurned}
-          leftGesture={textOnLeft ? <LeftPageReader chapterIndex={activeChapter} /> : null}
           className="relative z-[1] mx-auto shrink-0"
         />
       </div>
@@ -752,7 +472,5 @@ export function StoryBook({ className }: { className?: string }) {
         </p>
       </div>
     </div>
-    </StoryReaderRegistryContext.Provider>
-    </StoryActiveChapterContext.Provider>
   );
 }

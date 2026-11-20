@@ -167,8 +167,14 @@ export function Hero() {
     <section
       ref={ref}
       id="hero"
-      className="relative flex h-[100vh] h-[100svh] h-[100dvh] w-full shrink-0 flex-col overflow-hidden px-0 pb-[env(safe-area-inset-bottom,0px)] pt-[env(safe-area-inset-top,0px)]"
-      style={{ background: "#0d0720" }}
+      className="relative flex w-full shrink-0 flex-col overflow-hidden px-0"
+      style={{
+        background: "#0d0720",
+        // Live visual-viewport height on phones avoids a white strip under the
+        // night sky when Messenger / browser chrome resizes the frame.
+        minHeight: onPhone ? "var(--invite-vvh, 100dvh)" : "100svh",
+        height: onPhone ? "var(--invite-vvh, 100dvh)" : "100dvh",
+      }}
     >
       {!onPhone && decorReady ? (
         <MagicDust count={30} intensity="soft" className="z-[2] opacity-40" />
@@ -238,21 +244,21 @@ export function Hero() {
         />
       </motion.div>
 
-      {/* Scenic base — raised / taller on mobile to claim the lower third */}
+      {/* Scenic base — shorter on phones so centered copy stays clear of roofs */}
       <motion.div
         style={{ y: hillsY }}
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] sm:bottom-0"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[2]"
         aria-hidden
       >
-        <HillSilhouette className="h-[32vh] w-full min-[400px]:h-[34vh] sm:h-auto sm:min-h-0" />
+        <HillSilhouette className="h-[22vh] w-full max-sm:opacity-90 sm:h-auto sm:min-h-0" />
       </motion.div>
 
       <motion.div
         style={{ y: castleY, scale: castleScale, opacity: castleOpacity }}
-        className="pointer-events-none absolute inset-x-0 bottom-[-2%] z-[3] origin-bottom sm:bottom-0"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] origin-bottom"
         aria-hidden
       >
-        <CastleSilhouette className="h-[30vh] w-full min-[400px]:h-[32vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
+        <CastleSilhouette className="h-[22vh] w-full max-sm:max-h-[28vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
       </motion.div>
 
       <motion.div
@@ -326,12 +332,20 @@ export function Hero() {
         )}
       </AnimatePresence>
 
-      {/* Content sits in the upper sky so names clear the bright castle */}
+      {/* Vertically centered copy on every phone size; page scroll (not nested). */}
       <motion.div
-        style={onPhone ? undefined : { y: contentY, opacity: contentOp }}
-        className="absolute inset-0 z-[5] flex items-start justify-center overflow-y-auto overscroll-contain px-5 pb-[max(6.5rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,10vh)] text-center sm:items-center sm:overflow-visible sm:pb-[18vh] sm:pt-0"
+        className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-5 text-center"
+        style={
+          onPhone
+            ? {
+                // Optical center above the castle / chevron band.
+                paddingTop: "max(0.5rem, env(safe-area-inset-top, 0px))",
+                paddingBottom: "max(5.5rem, 18vh)",
+              }
+            : { y: contentY, opacity: contentOp, paddingBottom: "18vh" }
+        }
       >
-        <div className="relative mx-auto flex w-full max-w-md flex-col items-center sm:max-w-2xl">
+        <div className="pointer-events-auto relative mx-auto flex w-full max-w-md -translate-y-[4%] flex-col items-center sm:max-w-2xl sm:translate-y-0">
           {/* Soft night scrim — keeps gold/cream type readable over roofs */}
           <div
             aria-hidden
@@ -364,7 +378,7 @@ export function Hero() {
                 ? { duration: 0 }
                 : { duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }
             }
-            className="mt-3 w-full text-center text-gold-foil font-display text-[clamp(2.35rem,11vw,3.6rem)] font-light leading-[0.98] tracking-[-0.02em] sm:mt-6 sm:text-7xl lg:text-8xl"
+            className="mt-3 w-full text-center text-gold-foil font-display text-[clamp(2.2rem,10.5vw,3.4rem)] font-light leading-[0.98] tracking-[-0.02em] sm:mt-6 sm:text-7xl lg:text-8xl"
             style={
               onPhone
                 ? {
@@ -403,14 +417,14 @@ export function Hero() {
             initial={onPhone ? false : { opacity: 0, scaleX: 0.6 }}
             animate={mounted || onPhone ? { opacity: 1, scaleX: 1 } : false}
             transition={onPhone ? { duration: 0 } : { duration: 1, delay: 0.7 }}
-            className="mx-auto my-4 rose-rule w-28 sm:my-7 sm:w-40"
+            className="mx-auto my-3.5 rose-rule w-28 sm:my-7 sm:w-40"
           />
 
           <motion.p
             initial={onPhone ? false : { opacity: 0, y: 10 }}
             animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
             transition={onPhone ? { duration: 0 } : { duration: 1, delay: 0.85 }}
-            className="mx-auto w-full max-w-[20.5rem] px-1 text-center font-serif text-[0.98rem] leading-7 text-cream sm:max-w-2xl sm:text-lg sm:leading-8"
+            className="mx-auto w-full max-w-[20.5rem] px-1 text-center font-serif text-[0.95rem] leading-7 text-cream sm:max-w-2xl sm:text-lg sm:leading-8"
             style={{ textShadow: "0 2px 16px rgba(0,0,0,0.85), 0 8px 28px rgba(0,0,0,0.55)" }}
           >
             {wedding.hero.closing}
@@ -420,7 +434,7 @@ export function Hero() {
             initial={onPhone ? false : { opacity: 0, y: 10 }}
             animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
             transition={onPhone ? { duration: 0 } : { duration: 1, delay: 1.05 }}
-            className="mt-6 flex w-full justify-center sm:mt-9"
+            className="mt-5 flex w-full justify-center sm:mt-9"
           >
             <StoryCta href="#portrait" onClick={enterStory}>
               Enter Our Story

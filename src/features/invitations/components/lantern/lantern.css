@@ -1,5 +1,12 @@
 /* Lantern invite — scoped under .invite-root */
 
+/* Kill the app's default white body behind the invite (phones showed a white strip). */
+html:has(.invite-root),
+html:has(.invite-root) body {
+  background: #0d0720 !important;
+  overscroll-behavior-y: none;
+}
+
 .invite-root {
   --color-night: #0d0720;
   --color-dusk: #1e0f3a;
@@ -56,10 +63,12 @@
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Skip layout and paint for sections below the hero until they near the screen. */
+/* Skip layout and paint for sections below the hero until they near the screen.
+   Keep the placeholder on the night palette so phones never flash a white gap. */
 .invite-root main > :not(#hero) {
   content-visibility: auto;
-  contain-intrinsic-size: auto 100dvh;
+  contain-intrinsic-size: auto 80vh;
+  background-color: var(--color-night);
 }
 
 /* Compact phones: keep type readable without blowing the scroll frame. */
