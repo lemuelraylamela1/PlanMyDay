@@ -85,7 +85,13 @@ export function Hero() {
   const lanternsY = useTransform(scrollYProgress, [0, 1], ["0%", `${18 * p}%`]);
   const reflectionY = useTransform(scrollYProgress, [0, 1], ["0%", `${24 * p}%`]);
   const contentY = useTransform(scrollYProgress, [0, 1], ["0%", `${-22 * p}%`]);
-  const contentOp = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
+  // Phones keep hero copy fully opaque — scroll-linked fade + foil clip made
+  // names/CTA vanish in Messenger while the eyebrow (solid blush) stayed.
+  const contentOp = useTransform(
+    scrollYProgress,
+    [0, 0.55],
+    onPhone || reduceMotion ? [1, 1] : [1, 0],
+  );
 
   // Desktop-only WebGL budget. Phones use CSS lanterns — compiling this shader
   // on Messenger was locking the main thread after Open Invitation.
@@ -322,8 +328,8 @@ export function Hero() {
 
       {/* Content sits in the upper sky so names clear the bright castle */}
       <motion.div
-        style={{ y: contentY, opacity: contentOp }}
-        className="absolute inset-0 z-[5] flex items-start justify-center px-5 pb-8 pt-[max(5.5rem,12vh)] text-center sm:items-center sm:pt-0 sm:pb-[18vh]"
+        style={onPhone ? undefined : { y: contentY, opacity: contentOp }}
+        className="absolute inset-0 z-[5] flex items-start justify-center overflow-y-auto overscroll-contain px-5 pb-[max(6.5rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,10vh)] text-center sm:items-center sm:overflow-visible sm:pb-[18vh] sm:pt-0"
       >
         <div className="relative mx-auto flex w-full max-w-md flex-col items-center sm:max-w-2xl">
           {/* Soft night scrim — keeps gold/cream type readable over roofs */}
@@ -337,9 +343,13 @@ export function Hero() {
           />
 
           <motion.p
-            initial={false}
-            animate={mounted ? { opacity: 1, y: 0 } : false}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+            initial={onPhone ? false : { opacity: 0, y: 10 }}
+            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
+            transition={
+              onPhone
+                ? { duration: 0 }
+                : { duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }
+            }
             className="w-full text-center font-cinzel text-[10px] font-semibold uppercase tracking-[0.38em] text-blush min-[380px]:text-[11px] sm:text-[10px] sm:tracking-[0.45em]"
             style={{ textShadow: "0 2px 18px rgba(0,0,0,0.75)" }}
           >
@@ -347,17 +357,42 @@ export function Hero() {
           </motion.p>
 
           <motion.h1
-            initial={false}
-            animate={mounted ? { opacity: 1, y: 0 } : false}
-            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
-            className="mt-4 w-full text-center text-gold-foil font-display text-[clamp(2.85rem,12vw,4.1rem)] font-light leading-[0.95] tracking-[-0.02em] sm:mt-6 sm:text-7xl lg:text-8xl"
-            style={{
-              textShadow:
-                "0 2px 0 rgba(7,3,20,0.55), 0 10px 28px rgba(0,0,0,0.72), 0 22px 60px rgba(0,0,0,0.55)",
-            }}
+            initial={onPhone ? false : { opacity: 0, y: 12 }}
+            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
+            transition={
+              onPhone
+                ? { duration: 0 }
+                : { duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }
+            }
+            className="mt-3 w-full text-center text-gold-foil font-display text-[clamp(2.35rem,11vw,3.6rem)] font-light leading-[0.98] tracking-[-0.02em] sm:mt-6 sm:text-7xl lg:text-8xl"
+            style={
+              onPhone
+                ? {
+                    // Force solid gold — foil clip + Motion opacity blanks out on Android WebViews.
+                    background: "none",
+                    WebkitBackgroundClip: "border-box",
+                    backgroundClip: "border-box",
+                    color: "#f0d078",
+                    WebkitTextFillColor: "#f0d078",
+                    textShadow:
+                      "0 2px 0 rgba(7,3,20,0.55), 0 10px 28px rgba(0,0,0,0.72)",
+                  }
+                : {
+                    textShadow:
+                      "0 2px 0 rgba(7,3,20,0.55), 0 10px 28px rgba(0,0,0,0.72), 0 22px 60px rgba(0,0,0,0.55)",
+                  }
+            }
           >
             <span className="block text-center">{firstName}</span>
-            <span className="mt-1 block text-center text-[0.55em] leading-none text-blush sm:mt-2" aria-hidden>
+            <span
+              className="mt-1 block text-center text-[0.55em] leading-none text-blush sm:mt-2"
+              style={
+                onPhone
+                  ? { color: "#f0c4cc", WebkitTextFillColor: "#f0c4cc" }
+                  : undefined
+              }
+              aria-hidden
+            >
               {"\u2661"}
             </span>
             <span className="sr-only"> and </span>
@@ -365,27 +400,27 @@ export function Hero() {
           </motion.h1>
 
           <motion.div
-            initial={false}
-            animate={mounted ? { opacity: 1, scaleX: 1 } : false}
-            transition={{ duration: 1, delay: 0.7 }}
-            className="mx-auto my-5 rose-rule w-28 sm:my-7 sm:w-40"
+            initial={onPhone ? false : { opacity: 0, scaleX: 0.6 }}
+            animate={mounted || onPhone ? { opacity: 1, scaleX: 1 } : false}
+            transition={onPhone ? { duration: 0 } : { duration: 1, delay: 0.7 }}
+            className="mx-auto my-4 rose-rule w-28 sm:my-7 sm:w-40"
           />
 
           <motion.p
-            initial={false}
-            animate={mounted ? { opacity: 1, y: 0 } : false}
-            transition={{ duration: 1, delay: 0.85 }}
-            className="mx-auto w-full max-w-[20.5rem] px-1 text-center font-serif text-[1.02rem] leading-7 text-cream sm:max-w-2xl sm:text-lg sm:leading-8"
+            initial={onPhone ? false : { opacity: 0, y: 10 }}
+            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
+            transition={onPhone ? { duration: 0 } : { duration: 1, delay: 0.85 }}
+            className="mx-auto w-full max-w-[20.5rem] px-1 text-center font-serif text-[0.98rem] leading-7 text-cream sm:max-w-2xl sm:text-lg sm:leading-8"
             style={{ textShadow: "0 2px 16px rgba(0,0,0,0.85), 0 8px 28px rgba(0,0,0,0.55)" }}
           >
             {wedding.hero.closing}
           </motion.p>
 
           <motion.div
-            initial={false}
-            animate={mounted ? { opacity: 1, y: 0 } : false}
-            transition={{ duration: 1, delay: 1.05 }}
-            className="mt-7 flex w-full justify-center sm:mt-9"
+            initial={onPhone ? false : { opacity: 0, y: 10 }}
+            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
+            transition={onPhone ? { duration: 0 } : { duration: 1, delay: 1.05 }}
+            className="mt-6 flex w-full justify-center sm:mt-9"
           >
             <StoryCta href="#portrait" onClick={enterStory}>
               Enter Our Story

@@ -1119,13 +1119,27 @@ body.experience-locked {
   background: #f5c0cf;
 }
 
-/* Cheaper filter/compositor work on phones (balanced) and weak devices (low). */
+/* Cheaper filter/compositor work on phones (balanced) and weak devices (low).
+   Solid fill — background-clip + color:transparent disappears when Framer
+   Motion applies opacity/transform on Android / Messenger WebViews. */
 html[data-lantern-perf="balanced"] .invite-root .text-gold-foil,
+html[data-lantern-perf="low"] .invite-root .text-gold-foil {
+  animation: none;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #f0d078;
+  -webkit-text-fill-color: #f0d078;
+}
+
 html[data-lantern-perf="balanced"] .invite-root .text-rose-shimmer,
-html[data-lantern-perf="low"] .invite-root .text-gold-foil,
 html[data-lantern-perf="low"] .invite-root .text-rose-shimmer {
   animation: none;
-  background-position: 40% center;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #f0c4cc;
+  -webkit-text-fill-color: #f0c4cc;
 }
 
 html[data-lantern-perf="balanced"] .invite-root .story-cta-ring,
