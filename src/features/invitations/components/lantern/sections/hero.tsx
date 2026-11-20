@@ -24,10 +24,9 @@ export function Hero() {
   const { phase } = useExperience();
   const { profile, compact, reduceMotion, quality } = useLanternPerf();
   const revealed = phase === "revealed";
-  // Sky + SVG lanterns share one gate and fade in together so the hero
-  // never lands with an empty sky, then a hard lantern pop.
+  // Hero chrome first; lanterns wait until the opening overlay has cleared
+  // and layout is settled so they fade in once instead of snapping mid-handoff.
   const [lanternsReady, setLanternsReady] = React.useState(false);
-  // Dust / light bloom stay a beat later — they are not the first-paint glitch.
   const [decorReady, setDecorReady] = React.useState(false);
   React.useEffect(() => {
     if (phase !== "revealed") {
@@ -37,11 +36,11 @@ export function Hero() {
     }
     const lanternId = window.setTimeout(
       () => setLanternsReady(true),
-      compact ? 100 : 80,
+      compact ? 800 : 500,
     );
     const decorId = window.setTimeout(
       () => setDecorReady(true),
-      compact ? 500 : 400,
+      compact ? 1000 : 700,
     );
     return () => {
       window.clearTimeout(lanternId);
@@ -50,7 +49,7 @@ export function Hero() {
   }, [phase, compact]);
   const lanternFade = reduceMotion
     ? { duration: 0 }
-    : { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const };
+    : { duration: 1, ease: [0.22, 1, 0.36, 1] as const };
   const wedding = useLanternContent();
   const [firstRole, secondRole] = wedding.couple.order;
   const firstName = wedding.couple[firstRole].first;
@@ -124,33 +123,25 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -top-[10%] z-[1] h-[120%] overflow-hidden"
         aria-hidden
       >
-        {/* Mount after reveal — opening already did the lantern spectacle, so
-            skip the shader intro and ease the canvas in with CSS. */}
+        {/* Deferred mount; LanternSky fades itself after the first GL paint. */}
         {lanternsReady ? (
-          <motion.div
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={lanternFade}
-          >
-            <LanternSky
-              lanternColors={LANTERN_SKY_COLORS}
-              density={skyDensity}
-              layers={skyLayers}
-              glowIntensity={compact ? 0.7 : 0.55}
-              lanternSize={compact ? 0.42 : 0.38}
-              twinkleIntensity={0.22}
-              speed={0.95}
-              mouseRepulsion={false}
-              mouseInteraction={false}
-              intro={false}
-              disableAnimation={reduceMotion}
-              transparent={false}
-              backgroundColor="#0d0720"
-              opacity={1}
-              dpr={profile.maxDpr}
-            />
-          </motion.div>
+          <LanternSky
+            lanternColors={LANTERN_SKY_COLORS}
+            density={skyDensity}
+            layers={skyLayers}
+            glowIntensity={compact ? 0.7 : 0.55}
+            lanternSize={compact ? 0.42 : 0.38}
+            twinkleIntensity={0.22}
+            speed={0.95}
+            mouseRepulsion={false}
+            mouseInteraction={false}
+            intro={false}
+            disableAnimation={reduceMotion}
+            transparent={false}
+            backgroundColor="#0d0720"
+            opacity={1}
+            dpr={profile.maxDpr}
+          />
         ) : null}
         {/* Warm horizon twist — sunset wash over the lantern sky toward the castle */}
         <div
@@ -207,33 +198,38 @@ export function Hero() {
         <CastleSilhouette className="h-[30vh] w-full min-[400px]:h-[32vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
       </motion.div>
 
-      <motion.div
-        style={{ y: lanternsY }}
-        className="pointer-events-none absolute inset-0 z-[4]"
-        aria-hidden
-        initial={false}
-        animate={{ opacity: lanternsReady ? 0.75 : 0 }}
-        transition={lanternFade}
-      >
-        {lanternsReady ? (
-          <FloatingLanterns
-            count={compact ? Math.min(svgLanternCount, 6) : svgLanternCount}
-            intensity="festival"
-            sizeScale={compact ? 0.52 : 0.48}
-          />
-        ) : null}
-      </motion.div>
+      {/* Phones: WebGL sky only — SVG lanterns remount on quality dips and snap. */}
+      {!compact ? (
+        <motion.div
+          style={{ y: lanternsY }}
+          className="pointer-events-none absolute inset-0 z-[4]"
+          aria-hidden
+          initial={false}
+          animate={{ opacity: lanternsReady ? 0.75 : 0 }}
+          transition={lanternFade}
+        >
+          {lanternsReady ? (
+            <FloatingLanterns
+              count={svgLanternCount}
+              intensity="festival"
+              sizeScale={0.48}
+            />
+          ) : null}
+        </motion.div>
+      ) : null}
 
-      <motion.div
-        style={{ y: reflectionY }}
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]"
-        aria-hidden
-        initial={false}
-        animate={{ opacity: lanternsReady ? 1 : 0 }}
-        transition={lanternFade}
-      >
-        {lanternsReady ? <LanternReflection className="opacity-80" /> : null}
-      </motion.div>
+      {!compact ? (
+        <motion.div
+          style={{ y: reflectionY }}
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]"
+          aria-hidden
+          initial={false}
+          animate={{ opacity: lanternsReady ? 1 : 0 }}
+          transition={lanternFade}
+        >
+          {lanternsReady ? <LanternReflection className="opacity-80" /> : null}
+        </motion.div>
+      ) : null}
 
       <div
         aria-hidden

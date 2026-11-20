@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './LanternSky.css';
 
 const MAX_LAYERS = 6;
@@ -274,6 +274,8 @@ const LanternSky = ({
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const wakeRef = useRef(null);
+  const paintedRef = useRef(false);
+  const [painted, setPainted] = useState(false);
   const palette = Array.isArray(lanternColors) ? lanternColors.filter(Boolean).slice(0, MAX_COLORS) : [];
   const settings = {
     focal: Array.isArray(focal) ? focal : [0.5, 0.5],
@@ -300,6 +302,8 @@ const LanternSky = ({
   settingsRef.current = settings;
 
   useEffect(() => {
+    paintedRef.current = false;
+    setPainted(false);
     const container = containerRef.current;
     const canvas = canvasRef.current;
     const gl = canvas?.getContext('webgl2', {
@@ -416,6 +420,11 @@ const LanternSky = ({
       gl.uniform3fv(u.uBackground, background);
       gl.uniform1f(u.uOpacity, s.opacity);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // Reveal only after the first real frame so an empty/cleared canvas never flashes.
+      if (!paintedRef.current) {
+        paintedRef.current = true;
+        requestAnimationFrame(() => setPainted(true));
+      }
     };
 
     const frame = now => {
@@ -458,8 +467,13 @@ const LanternSky = ({
       const width = Math.max(1, container.clientWidth);
       const height = Math.max(1, container.clientHeight);
       const ratio = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
-      canvas.width = Math.max(1, Math.round(width * ratio));
-      canvas.height = Math.max(1, Math.round(height * ratio));
+      const nextW = Math.max(1, Math.round(width * ratio));
+      const nextH = Math.max(1, Math.round(height * ratio));
+      // Rewriting width/height clears the buffer — skip no-op resizes (Messenger WebView flash).
+      if (canvas.width !== nextW || canvas.height !== nextH) {
+        canvas.width = nextW;
+        canvas.height = nextH;
+      }
       render();
       wake();
     };
@@ -544,7 +558,12 @@ const LanternSky = ({
   });
 
   return (
-    <div ref={containerRef} className={`lantern-sky-container${className ? ` ${className}` : ''}`} style={style} {...rest}>
+    <div
+      ref={containerRef}
+      className={`lantern-sky-container${painted ? ' is-painted' : ''}${className ? ` ${className}` : ''}`}
+      style={style}
+      {...rest}
+    >
       <canvas ref={canvasRef} className="lantern-sky-canvas" aria-hidden="true" />
     </div>
   );
