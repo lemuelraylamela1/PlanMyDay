@@ -167,18 +167,26 @@ function AttireLightbox({
       <button
         ref={closeRef}
         type="button"
-        onClick={onClose}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
         aria-label="Close fullscreen image"
-        className="absolute right-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/90 text-[#2a1540] shadow-sm transition hover:bg-cream sm:right-5 sm:top-5"
+        className="absolute z-30 grid h-12 w-12 place-items-center rounded-full bg-[#f4c444] text-[#1a0a18] shadow-[0_8px_24px_rgba(0,0,0,0.55)] ring-2 ring-[#1a0a18]/85 transition hover:bg-[#ffdf70] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4c444]"
+        style={{
+          // Portal sits outside .invite-root — explicit colors + safe-area.
+          top: "max(0.85rem, env(safe-area-inset-top, 0px))",
+          right: "max(0.85rem, env(safe-area-inset-right, 0px))",
+        }}
       >
-        <X className="h-5 w-5" />
+        <X className="h-6 w-6" strokeWidth={2.5} />
       </button>
 
       <div
         className="relative z-10 flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col items-center"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative h-[min(84vh,860px)] w-full overflow-hidden rounded-2xl">
+        <div className="relative h-[min(88vh,900px)] w-full overflow-hidden rounded-2xl bg-[#1a0f18]">
           <Image
             src={src}
             alt={alt}
@@ -188,11 +196,6 @@ function AttireLightbox({
             priority
           />
         </div>
-        {title ? (
-          <p className="mt-4 font-display text-xl font-light tracking-[-0.02em] text-[#fdf6ec] sm:text-2xl">
-            {title}
-          </p>
-        ) : null}
       </div>
     </div>,
     document.body,

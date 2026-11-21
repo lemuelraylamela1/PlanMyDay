@@ -98,6 +98,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
       wrapIndex(startIndex, Math.max(count, 1)),
     );
     const [hovering, setHovering] = React.useState(false);
+    const [holding, setHolding] = React.useState(false);
     const [sweepKey, setSweepKey] = React.useState(0);
     const [dragPx, setDragPx] = React.useState(0);
     const [stageWidth, setStageWidth] = React.useState(720);
@@ -174,6 +175,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
       reduceMotion ||
       !autoplay ||
       count < 2 ||
+      holding ||
       (pauseOnHover && hovering);
 
     React.useEffect(() => {
@@ -187,9 +189,25 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
     const slideWidth = Math.min(Math.max(stageWidth * 0.42, 210), 340);
     const step = slideWidth + gap;
 
+    const releaseHold = React.useCallback(() => {
+      setHolding(false);
+    }, []);
+
     const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!draggable || count < 2) return;
       if (event.button !== 0) return;
+      // Pause autoplay while the guest presses/holds a card (touch + mouse).
+      setHolding(true);
+
+      if (!draggable || count < 2) {
+        const endHold = () => {
+          releaseHold();
+          window.removeEventListener("pointerup", endHold);
+          window.removeEventListener("pointercancel", endHold);
+        };
+        window.addEventListener("pointerup", endHold);
+        window.addEventListener("pointercancel", endHold);
+        return;
+      }
 
       const startX = event.clientX;
       const startY = event.clientY;
@@ -224,6 +242,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
         target.removeEventListener("pointermove", onMove);
         target.removeEventListener("pointerup", onUp);
         target.removeEventListener("pointercancel", onUp);
+        releaseHold();
 
         const dx = upEvent.clientX - startX;
         setDragPx(0);
