@@ -371,7 +371,7 @@ export function SaveTheDate() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: LUXURY }}
-          className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.4em] text-lantern-rose/90"
+          className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.32em] text-lantern-rose"
         >
           Save the Date
         </motion.span>
@@ -391,7 +391,7 @@ export function SaveTheDate() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: LUXURY, delay: 0.1 }}
-          className="mt-1.5 max-w-xl font-serif text-sm italic text-cream/80 sm:mt-3 sm:text-base"
+          className="mt-1.5 max-w-xl font-serif text-base italic text-cream/92 sm:mt-3 sm:text-lg"
         >
           Press play and step into the beginning of our happily ever after.
         </motion.p>

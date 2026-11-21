@@ -587,17 +587,17 @@ export function StoryBook({ className }: { className?: string }) {
         <div className="story-book-hint-icon flex h-11 w-11 items-center justify-center rounded-full border border-[#f4c444]/35 bg-[rgba(30,15,58,0.55)] text-[#f4c444] shadow-[0_0_24px_rgba(244,196,68,0.18)]">
           <BookOpen className="h-5 w-5" strokeWidth={1.6} aria-hidden />
         </div>
-        <p className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.38em] text-[#e8b4bc]">
+        <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.3em] text-[#f0c8d0]">
           {atEnd ? "The end" : hintQuiet ? "Keep turning" : "This is a storybook"}
         </p>
-        <p className="max-w-[22ch] font-serif text-sm leading-relaxed text-cream/70">
+        <p className="max-w-[24ch] font-serif text-base leading-relaxed text-cream/90">
           {atEnd
             ? "Drag the page right to turn back through your story."
             : hintQuiet
               ? "Drag a page left or right like a real book."
               : "Grab a page and drag left or right — just like a real storybook."}
         </p>
-        <p className="font-cinzel text-[9px] uppercase tracking-[0.32em] text-cream/40">
+        <p className="font-cinzel text-[11px] uppercase tracking-[0.28em] text-cream/70">
           {chapterView} / {chapters.length}
         </p>
       </div>

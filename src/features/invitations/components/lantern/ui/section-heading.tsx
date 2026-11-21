@@ -38,8 +38,8 @@ export function SectionHeading({
       {eyebrow && (
         <span
           className={cn(
-            "font-cinzel text-[10px] font-semibold uppercase tracking-[0.4em]",
-            isDark ? "text-[#f5c0cf]" : "text-[#b76e79]",
+            "font-cinzel text-[12px] font-semibold uppercase tracking-[0.32em]",
+            isDark ? "text-[#f7d4dc]" : "text-[#8f4f5a]",
           )}
         >
           {eyebrow}
@@ -85,9 +85,9 @@ export function SectionHeading({
       {intro && (
         <p
           className={cn(
-            "max-w-2xl px-1 font-serif text-base leading-[1.75] sm:text-xl sm:leading-[1.85]",
+            "max-w-2xl px-1 font-serif text-lg leading-[1.75] sm:text-xl sm:leading-[1.85]",
             isCenter ? "mx-auto" : "",
-            isDark ? "text-[#f5c0cf]/90" : "text-[#2a1540]/75",
+            isDark ? "text-cream/92" : "text-[#2a1540]/88",
           )}
         >
           {intro}

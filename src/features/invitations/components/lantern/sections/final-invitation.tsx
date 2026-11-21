@@ -90,7 +90,7 @@ export function FinalInvitation() {
         >
           <div className="mx-auto mb-6 flex items-center justify-center gap-3 sm:mb-8 sm:gap-4">
             <span className="h-px w-8 bg-lantern/50 sm:w-14" />
-            <span className="font-cinzel text-[9px] font-semibold uppercase tracking-[0.32em] text-lantern-rose/80 sm:text-[10px] sm:tracking-[0.45em]">
+            <span className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.28em] text-lantern-rose sm:tracking-[0.36em]">
               {wedding.final.signature}
             </span>
             <span className="h-px w-8 bg-lantern/50 sm:w-14" />
@@ -107,7 +107,7 @@ export function FinalInvitation() {
             {coupleNames(wedding, "\u2661")}
           </GoldShimmer>
 
-          <p className="mt-3 font-serif text-lg italic text-blush/80 sm:text-xl">
+          <p className="mt-3 font-serif text-lg italic text-cream/90 sm:text-xl">
             {wedding.event.dateLong}
           </p>
 

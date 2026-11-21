@@ -403,7 +403,7 @@ export function Gallery() {
         )}
       </div>
 
-      <p className="relative z-10 mt-5 text-center font-cinzel text-[12px] font-bold uppercase tracking-[0.28em] text-[#2a1540]/45 sm:mt-6">
+      <p className="relative z-10 mt-5 text-center font-cinzel text-[12px] font-bold uppercase tracking-[0.28em] text-[#2a1540]/85 sm:mt-6">
         Drag to find · Tap to open · Swipe stays in that row ·
       </p>
 

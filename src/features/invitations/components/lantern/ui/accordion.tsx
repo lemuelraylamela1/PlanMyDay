@@ -10,6 +10,55 @@ export type AccordionItemData = {
   answer: string;
 };
 
+function parseAnswer(answer: string): { paragraphs: string[]; bullets: string[] } {
+  const paragraphs: string[] = [];
+  const bullets: string[] = [];
+  for (const raw of answer.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const bullet = line.match(/^[*•\-]\s+(.*)$/);
+    if (bullet?.[1]) {
+      bullets.push(bullet[1]);
+      continue;
+    }
+    paragraphs.push(line);
+  }
+  return { paragraphs, bullets };
+}
+
+function AccordionAnswer({
+  answer,
+  isDark,
+}: {
+  answer: string;
+  isDark: boolean;
+}) {
+  const { paragraphs, bullets } = parseAnswer(answer);
+  const bodyClass = cn(
+    "font-serif text-[1.08rem] leading-[1.85]",
+    isDark ? "text-cream/92" : "text-ink/85",
+  );
+
+  if (bullets.length === 0) {
+    return <p className={cn("px-6 pb-6", bodyClass)}>{answer}</p>;
+  }
+
+  return (
+    <div className={cn("px-6 pb-6 space-y-3", bodyClass)}>
+      {paragraphs.map((p) => (
+        <p key={p}>{p}</p>
+      ))}
+      <ul className="list-disc space-y-2 pl-5 marker:text-lantern">
+        {bullets.map((item) => (
+          <li key={item} className="pl-1">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function Accordion({
   items,
   className,
@@ -77,14 +126,7 @@ export function Accordion({
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <p
-                    className={cn(
-                      "px-6 pb-6 font-serif text-[1.05rem] leading-[1.9]",
-                      isDark ? "text-blush/85" : "text-ink/80"
-                    )}
-                  >
-                    {item.answer}
-                  </p>
+                  <AccordionAnswer answer={item.answer} isDark={isDark} />
                 </motion.div>
               )}
             </AnimatePresence>

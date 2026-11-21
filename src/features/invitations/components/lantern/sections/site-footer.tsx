@@ -28,7 +28,7 @@ export function SiteFooter() {
         <p className="mt-2 font-serif italic" style={{ color: "#e8c880" }}>
           {wedding.event.dateLong}
         </p>
-        <p className="mt-1 font-sans text-sm text-cream/50">{wedding.event.venue.name}</p>
+        <p className="mt-1 font-sans text-sm text-cream/80">{wedding.event.venue.name}</p>
 
         <div
           className="mx-auto my-7 h-px w-32"
@@ -37,7 +37,7 @@ export function SiteFooter() {
           }}
         />
 
-        <p className="flex items-center justify-center gap-2 font-sans text-[11px] uppercase tracking-[0.25em] text-cream/40">
+        <p className="flex items-center justify-center gap-2 font-sans text-[12px] uppercase tracking-[0.22em] text-cream/70">
           Made with <Heart className="h-3.5 w-3.5 text-lantern-rose" /> &amp; lots of lanterns
         </p>
         <p className="mt-2 font-sans text-xs text-cream/30" suppressHydrationWarning>

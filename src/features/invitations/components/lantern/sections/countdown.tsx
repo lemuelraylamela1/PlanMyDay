@@ -172,7 +172,7 @@ export function Countdown() {
                       </motion.span>
                     </AnimatePresence>
                   </div>
-                  <span className="mt-2 font-sans text-[11px] uppercase tracking-[0.35em] text-lantern-rose/80">
+                  <span className="mt-2 font-sans text-[12px] uppercase tracking-[0.28em] text-lantern-rose">
                     {u.label}
                   </span>
                 </div>

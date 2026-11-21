@@ -179,15 +179,15 @@ export const attireGuideImages = {
   },
   family: {
     src: "/attire/family-barong.jpg",
-    alt: "Family in darker pink with gentlemen in barong",
+    alt: "Family in dark or muted pink formal attire",
   },
   sponsors: {
     src: "/attire/sponsors.jpg",
-    alt: "Sponsors in cream formal wear",
+    alt: "Principal sponsors in cream or champagne formal attire",
   },
   guests: {
     src: "/attire/guests-v3.jpg",
-    alt: "Guests in lavender or soft pink formal or semi-formal attire",
+    alt: "Guests in pink, cream, or champagne formal or semi-formal attire",
   },
 } as const;
 

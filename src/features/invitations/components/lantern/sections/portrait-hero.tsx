@@ -22,15 +22,14 @@ function pickRandomIndex(exclude: number, length: number) {
 }
 
 /**
- * Second hero: exact viewport height; gallery photos crossfade to a
- * random next frame every 2 seconds.
+ * Second hero: exact viewport height; gallery photos hard-cut to a
+ * random next frame every 2 seconds (no crossfade).
  */
 export function PortraitHero() {
   const wedding = useLanternContent();
   const reduceMotion = useReducedMotion();
   const { isMobile, isCompact, isShort, height } = useInviteViewport();
   const [active, setActive] = React.useState(0);
-  const [previous, setPrevious] = React.useState<number | null>(null);
   const sectionRef = React.useRef<HTMLElement>(null);
   const [inView, setInView] = React.useState(false);
 
@@ -48,21 +47,10 @@ export function PortraitHero() {
   React.useEffect(() => {
     if (reduceMotion || !inView || portraitHeroImages.length < 2) return;
     const id = window.setInterval(() => {
-      setActive((current) => {
-        const next = pickRandomIndex(current, portraitHeroImages.length);
-        setPrevious(current);
-        return next;
-      });
+      setActive((current) => pickRandomIndex(current, portraitHeroImages.length));
     }, ROTATE_MS);
     return () => window.clearInterval(id);
   }, [inView, reduceMotion]);
-
-  // Drop the outgoing layer after the crossfade so we never keep 47 images mounted.
-  React.useEffect(() => {
-    if (previous === null) return;
-    const id = window.setTimeout(() => setPrevious(null), 1200);
-    return () => window.clearTimeout(id);
-  }, [previous, active]);
 
   const dateLine = wedding.event.dateLong.toLowerCase().startsWith(
     wedding.event.dayOfWeek.toLowerCase(),
@@ -70,17 +58,7 @@ export function PortraitHero() {
     ? wedding.event.dateLong
     : `${wedding.event.dayOfWeek}, ${wedding.event.dateLong}`;
 
-  const layers = React.useMemo(() => {
-    const indexes =
-      previous === null || previous === active
-        ? [active]
-        : [previous, active];
-    return indexes.map((index) => ({
-      index,
-      image: portraitHeroImages[index]!,
-      visible: index === active,
-    }));
-  }, [active, previous]);
+  const image = portraitHeroImages[active] ?? portraitHeroImages[0]!;
 
   return (
     <section
@@ -94,33 +72,25 @@ export function PortraitHero() {
         minHeight: "100svh",
       }}
     >
-      <div className="absolute inset-0">
-        {layers.map(({ index, image, visible }) => (
-          <motion.div
-            key={`${image.src}-${index}`}
-            aria-hidden={!visible}
-            className="absolute inset-0"
-            initial={false}
-            animate={{ opacity: visible ? 1 : 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.9, ease: LUXURY }}
-            style={
-              {
-                "--mobile-position": image.mobileObjectPosition,
-                "--desktop-position": image.objectPosition,
-              } as React.CSSProperties
-            }
-          >
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              priority={index === 0}
-              sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1440px"
-              quality={isMobile ? 70 : 82}
-              className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
-            />
-          </motion.div>
-        ))}
+      <div
+        className="absolute inset-0"
+        style={
+          {
+            "--mobile-position": image.mobileObjectPosition,
+            "--desktop-position": image.objectPosition,
+          } as React.CSSProperties
+        }
+      >
+        <Image
+          key={image.src}
+          src={image.src}
+          alt={image.alt}
+          fill
+          priority={active === 0}
+          sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1440px"
+          quality={isMobile ? 70 : 82}
+          className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
+        />
       </div>
 
       <div
@@ -146,7 +116,7 @@ export function PortraitHero() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: LUXURY }}
-          className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.32em] text-lantern-soft sm:text-[10px] sm:tracking-[0.45em]"
+          className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.28em] text-lantern-soft sm:tracking-[0.38em]"
         >
           Save the Date
         </motion.p>
@@ -188,7 +158,7 @@ export function PortraitHero() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: LUXURY, delay: 0.22 }}
-          className="mt-3 font-serif text-base text-cream/95 sm:mt-5 sm:text-lg"
+          className="mt-3 font-serif text-lg text-cream sm:mt-5 sm:text-xl"
         >
           {wedding.event.ceremony.time}
           {wedding.event.ceremony.timezoneNote
@@ -202,7 +172,7 @@ export function PortraitHero() {
         aria-label="Scroll down to continue"
         className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5 text-cream"
       >
-        <span className="whitespace-nowrap font-cinzel text-[9px] font-semibold uppercase tracking-[0.18em] text-cream/85 min-[380px]:text-[10px] min-[380px]:tracking-[0.24em] sm:tracking-[0.32em]">
+        <span className="whitespace-nowrap font-cinzel text-[11px] font-semibold uppercase tracking-[0.2em] text-cream min-[380px]:text-[12px] min-[380px]:tracking-[0.24em] sm:tracking-[0.3em]">
           Scroll down to continue
         </span>
         <motion.span

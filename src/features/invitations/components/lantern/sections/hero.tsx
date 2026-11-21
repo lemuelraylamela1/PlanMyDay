@@ -364,7 +364,7 @@ export function Hero() {
                 ? { duration: 0 }
                 : { duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }
             }
-            className="w-full text-center font-cinzel text-[11px] font-semibold uppercase tracking-[0.36em] text-blush min-[380px]:text-[12px] sm:text-[10px] sm:tracking-[0.45em]"
+            className="w-full text-center font-cinzel text-[12px] font-semibold uppercase tracking-[0.3em] text-[#f7d4dc] min-[380px]:text-[13px] sm:tracking-[0.36em]"
             style={{ textShadow: "0 2px 18px rgba(0,0,0,0.75)" }}
           >
             {wedding.hero.eyebrow}

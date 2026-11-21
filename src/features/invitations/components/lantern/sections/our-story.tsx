@@ -39,13 +39,13 @@ export function OurStory() {
       </div>
 
       <header className="story-prologue relative z-[1] mx-auto max-w-4xl px-4 pt-4 text-center sm:px-6 sm:pt-6">
-        <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.45em] text-[#e8b4bc]">
+        <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.34em] text-[#f0c8d0]">
           {wedding.story.eyebrow}
         </p>
         <h2 className="story-prologue-title mx-auto mt-5 max-w-[14ch] font-display text-[2.35rem] font-light leading-[1.08] tracking-[-0.03em] text-cream min-[380px]:text-4xl sm:max-w-none sm:text-6xl md:text-[4.25rem]">
           {wedding.story.title}
         </h2>
-        <p className="mx-auto mt-6 max-w-xl font-serif text-lg leading-[1.85] text-cream/70 sm:text-xl sm:leading-[1.9]">
+        <p className="mx-auto mt-6 max-w-xl font-serif text-lg leading-[1.85] text-cream/90 sm:text-xl sm:leading-[1.9]">
           {wedding.story.intro}
         </p>
       </header>

@@ -144,7 +144,7 @@ export function Attire() {
           className="mx-auto flex max-w-3xl flex-col items-center text-center"
         >
           <p
-            className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.42em]"
+            className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.32em]"
             style={{ color: colors.accent }}
           >
             {dressCode.eyebrow}

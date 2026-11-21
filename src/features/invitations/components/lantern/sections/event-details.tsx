@@ -57,7 +57,7 @@ export function EventDetails() {
           transition={{ duration: 0.9, ease: LUXURY }}
           className="w-full text-center"
         >
-          <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.4em] text-lantern-soft/90">
+          <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.32em] text-lantern-soft">
             The Celebration
           </p>
           <h2 className="mt-2 font-display text-[2.1rem] font-light leading-[1.05] tracking-[-0.02em] text-cream sm:mt-3 sm:text-6xl lg:text-7xl">
@@ -73,21 +73,21 @@ export function EventDetails() {
           transition={{ duration: 0.95, ease: LUXURY, delay: 0.06 }}
           className="mt-10 flex w-full flex-col items-center text-center sm:mt-12"
         >
-          <p className="font-serif text-lg italic text-cream/90 sm:text-2xl">{dateLine}</p>
+          <p className="font-serif text-xl italic text-cream sm:text-2xl">{dateLine}</p>
 
-          <p className="mt-6 font-cinzel text-[10px] font-semibold uppercase tracking-[0.32em] text-lantern/90">
+          <p className="mt-6 font-cinzel text-[12px] font-semibold uppercase tracking-[0.28em] text-lantern">
             Ceremony begins
           </p>
           <p className="mt-2 font-display text-3xl font-light text-cream sm:text-5xl">
             {ceremony.time}
           </p>
-          <p className="mt-1.5 font-serif text-sm italic text-cream/75 sm:text-base">
+          <p className="mt-1.5 font-serif text-base italic text-cream/88 sm:text-lg">
             {ceremony.timezoneNote}
           </p>
 
           <div className="mx-auto my-8 h-px w-16 bg-gradient-to-r from-transparent via-lantern/60 to-transparent sm:my-10 sm:w-24" />
 
-          <p className="font-cinzel text-[10px] font-semibold uppercase tracking-[0.35em] text-cream/70">
+          <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.3em] text-cream/88">
             The Venue
           </p>
           <h3 className="mt-2 font-display text-2xl font-light text-cream sm:text-4xl">
@@ -119,7 +119,7 @@ export function EventDetails() {
               className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-lantern/20"
             />
           </div>
-          <figcaption className="mt-3 text-center font-cinzel text-[9px] font-semibold uppercase tracking-[0.28em] text-cream/55 sm:text-[10px]">
+          <figcaption className="mt-3 text-center font-cinzel text-[11px] font-semibold uppercase tracking-[0.24em] text-cream/80 sm:text-[12px]">
             A glimpse of Fernwood Gardens
           </figcaption>
         </motion.figure>
@@ -131,7 +131,7 @@ export function EventDetails() {
           transition={{ duration: 0.9, ease: LUXURY, delay: 0.12 }}
           className="mt-7 flex w-full flex-col items-center text-center sm:mt-8"
         >
-          <p className="font-sans text-[11px] uppercase tracking-[0.22em] text-cream/70 sm:text-xs sm:tracking-[0.26em]">
+          <p className="font-sans text-[12px] uppercase tracking-[0.2em] text-cream/88 sm:text-sm sm:tracking-[0.24em]">
             {venue.parkingNote ?? "Lots of parking spaces available on site"}
           </p>
 
