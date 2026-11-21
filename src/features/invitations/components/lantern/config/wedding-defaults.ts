@@ -88,12 +88,12 @@ export const weddingDefaults = {
           men: "Cream Barong Tagalog.",
           swatches: ["#F4C2C2", "#CB7579", "#CB938C", "#F7E7CE"],
           badge: null,
-          imageSrc: "/attire/family-editorial.webp",
-          imageAlt: "Family formal attire in dusty rose and cream Barong Tagalog",
+          imageSrc: "/attire/secondary-sponsors.webp",
+          imageAlt: "Secondary sponsors in dusty rose formal dress and cream Barong Tagalog",
         },
         {
           role: "Principal Sponsors",
-          description: "Formal attire in shades of Antique white, Champagne and Bisque",
+          description: "Formal Attire in Shades of Cream and Champagne",
           women: null,
           men: null,
           swatches: ["#FAEBD7", "#F7F7CE", "#FFE4C4"],
@@ -103,8 +103,7 @@ export const weddingDefaults = {
         },
         {
           role: "Team Bride",
-          description:
-            " Pastel Pink, Pink, Flamingo pink, and Carnation pink (Provided by the Couple)",
+          description: "Light Pink Attire (Provided by the Couple)",
           women: null,
           men: null,
           swatches: ["#FFD1DC", "#FFC0CB", "#FC8EAC", "#FFA6C9"],
@@ -114,7 +113,7 @@ export const weddingDefaults = {
         },
         {
           role: "Team Groom",
-          description: "Light tan Suit with Baby Pink Tie (Provided by the Couple)",
+          description: "Cream Suit with Pink Tie (Provided by the Couple)",
           women: null,
           men: null,
           swatches: ["#ECDEC9", "#F4C2C2"],

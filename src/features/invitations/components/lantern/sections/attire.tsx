@@ -325,7 +325,7 @@ export function Attire() {
             />
             <p
               className="font-cinzel text-base font-bold uppercase tracking-[0.22em] sm:text-xl sm:tracking-[0.28em] lg:text-2xl lg:tracking-[0.3em]"
-              style={{ color: colors.gold }}
+              style={{ color: colors.title }}
             >
               {dressCode.restriction}
             </p>

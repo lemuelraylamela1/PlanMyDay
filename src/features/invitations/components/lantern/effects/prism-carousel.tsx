@@ -337,7 +337,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
                   }
                   aria-current={isActive ? "true" : undefined}
                   className={[
-                    "absolute left-1/2 top-1/2 overflow-hidden border-0 bg-transparent p-0 shadow-[0_28px_60px_-36px_rgba(96,40,60,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-lantern,#f4c444)]",
+                    "absolute left-1/2 top-1/2 overflow-hidden border-0 bg-[#f7efe8] p-0 shadow-[0_28px_60px_-36px_rgba(96,40,60,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-lantern,#f4c444)]",
                     isActive ? "cursor-zoom-in" : "cursor-pointer",
                   ].join(" ")}
                   style={{
@@ -403,7 +403,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
                     alt={item.alt}
                     fill
                     sizes="(max-width: 768px) 70vw, 360px"
-                    className="pointer-events-none select-none object-cover object-[50%_18%]"
+                    className="pointer-events-none select-none object-contain object-center"
                     draggable={false}
                     priority={isActive}
                   />

@@ -155,8 +155,8 @@ export const VENUE_IMAGE = {
 /** Attire guide references by wedding party role. */
 export const attireGuideImages = {
   family: {
-    src: "/attire/family-editorial.webp",
-    alt: "Family formal attire in dusty rose and cream Barong Tagalog",
+    src: "/attire/secondary-sponsors.webp",
+    alt: "Secondary sponsors in dusty rose formal dress and cream Barong Tagalog",
   },
   sponsors: {
     src: "/attire/sponsors-image.webp",
