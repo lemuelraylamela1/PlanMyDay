@@ -138,24 +138,9 @@ const TWILIGHT_CAPTIONS = [
  * Folder 1 → fairytale, 2 → garden, 3 → twilight.
  */
 export const gallerySets: GallerySet[] = [
-  galleryRow(
-    "1",
-    "Fairytale",
-    "Royal moments at Fernwood Gardens.",
-    FAIRYTALE_CAPTIONS,
-  ),
-  galleryRow(
-    "2",
-    "Garden",
-    "Romance in the conservatory.",
-    GARDEN_CAPTIONS,
-  ),
-  galleryRow(
-    "3",
-    "Twilight",
-    "Evening light and quiet vows.",
-    TWILIGHT_CAPTIONS,
-  ),
+  galleryRow("1", "Fairytale", "Royal moments at Fernwood Gardens.", FAIRYTALE_CAPTIONS),
+  galleryRow("2", "Garden", "Romance in the conservatory.", GARDEN_CAPTIONS),
+  galleryRow("3", "Twilight", "Evening light and quiet vows.", TWILIGHT_CAPTIONS),
 ];
 
 /** Flat list of all gallery photos. */
@@ -167,27 +152,27 @@ export const VENUE_IMAGE = {
   alt: "The grand Fernwood Gardens entrance in Tagaytay",
 } as const;
 
-/** 3D attire guide illustrations by wedding party role. */
+/** Attire guide references by wedding party role. */
 export const attireGuideImages = {
-  bridesmaids: {
-    src: "/attire/bridesmaids.jpg",
-    alt: "Bridesmaids in light pink gowns",
-  },
-  groomsmen: {
-    src: "/attire/groomsmen.jpg",
-    alt: "Groomsmen in cream suits with pink ties",
-  },
   family: {
-    src: "/attire/family-barong.jpg",
-    alt: "Family in dark or muted pink formal attire",
+    src: "/attire/family-editorial.webp",
+    alt: "Family formal attire in dusty rose and cream Barong Tagalog",
   },
   sponsors: {
-    src: "/attire/sponsors.jpg",
-    alt: "Principal sponsors in cream or champagne formal attire",
+    src: "/attire/sponsors-image.webp",
+    alt: "Principal sponsors in Antique white, Champagne and Bisque formal attire",
+  },
+  teamBride: {
+    src: "/attire/team-bride-editorial.webp",
+    alt: "Team Bride in light pink formal dresses",
+  },
+  teamGroom: {
+    src: "/attire/team-groom-editorial.webp",
+    alt: "Team Groom in cream suits with blush pink ties",
   },
   guests: {
-    src: "/attire/guests-v3.jpg",
-    alt: "Guests in pink, cream, or champagne formal or semi-formal attire",
+    src: "/attire/guests-editorial.webp",
+    alt: "Wedding guests in cream, champagne, blush, and dusty rose formal attire",
   },
 } as const;
 

@@ -103,6 +103,10 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
     const [stageWidth, setStageWidth] = React.useState(720);
     const indexRef = React.useRef(index);
     const onIndexChangeRef = React.useRef(onIndexChange);
+    const didDragRef = React.useRef(false);
+    const tapStartRef = React.useRef<{ x: number; y: number } | null>(null);
+    const lastSelectAtRef = React.useRef(0);
+    const onSelectRef = React.useRef(onSelect);
 
     React.useEffect(() => {
       indexRef.current = index;
@@ -111,6 +115,10 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
     React.useEffect(() => {
       onIndexChangeRef.current = onIndexChange;
     }, [onIndexChange]);
+
+    React.useEffect(() => {
+      onSelectRef.current = onSelect;
+    }, [onSelect]);
 
     React.useEffect(() => {
       const node = stageRef.current;
@@ -186,8 +194,9 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
       const startX = event.clientX;
       const startY = event.clientY;
       let axis: "x" | "y" | null = null;
+      let capturing = false;
       const target = event.currentTarget;
-      target.setPointerCapture(event.pointerId);
+      didDragRef.current = false;
 
       const onMove = (moveEvent: PointerEvent) => {
         const dx = moveEvent.clientX - startX;
@@ -196,14 +205,22 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
           if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
           axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
           if (axis === "y") return;
+          // Capture only after a confirmed horizontal drag so taps still click.
+          if (!capturing) {
+            capturing = true;
+            target.setPointerCapture(event.pointerId);
+          }
         }
         if (axis !== "x") return;
+        didDragRef.current = true;
         moveEvent.preventDefault();
         setDragPx(dx);
       };
 
       const onUp = (upEvent: PointerEvent) => {
-        target.releasePointerCapture(upEvent.pointerId);
+        if (capturing && target.hasPointerCapture(upEvent.pointerId)) {
+          target.releasePointerCapture(upEvent.pointerId);
+        }
         target.removeEventListener("pointermove", onMove);
         target.removeEventListener("pointerup", onUp);
         target.removeEventListener("pointercancel", onUp);
@@ -211,6 +228,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
         const dx = upEvent.clientX - startX;
         setDragPx(0);
         if (axis === "x" && Math.abs(dx) >= DRAG_THRESHOLD) {
+          didDragRef.current = true;
           if (dx < 0) next();
           else previous();
         }
@@ -234,6 +252,14 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
       else previous();
     };
 
+    const selectItem = (item: PrismCarouselItem, itemIndex: number) => {
+      const now = Date.now();
+      if (now - lastSelectAtRef.current < 350) return;
+      lastSelectAtRef.current = now;
+      onSelectRef.current?.(item, itemIndex);
+      if (item.href) window.location.assign(item.href);
+    };
+
     const onKeyDown = (event: React.KeyboardEvent) => {
       if (event.key === "ArrowRight") {
         event.preventDefault();
@@ -245,8 +271,7 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
         const item = items[index];
         if (!item) return;
         event.preventDefault();
-        onSelect?.(item, index);
-        if (item.href) window.location.assign(item.href);
+        selectItem(item, index);
       }
     };
 
@@ -305,9 +330,16 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
                 <motion.button
                   key={`${item.src}-${i}`}
                   type="button"
-                  aria-label={item.title ?? item.alt}
+                  aria-label={
+                    isActive
+                      ? `Open ${item.title ?? item.alt} fullscreen`
+                      : (item.title ?? item.alt)
+                  }
                   aria-current={isActive ? "true" : undefined}
-                  className="absolute left-1/2 top-1/2 overflow-hidden border-0 bg-transparent p-0 shadow-[0_28px_60px_-36px_rgba(96,40,60,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-lantern,#f4c444)]"
+                  className={[
+                    "absolute left-1/2 top-1/2 overflow-hidden border-0 bg-transparent p-0 shadow-[0_28px_60px_-36px_rgba(96,40,60,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-lantern,#f4c444)]",
+                    isActive ? "cursor-zoom-in" : "cursor-pointer",
+                  ].join(" ")}
                   style={{
                     width: slideWidth,
                     aspectRatio: String(aspect),
@@ -330,11 +362,37 @@ export const PrismCarousel = React.forwardRef<PrismCarouselHandle, Props>(
                       ? { duration: 0 }
                       : { type: "spring", stiffness: 280, damping: 30 }
                   }
-                  onClick={() => {
-                    if (Math.abs(dragPx) > 8) return;
+                  onPointerDown={(event) => {
+                    if (event.button !== 0) return;
+                    tapStartRef.current = {
+                      x: event.clientX,
+                      y: event.clientY,
+                    };
+                  }}
+                  onPointerUp={(event) => {
+                    const start = tapStartRef.current;
+                    tapStartRef.current = null;
+                    if (!start || didDragRef.current) return;
+                    const dist = Math.hypot(
+                      event.clientX - start.x,
+                      event.clientY - start.y,
+                    );
+                    if (dist > 10) return;
                     if (isActive) {
-                      onSelect?.(item, i);
-                      if (item.href) window.location.assign(item.href);
+                      selectItem(item, i);
+                      return;
+                    }
+                    goTo(i);
+                  }}
+                  onClick={(event) => {
+                    // Pointer-up already handled selection; block duplicate click.
+                    if (didDragRef.current || Math.abs(dragPx) > 8) {
+                      event.preventDefault();
+                      return;
+                    }
+                    event.preventDefault();
+                    if (isActive) {
+                      selectItem(item, i);
                       return;
                     }
                     goTo(i);

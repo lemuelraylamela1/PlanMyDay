@@ -13,10 +13,19 @@ function CoverFront({ title, names }: { title: string; names: string }) {
     <div className="story-book-cover relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 text-center sm:px-5">
       <span aria-hidden className="story-book-cover-glow pointer-events-none absolute inset-0" />
       <span aria-hidden className="story-book-cover-stars pointer-events-none absolute inset-0" />
-      <span aria-hidden className="story-book-cover-vignette pointer-events-none absolute inset-0" />
+      <span
+        aria-hidden
+        className="story-book-cover-vignette pointer-events-none absolute inset-0"
+      />
 
-      <span aria-hidden className="story-book-foil pointer-events-none absolute inset-[10px] rounded-[4px] sm:inset-3" />
-      <span aria-hidden className="story-book-foil-inner pointer-events-none absolute inset-[14px] rounded-[2px] sm:inset-[18px]" />
+      <span
+        aria-hidden
+        className="story-book-foil pointer-events-none absolute inset-[10px] rounded-[4px] sm:inset-3"
+      />
+      <span
+        aria-hidden
+        className="story-book-foil-inner pointer-events-none absolute inset-[14px] rounded-[2px] sm:inset-[18px]"
+      />
       <span aria-hidden className="story-book-corner story-book-corner-tl" />
       <span aria-hidden className="story-book-corner story-book-corner-tr" />
       <span aria-hidden className="story-book-corner story-book-corner-bl" />
@@ -27,7 +36,10 @@ function CoverFront({ title, names }: { title: string; names: string }) {
           Once upon a time
         </p>
 
-        <div aria-hidden className="story-book-lantern relative mt-4 h-[3.6rem] w-[2.55rem] sm:mt-5 sm:h-[4.35rem] sm:w-[3.1rem]">
+        <div
+          aria-hidden
+          className="story-book-lantern relative mt-4 h-[3.6rem] w-[2.55rem] sm:mt-5 sm:h-[4.35rem] sm:w-[3.1rem]"
+        >
           <span className="story-book-lantern-glow absolute left-1/2 top-[58%] h-[120%] w-[160%] -translate-x-1/2 -translate-y-1/2 rounded-full" />
           <svg viewBox="0 0 100 140" className="relative h-full w-full">
             <defs>
@@ -68,16 +80,8 @@ function CoverFront({ title, names }: { title: string; names: string }) {
               d="M50 98 C44 106 45 116 50 122 C56 116 56 106 50 98Z"
               fill="url(#coverLanternFlame)"
             />
-            <path
-              d="M28 52 H72"
-              stroke="rgba(255,250,230,0.28)"
-              strokeWidth="1"
-            />
-            <path
-              d="M30 72 H70"
-              stroke="rgba(255,250,230,0.2)"
-              strokeWidth="1"
-            />
+            <path d="M28 52 H72" stroke="rgba(255,250,230,0.28)" strokeWidth="1" />
+            <path d="M30 72 H70" stroke="rgba(255,250,230,0.2)" strokeWidth="1" />
           </svg>
         </div>
 
@@ -110,7 +114,10 @@ function CoverFront({ title, names }: { title: string; names: string }) {
 function ClosingEndpaper() {
   return (
     <div className="story-book-endpaper relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-6 text-center">
-      <span aria-hidden className="parchment-grain pointer-events-none absolute inset-0 opacity-70" />
+      <span
+        aria-hidden
+        className="parchment-grain pointer-events-none absolute inset-0 opacity-70"
+      />
       <p className="relative font-cinzel text-[9px] font-semibold uppercase tracking-[0.4em] text-[#9a6b3a]">
         Dedication
       </p>
@@ -441,12 +448,12 @@ function ChapterParchment({
             {chapter.title}
           </h4>
           <p className="mt-1 font-serif text-sm italic text-[#9a6b3a]">{chapter.date}</p>
-          <p className="mt-3 font-serif text-[0.86rem] leading-[1.7] text-[#4a3218] sm:text-[0.92rem] sm:leading-[1.75]">
+          <p className="mt-3 font-serif text-[0.86rem] leading-[1.7] text-[#2B1B0E] sm:text-[0.92rem] sm:leading-[1.75]">
             {chapter.description}
           </p>
-          <p className="mt-4 font-cinzel text-[8px] uppercase tracking-[0.32em] text-[#9a6b3a]/70">
+          <p className="mt-4 font-cinzel text-[8px] uppercase tracking-[0.32em] text-[#4a3218]/90">
             {index + 1} / {total}
-            <span className="ml-2 normal-case tracking-normal text-[#9a6b3a]/55">
+            <span className="ml-2 normal-case tracking-normal text-[#4a3218]/90">
               · drag to read
             </span>
           </p>
@@ -458,18 +465,13 @@ function ChapterParchment({
 }
 
 /** Build leaves so each chapter is a full spread with alternating layout. */
-function buildStoryLeaves(
-  chapters: StoryChapter[],
-  coverFront: React.ReactNode,
-): PageFlipLeaf[] {
+function buildStoryLeaves(chapters: StoryChapter[], coverFront: React.ReactNode): PageFlipLeaf[] {
   // Odd chapters (1,3,5): image left, text right
   // Even chapters (2,4): text left, image right
   const sides = chapters.map((chapter, index) => {
     const imageLeft = index % 2 === 0;
     const photo = <ChapterPhoto chapter={chapter} />;
-    const text = (
-      <ChapterParchment chapter={chapter} index={index} total={chapters.length} />
-    );
+    const text = <ChapterParchment chapter={chapter} index={index} total={chapters.length} />;
     return {
       left: imageLeft ? photo : text,
       right: imageLeft ? text : photo,
@@ -569,7 +571,7 @@ export function StoryBook({ className }: { className?: string }) {
           stagger={0}
           ease="easeInOut"
           shadow={compact ? 0.12 : 0.34}
-          trigger="drag"
+          trigger="click"
           closeOnLeave={false}
           interactive
           flat
@@ -590,12 +592,12 @@ export function StoryBook({ className }: { className?: string }) {
         <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.3em] text-[#f0c8d0]">
           {atEnd ? "The end" : hintQuiet ? "Keep turning" : "This is a storybook"}
         </p>
-        <p className="max-w-[24ch] font-serif text-base leading-relaxed text-cream/90">
+        <p className="max-w-[28ch] font-serif text-base leading-relaxed text-cream/90">
           {atEnd
-            ? "Drag the page right to turn back through your story."
+            ? "Tap the left page, or drag right, to turn back through your story."
             : hintQuiet
-              ? "Drag a page left or right like a real book."
-              : "Grab a page and drag left or right — just like a real storybook."}
+              ? "Tap a page to turn — or drag left and right like a real book."
+              : "Tap the cover or any page to turn. You can also drag left or right — just like a real storybook."}
         </p>
         <p className="font-cinzel text-[11px] uppercase tracking-[0.28em] text-cream/70">
           {chapterView} / {chapters.length}

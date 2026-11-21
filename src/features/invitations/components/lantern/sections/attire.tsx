@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
+import { X } from "lucide-react";
 
 import { MagicDust } from "../effects/magic-dust";
 import { PrismCarousel } from "../effects/prism-carousel";
@@ -73,6 +76,129 @@ function paletteForSwatch(swatch: string) {
   };
 }
 
+function HexSwatch({
+  hex,
+  label,
+}: {
+  hex: string;
+  label: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const value = hex.toUpperCase();
+
+  return (
+    <button
+      type="button"
+      role="listitem"
+      title={value}
+      aria-label={`${label}: ${value}`}
+      aria-expanded={open}
+      onClick={() => setOpen((v) => !v)}
+      onBlur={() => setOpen(false)}
+      className="group relative h-8 w-8 shrink-0 rounded-full outline-none transition-transform duration-200 hover:scale-105 focus-visible:scale-105 focus-visible:ring-2 focus-visible:ring-[#2a1540]/30 focus-visible:ring-offset-2 sm:h-9 sm:w-9"
+      style={{
+        background: hex,
+        border: `1px solid ${rgbaFromHex(hex, 0.45)}`,
+      }}
+    >
+      <span
+        className={[
+          "pointer-events-none absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#2a1540] px-2 py-1 font-cinzel text-[9px] font-semibold uppercase tracking-[0.14em] text-[#fdf6ec] shadow-sm transition-opacity duration-150",
+          open
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+        ].join(" ")}
+      >
+        {value}
+      </span>
+    </button>
+  );
+}
+
+function AttireLightbox({
+  src,
+  alt,
+  title,
+  onClose,
+}: {
+  src: string;
+  alt: string;
+  title?: string;
+  onClose: () => void;
+}) {
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  React.useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[130] flex touch-none items-center justify-center p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title ? `${title} attire reference` : "Attire reference"}
+      onClick={onClose}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-[#120814]/78 backdrop-blur-2xl"
+        onClick={onClose}
+      />
+
+      <button
+        ref={closeRef}
+        type="button"
+        onClick={onClose}
+        aria-label="Close fullscreen image"
+        className="absolute right-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/90 text-[#2a1540] shadow-sm transition hover:bg-cream sm:right-5 sm:top-5"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <div
+        className="relative z-10 flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col items-center"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="relative h-[min(84vh,860px)] w-full overflow-hidden rounded-2xl">
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 896px) 94vw, 896px"
+            className="object-contain"
+            priority
+          />
+        </div>
+        {title ? (
+          <p className="mt-4 font-display text-xl font-light tracking-[-0.02em] text-[#fdf6ec] sm:text-2xl">
+            {title}
+          </p>
+        ) : null}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 /**
  * Visual RSVP attire guide with Prism-inspired lookbook coverflow.
  */
@@ -82,6 +208,7 @@ export function Attire() {
   const { dressCode } = wedding.event;
   const roles = dressCode.roles;
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
 
   const carouselItems = React.useMemo(
     () =>
@@ -89,14 +216,17 @@ export function Attire() {
         src: role.imageSrc,
         alt: role.imageAlt,
         title: role.role,
-        subtitle: role.attire,
+        subtitle: role.description,
       })),
     [roles],
   );
 
   const activeRole = roles[activeIndex] ?? roles[0];
-  const activeSwatch = activeRole?.swatch ?? "#f5c0cf";
+  const activeSwatches = activeRole?.swatches ?? [];
+  const activeSwatch = activeSwatches[0] ?? "#f5c0cf";
   const colors = paletteForSwatch(activeSwatch);
+  const lightboxRole =
+    lightboxIndex !== null ? roles[lightboxIndex] ?? null : null;
 
   React.useEffect(() => {
     if (activeIndex >= roles.length) setActiveIndex(0);
@@ -225,13 +355,14 @@ export function Attire() {
             draggable
             wheel={false}
             pauseOnHover
-            paused={!!reduceMotion}
+            paused={!!reduceMotion || lightboxIndex !== null}
             sweep={reduceMotion ? 0 : 1}
             backgroundColor="transparent"
             titleColor={colors.title}
             subtitleColor={colors.body}
             accentColor={colors.accent}
             onIndexChange={setActiveIndex}
+            onSelect={(_item, index) => setLightboxIndex(index)}
             className="mx-auto max-w-5xl"
           />
         </motion.div>
@@ -239,23 +370,26 @@ export function Attire() {
         <div
           className="mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:mt-10"
           role="list"
-          aria-label="Wedding motif color palette"
+          aria-label={`${activeRole.role} color palette`}
         >
-          {roles.map((item) => (
-            <span
-              key={`palette-${item.role}`}
-              role="listitem"
-              title={item.role}
-              aria-label={`${item.role}: ${item.attire}`}
-              className="h-8 w-8 rounded-full sm:h-9 sm:w-9"
-              style={{
-                background: item.swatch,
-                border: `1px solid ${rgbaFromHex(item.swatch, 0.45)}`,
-              }}
+          {activeSwatches.map((hex) => (
+            <HexSwatch
+              key={`${activeRole.role}-${hex}`}
+              hex={hex}
+              label={activeRole.role}
             />
           ))}
         </div>
       </div>
+
+      {lightboxRole ? (
+        <AttireLightbox
+          src={lightboxRole.imageSrc}
+          alt={lightboxRole.imageAlt}
+          title={lightboxRole.role}
+          onClose={() => setLightboxIndex(null)}
+        />
+      ) : null}
     </motion.section>
   );
 }
