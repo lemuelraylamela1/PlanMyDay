@@ -17,6 +17,18 @@ import { submitProposalResponseAction } from "@/features/sponsor-proposals/actio
 
 type ResponseStatus = "PENDING" | "ACCEPTED" | "DECLINED";
 
+/** Slightly larger labels for elderly guests — local to the proposal page. */
+const proposalSmallCaps = cn(smallCaps, "text-[12px] tracking-[0.22em] sm:text-[13px] sm:tracking-[0.28em]");
+
+/** High-contrast parchment palette for older guests / poor eyesight. */
+const ink = {
+  body: "text-[#1a1214]",
+  heading: "text-[#140f11]",
+  secondary: "text-[#2a181c]",
+  accent: "text-[#5c2a34]",
+  muted: "text-[#3a2824]",
+} as const;
+
 export function ProposalResponseForm({
   token,
   rolePhrase,
@@ -57,25 +69,30 @@ export function ProposalResponseForm({
     return (
       <ReplyFrame>
         <Fleuron className="mx-auto" />
-        <p className={cn(smallCaps, "mt-5 text-[#B76E79]")}>
+        <p className={cn(proposalSmallCaps, "mt-5", ink.accent)}>
           {accepted ? "With love" : "With gratitude"}
         </p>
-        <h2 className={cn(displayFont, "mt-4 text-4xl font-light text-[#4a3236] sm:text-5xl")}>
+        <h2 className={cn(displayFont, "mt-4 text-4xl font-normal sm:text-5xl", ink.heading)}>
           {accepted ? "You said yes" : "Your reply is with us"}
         </h2>
-        <p className="mx-auto mt-4 max-w-md font-serif text-lg italic leading-7 text-[#6d4a50]">
+        <p className={cn("mx-auto mt-4 max-w-md font-serif text-lg italic leading-7", ink.secondary)}>
           {accepted
             ? `Thank you for accepting your place as ${rolePhrase}.`
             : "Thank you for letting us know. Your kindness means a great deal."}
         </p>
         {message && (
-          <p className="mx-auto mt-6 max-w-md border border-[#DDBF8D]/40 bg-[#FFFDF8] px-5 py-4 font-serif text-lg italic text-[#4a3236]">
+          <p
+            className={cn(
+              "mx-auto mt-6 max-w-md border border-[#C9A66B] bg-[#FFFDF8] px-5 py-4 font-serif text-lg italic",
+              ink.body,
+            )}
+          >
             “{message}”
           </p>
         )}
         <Button
           variant="ghost"
-          className="mt-6 text-[#B76E79] hover:bg-[#F7E3E8] hover:text-[#B76E79]"
+          className={cn("mt-6 hover:bg-[#F7E3E8]", ink.accent, "hover:text-[#5c2a34]")}
           onClick={() => setEditing(true)}
         >
           Change response
@@ -87,13 +104,19 @@ export function ProposalResponseForm({
   return (
     <ReplyFrame>
       <Fleuron className="mx-auto" />
-      <h2 className={cn(displayFont, "mt-5 text-4xl font-light text-[#4a3236] sm:text-5xl")}>Your response</h2>
-      <p className="mt-3 font-serif text-lg italic leading-7 text-[#6d4a50]">
+      <h2 className={cn(displayFont, "mt-5 text-4xl font-normal sm:text-5xl", ink.heading)}>
+        Your response
+      </h2>
+      <p className={cn("mt-3 font-serif text-lg italic leading-7", ink.secondary)}>
         We would be honored to have you as {rolePhrase}.
       </p>
 
       <Textarea
-        className="mt-7 min-h-28 resize-none border-[#DDBF8D]/60 bg-[#FFFDF8] text-center font-serif text-[#4a3236] placeholder:text-[#9b7b62]/70 focus-visible:ring-[#DDBF8D]"
+        className={cn(
+          "mt-7 min-h-28 resize-none border-[#C9A66B] bg-[#FFFDF8] text-center font-serif focus-visible:ring-[#C9A66B]",
+          ink.body,
+          "placeholder:text-[#3a2824]",
+        )}
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         maxLength={2000}
@@ -104,7 +127,7 @@ export function ProposalResponseForm({
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Button
           size="lg"
-          className="h-12 bg-[#B76E79] text-xs uppercase tracking-[0.16em] text-[#FFFDF8] hover:bg-[#a25e69]"
+          className="h-12 bg-[#8a4a55] text-xs uppercase tracking-[0.16em] text-[#FFFDF8] hover:bg-[#6f3a44]"
           disabled={Boolean(pending)}
           onClick={() => respond("ACCEPTED")}
         >
@@ -116,7 +139,11 @@ export function ProposalResponseForm({
         <Button
           size="lg"
           variant="outline"
-          className="h-12 border-[#DDBF8D] bg-transparent text-xs uppercase tracking-[0.16em] text-[#8a6248] hover:bg-[#FBF6EE] hover:text-[#6d4a50]"
+          className={cn(
+            "h-12 border-[#C9A66B] bg-transparent text-xs uppercase tracking-[0.16em] hover:bg-[#FBF6EE]",
+            ink.muted,
+            "hover:text-[#2a181c]",
+          )}
           disabled={Boolean(pending)}
           onClick={() => respond("DECLINED")}
         >
@@ -130,7 +157,7 @@ export function ProposalResponseForm({
 
 function ReplyFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative border border-[#DDBF8D]/55 bg-[#FFFDF8]/75 px-6 py-10 text-center shadow-[0_24px_50px_-36px_rgba(74,50,54,0.45)] sm:px-10 sm:py-12">
+    <div className="relative border border-[#C9A66B] bg-[#FFFDF8] px-6 py-10 text-center shadow-[0_24px_50px_-36px_rgba(74,50,54,0.45)] sm:px-10 sm:py-12">
       <GoldCorner className="left-2 top-2" />
       <GoldCorner className="right-2 top-2 rotate-90" />
       <GoldCorner className="bottom-2 left-2 -rotate-90" />

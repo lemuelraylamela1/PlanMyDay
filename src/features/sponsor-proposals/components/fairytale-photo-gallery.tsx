@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion, type PanInfo } from "framer-motion";
+import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -15,11 +16,32 @@ import {
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay, pageParchment } from "@/features/invitations/components/fairytale/textures";
-import { gallerySets, type GalleryImage } from "@/features/invitations/components/lantern/media";
+import {
+  gallerySets,
+  portraitHeroImages,
+  type GalleryImage,
+} from "@/features/invitations/components/lantern/media";
 import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
 
-const PROPOSAL_MUSIC_SRC = "/proposal-audio/marry-me.mp3";
+const PROPOSAL_MUSIC_SRC = "/proposal-audio/it-might-be-you.mp3";
 const SAVE_THE_DATE_VIDEO_SRC = "/proposal-video/save-the-date.mp4";
+const SAVE_THE_DATE_POSTER_SRC = "/proposal-video/save-the-date-poster.jpg";
+const HERO_ROTATE_MS = 3000;
+
+/** Slightly larger labels for elderly guests — local to the proposal page. */
+const proposalSmallCaps = cn(smallCaps, "text-[12px] tracking-[0.22em] sm:text-[13px] sm:tracking-[0.28em]");
+
+const heroTextShadow = "[text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_2px_12px_rgba(0,0,0,0.45)]";
+
+/** High-contrast parchment palette for older guests / poor eyesight. */
+const ink = {
+  body: "text-[#1a1214]",
+  heading: "text-[#140f11]",
+  secondary: "text-[#2a181c]",
+  accent: "text-[#5c2a34]",
+  muted: "text-[#3a2824]",
+  footer: "text-[#3a2818]",
+} as const;
 
 export interface ProposalImage {
   id: string;
@@ -28,38 +50,34 @@ export interface ProposalImage {
   caption: string | null;
 }
 
-/** Opening hero slides for the entourage proposal. */
-export const proposalHeroImages: ProposalImage[] = [
-  {
-    id: "hero-07",
-    url: "/proposal-photos/hero-07.jpg",
-    fileName: "In the carriage",
-    caption: "In the carriage",
-  },
-  {
-    id: "hero-08",
-    url: "/proposal-photos/hero-08.jpg",
-    fileName: "Stepping out",
-    caption: "Stepping out",
-  },
-  {
-    id: "hero-09",
-    url: "/proposal-photos/hero-09.jpg",
-    fileName: "By the fountain",
-    caption: "By the fountain",
-  },
-  {
-    id: "hero-10",
-    url: "/proposal-photos/hero-10.jpg",
-    fileName: "Hand in hand",
-    caption: "Hand in hand",
-  },
-];
-
+/** Opening hero slides — every photo from public/gallery/1, 2, and 3. */
+export const proposalHeroImages: ProposalImage[] = portraitHeroImages.map((image, index) => ({
+  id: `gallery-hero-${index + 1}`,
+  url: image.src,
+  fileName: image.alt,
+  caption: image.alt,
+}));
 
 const useIsoLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
 const ease = [0.22, 1, 0.36, 1] as const;
+
+const SWIPE_OFFSET = 72;
+const SWIPE_VELOCITY = 450;
+
+function pickRandomIndex(exclude: number, length: number) {
+  if (length <= 1) return 0;
+  let next = exclude;
+  while (next === exclude) {
+    next = Math.floor(Math.random() * length);
+  }
+  return next;
+}
+
+function wrapIndex(index: number, length: number) {
+  if (length <= 0) return 0;
+  return ((index % length) + length) % length;
+}
 
 const lightMotes = [
   { left: "8%", size: 3, duration: 16, delay: 0, drift: 14 },
@@ -81,7 +99,6 @@ export function ProposalExperience({
   dateLabel,
   timeLabel,
   venueName,
-  venueAddress,
   children,
 }: {
   images: ProposalImage[];
@@ -92,7 +109,6 @@ export function ProposalExperience({
   dateLabel: string | null;
   timeLabel: string | null;
   venueName: string | null;
-  venueAddress: string | null;
   children: React.ReactNode;
 }) {
   const calm = usePrefersReducedMotion();
@@ -100,6 +116,7 @@ export function ProposalExperience({
   const [outgoing, setOutgoing] = React.useState<number | null>(null);
   const [opened, setOpened] = React.useState(false);
   const [musicPlaying, setMusicPlaying] = React.useState(false);
+  const [videoPlaying, setVideoPlaying] = React.useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const musicPausedByVideoRef = React.useRef(false);
@@ -115,8 +132,6 @@ export function ProposalExperience({
     query.addEventListener("change", apply);
     return () => query.removeEventListener("change", apply);
   }, []);
-
-
 
   useIsoLayoutEffect(() => {
     if (calm) setOpened(true);
@@ -136,10 +151,16 @@ export function ProposalExperience({
   React.useEffect(() => {
     if (!opened || calm || photos.length < 2) return;
     const timer = window.setInterval(() => {
-      showPhoto((activeRef.current + 1) % photos.length);
-    }, 7000);
+      showPhoto(pickRandomIndex(activeRef.current, photos.length));
+    }, HERO_ROTATE_MS);
     return () => window.clearInterval(timer);
   }, [opened, photos.length, calm, showPhoto]);
+
+  React.useEffect(() => {
+    if (outgoing === null) return;
+    const id = window.setTimeout(() => setOutgoing(null), 1800);
+    return () => window.clearTimeout(id);
+  }, [outgoing, active]);
 
   async function startMusic() {
     const audio = audioRef.current;
@@ -159,57 +180,15 @@ export function ProposalExperience({
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
     audio.loop = true;
     audio.volume = 0.7;
-
-    void audio
-      .play()
-      .then(() => {
-        setMusicPlaying(true);
-        setOpened(true);
-      })
-      .catch(() => {
-        // Browsers often block sound until the guest taps Open.
-      });
-
     return () => {
       audio.pause();
     };
   }, []);
 
-  React.useEffect(() => {
-    const video = videoRef.current;
-    if (!opened || !video) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          const audio = audioRef.current;
-          musicPausedByVideoRef.current = Boolean(audio && !audio.paused);
-          if (audio && !audio.paused) {
-            audio.pause();
-            setMusicPlaying(false);
-          }
-          video.muted = true;
-          void video.play().catch(() => undefined);
-          return;
-        }
-
-        video.pause();
-        if (musicPausedByVideoRef.current) {
-          musicPausedByVideoRef.current = false;
-          void startMusic();
-        }
-      },
-      { threshold: 0.55 },
-    );
-
-    observer.observe(video);
-    return () => observer.disconnect();
-  }, [opened]);
-
   async function openInvitation() {
+    // Gate stays until the guest taps — never auto-open on music preload.
     await startMusic();
     setOpened(true);
   }
@@ -219,6 +198,7 @@ export function ProposalExperience({
     if (!audio) return;
     if (audio.paused) {
       videoRef.current?.pause();
+      setVideoPlaying(false);
       musicPausedByVideoRef.current = false;
       await startMusic();
       return;
@@ -227,12 +207,43 @@ export function ProposalExperience({
     setMusicPlaying(false);
   }
 
-  function handleVideoPlay() {
+  function pauseAmbientForVideo() {
     const audio = audioRef.current;
     if (!audio || audio.paused) return;
     musicPausedByVideoRef.current = true;
     audio.pause();
     setMusicPlaying(false);
+  }
+
+  async function playInvitationFilm() {
+    const video = videoRef.current;
+    if (!video) return;
+    pauseAmbientForVideo();
+    video.muted = false;
+    try {
+      await video.play();
+      setVideoPlaying(true);
+    } catch {
+      setVideoPlaying(false);
+    }
+  }
+
+  function handleVideoPlay() {
+    setVideoPlaying(true);
+    pauseAmbientForVideo();
+  }
+
+  function handleVideoPause() {
+    const video = videoRef.current;
+    setVideoPlaying(Boolean(video && !video.paused));
+  }
+
+  function handleVideoEnded() {
+    setVideoPlaying(false);
+    if (musicPausedByVideoRef.current) {
+      musicPausedByVideoRef.current = false;
+      void startMusic();
+    }
   }
 
   function arrive(delay = 0) {
@@ -258,8 +269,8 @@ export function ProposalExperience({
   if (outgoing !== null && outgoing !== active && photos[outgoing]) visibleSlides.add(outgoing);
 
   return (
-    <main className="bg-[#FFFDF8] text-[#5c3d43]">
-      <audio ref={audioRef} src={PROPOSAL_MUSIC_SRC} preload="auto" autoPlay loop playsInline />
+    <main className={cn("bg-[#FFFDF8]", ink.body)}>
+      <audio ref={audioRef} src={PROPOSAL_MUSIC_SRC} preload="auto" loop playsInline />
       <AnimatePresence>
         {!opened && (
           <motion.div
@@ -297,7 +308,10 @@ export function ProposalExperience({
             <button
               type="button"
               onClick={openInvitation}
-              className="relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center text-[#FFFDF8]"
+              className={cn(
+                "relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center text-[#FFFDF8]",
+                heroTextShadow,
+              )}
               aria-label="Open invitation and play music"
             >
               <motion.span
@@ -306,8 +320,8 @@ export function ProposalExperience({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, ease, delay: 0.12 }}
               >
-                <Fleuron className="text-[#DDBF8D]" />
-                <p className={cn(smallCaps, "mt-6 text-[#DDBF8D]")}>A special invitation</p>
+                <Fleuron className="text-[#FFEFD6]" />
+                <p className={cn(proposalSmallCaps, "mt-6 text-[#FFEFD6]")}>A special invitation</p>
                 <p
                   className={cn(
                     displayFont,
@@ -316,7 +330,7 @@ export function ProposalExperience({
                 >
                   {coupleNames}
                 </p>
-                <p className={cn(scriptFont, "mt-4 text-4xl text-[#F3E6C8] sm:text-5xl")}>
+                <p className={cn(scriptFont, "mt-4 text-4xl text-[#FFEFD6] sm:text-5xl")}>
                   For {honoreeName}
                 </p>
                 <motion.span
@@ -335,11 +349,11 @@ export function ProposalExperience({
                   }
                   transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  <span className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full border border-[#DDBF8D]/80 bg-[#1a1214]/40 text-[#F6E7C1] backdrop-blur-[2px]">
+                  <span className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full border border-[#DDBF8D]/80 bg-[#1a1214]/40 text-[#FFEFD6] backdrop-blur-[2px]">
                     <Volume2 className="h-5 w-5" />
                   </span>
                 </motion.span>
-                <span className={cn(smallCaps, "mt-5 text-[#DDBF8D]")}>Tap to open</span>
+                <span className={cn(proposalSmallCaps, "mt-5 text-[#FFEFD6]")}>Tap to open</span>
               </motion.span>
             </button>
           </motion.div>
@@ -350,7 +364,7 @@ export function ProposalExperience({
           type="button"
           onClick={toggleMusic}
           aria-label={musicPlaying ? "Mute music" : "Play music"}
-          className="fixed left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))] z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[#E8B8C7] bg-[#FFFDF8]/95 text-[#B76E79] shadow-md backdrop-blur-sm"
+          className="fixed left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))] z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[#E8B8C7] bg-[#FFFDF8]/95 text-[#5c2a34] shadow-md backdrop-blur-sm"
         >
           {musicPlaying ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
         </button>
@@ -378,36 +392,14 @@ export function ProposalExperience({
           className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-overlay"
           style={{ backgroundImage: grainOverlay }}
         />
-        {photos.length > 1 && (
-          <div
-            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex max-w-[68%] flex-wrap justify-end sm:right-8"
-            role="tablist"
-            aria-label="Wedding portraits"
-          >
-            {photos.map((photo, index) => (
-              <button
-                key={photo.id}
-                type="button"
-                role="tab"
-                aria-selected={active === index}
-                aria-label={`Show ${photo.caption || photo.fileName}`}
-                onClick={() => showPhoto(index)}
-                className="relative h-7 w-7 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFDF8]"
-              >
-                <span className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-white/80 shadow-[0_0_6px_rgba(0,0,0,0.7)]" />
-                <motion.span
-                  className="absolute left-1/2 top-1/2 h-px -translate-x-1/2 -translate-y-1/2 bg-[#DDBF8D] shadow-[0_0_6px_rgba(0,0,0,0.7)]"
-                  initial={false}
-                  animate={{ width: active === index ? 16 : 0 }}
-                  transition={{ duration: calm ? 0 : 0.65, ease }}
-                />
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center px-6 pb-[max(1.35rem,env(safe-area-inset-bottom))] text-center text-[#FFFDF8]">
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center px-6 pb-[max(1.35rem,env(safe-area-inset-bottom))] text-center text-[#FFFDF8]",
+            heroTextShadow,
+          )}
+        >
           {dateLabel && (
-            <motion.p {...rise(0.28)} className={cn(smallCaps, "text-[#DDBF8D]")}>
+            <motion.p {...rise(0.28)} className={cn(proposalSmallCaps, "text-[#FFEFD6]")}>
               {dateLabel}
             </motion.p>
           )}
@@ -422,13 +414,13 @@ export function ProposalExperience({
           </motion.p>
           <motion.p
             {...rise(0.56)}
-            className="mt-4 max-w-md text-balance font-serif text-lg italic leading-snug text-[#FFFDF8]/86 sm:text-2xl"
+            className="mt-4 max-w-md text-balance font-serif text-lg italic leading-snug text-[#FFFDF8] sm:text-2xl"
           >
             Will you be {rolePhrase}?
           </motion.p>
           <motion.p
             {...rise(0.7)}
-            className={cn(scriptFont, "mt-3 text-4xl text-[#F3E6C8] sm:text-5xl")}
+            className={cn(scriptFont, "mt-3 text-4xl text-[#FFEFD6] sm:text-5xl")}
           >
             {honoreeName}
           </motion.p>
@@ -436,10 +428,10 @@ export function ProposalExperience({
             {...rise(0.84)}
             href="#proposal-greeting"
             aria-label="Scroll down to the rest of the proposal"
-            className="pointer-events-auto mt-7 inline-flex flex-col items-center gap-3 text-[#FFFDF8]/75 transition-colors hover:text-[#DDBF8D] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFDF8]"
+            className="pointer-events-auto mt-7 inline-flex flex-col items-center gap-3 text-[#FFEFD6] transition-colors hover:text-[#FFFDF8] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFDF8]"
           >
-            <span className={smallCaps}>Continue</span>
-            <span aria-hidden className="relative block h-10 w-px overflow-hidden bg-[#FFFDF8]/35">
+            <span className={proposalSmallCaps}>Continue</span>
+            <span aria-hidden className="relative block h-10 w-px overflow-hidden bg-[#FFFDF8]/55">
               {calm ? (
                 <span className="absolute inset-x-0 top-0 block h-1/2 bg-[#DDBF8D]" />
               ) : (
@@ -467,21 +459,22 @@ export function ProposalExperience({
           <motion.div {...arrive(0)}>
             <Fleuron className="mx-auto" />
           </motion.div>
-          <motion.p {...arrive(0.08)} className={cn(smallCaps, "mt-6 text-[#B76E79]")}>
+          <motion.p {...arrive(0.08)} className={cn(proposalSmallCaps, "mt-6", ink.accent)}>
             Dear
           </motion.p>
           <motion.h1
             {...arrive(0.16)}
             className={cn(
               displayFont,
-              "mt-5 text-balance text-[clamp(3.2rem,8vw,5.5rem)] font-light leading-[0.95] text-[#4a3236]",
+              "mt-5 text-balance text-[clamp(3.2rem,8vw,5.5rem)] font-normal leading-[0.95]",
+              ink.heading,
             )}
           >
             {honoreeName}
           </motion.h1>
           <motion.p
             {...arrive(0.28)}
-            className={cn(scriptFont, "mt-5 text-4xl text-[#B76E79] sm:text-5xl")}
+            className={cn(scriptFont, "mt-5 text-4xl sm:text-5xl", ink.accent)}
           >
             {coupleNames}
           </motion.p>
@@ -489,7 +482,8 @@ export function ProposalExperience({
             {...arrive(0.38)}
             className={cn(
               displayFont,
-              "mx-auto mt-4 max-w-md text-balance text-2xl font-light italic leading-snug text-[#6d4a50] sm:text-3xl",
+              "mx-auto mt-4 max-w-md text-balance text-2xl font-normal italic leading-snug sm:text-3xl",
+              ink.secondary,
             )}
           >
             Will you be {rolePhrase}?
@@ -513,8 +507,7 @@ export function ProposalExperience({
             />
             <Detail
               label="The venue"
-              value={venueName ?? "To be announced"}
-              note={venueAddress}
+              value={venueName ?? "Fernwood Gardens, Tagaytay"}
               calm={calm}
               delay={0.2}
             />
@@ -535,21 +528,36 @@ export function ProposalExperience({
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, ease }}
           >
-            <video
-              ref={videoRef}
-              className="block h-auto w-full"
-              width={1920}
-              height={1080}
-              controls
-              muted
-              playsInline
-              preload="metadata"
-              poster="/proposal-photos/hero-08.jpg"
-              onPlay={handleVideoPlay}
-            >
-              <source src={SAVE_THE_DATE_VIDEO_SRC} type="video/mp4" />
-              Your browser does not support this video.
-            </video>
+            <div className="relative bg-[#1c1619]">
+              <video
+                ref={videoRef}
+                className="block h-auto w-full"
+                width={1920}
+                height={1080}
+                controls={videoPlaying}
+                playsInline
+                preload="metadata"
+                poster={SAVE_THE_DATE_POSTER_SRC}
+                onPlay={handleVideoPlay}
+                onPause={handleVideoPause}
+                onEnded={handleVideoEnded}
+              >
+                <source src={SAVE_THE_DATE_VIDEO_SRC} type="video/mp4" />
+                Your browser does not support this video.
+              </video>
+              {!videoPlaying && (
+                <button
+                  type="button"
+                  onClick={() => void playInvitationFilm()}
+                  aria-label="Play invitation film"
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#1c1619]/35 transition hover:bg-[#1c1619]/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#DDBF8D]"
+                >
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full border border-[#DDBF8D] bg-[#1a1214]/75 text-[#FFEFD6] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.65)] backdrop-blur-sm sm:h-24 sm:w-24">
+                    <Play className="h-8 w-8 translate-x-0.5 fill-current sm:h-9 sm:w-9" />
+                  </span>
+                </button>
+              )}
+            </div>
           </motion.div>
         </section>
 
@@ -559,23 +567,18 @@ export function ProposalExperience({
               calm={calm}
               kicker="Our photographs"
               title="Moments with us"
-              note="Drag a row to find a moment — swipe stays in that row."
+              note="Drag a row to find a moment — tap to open. Swipe stays in that row."
             />
           </div>
           <ProposalPhotoRows calm={calm} compact={compactGallery} />
-          <p
-            className={cn(
-              smallCaps,
-              "relative z-10 mt-5 text-center text-[#9b7b62]/70 sm:mt-6",
-            )}
-          >
-            Drag to find · Swipe stays in that row
+          <p className={cn(proposalSmallCaps, "relative z-10 mt-5 text-center sm:mt-6", ink.muted)}>
+            Drag to find · Tap to open · Swipe stays in that row
           </p>
         </section>
 
         <section className="relative mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-12">
           <motion.div
-            className="relative border border-[#DDBF8D]/50 bg-[#FFFDF8]/60 px-8 py-14 text-center sm:px-16 sm:py-16"
+            className="relative border border-[#C9A66B] bg-[#FFFDF8] px-8 py-14 text-center sm:px-16 sm:py-16"
             initial={calm ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
@@ -589,7 +592,8 @@ export function ProposalExperience({
             <p
               className={cn(
                 displayFont,
-                "mt-8 whitespace-pre-line text-2xl font-light italic leading-relaxed text-[#4a3236] sm:text-[2rem] sm:leading-relaxed",
+                "mt-8 whitespace-pre-line text-2xl font-normal italic leading-relaxed sm:text-[2rem] sm:leading-relaxed",
+                ink.body,
               )}
             >
               {message}
@@ -604,25 +608,243 @@ export function ProposalExperience({
             aria-hidden
             className="mb-5 h-12 w-px bg-gradient-to-b from-transparent to-[#DDBF8D]"
           />
-          <p className={cn(scriptFont, "text-4xl text-[#C9A66B]")}>{coupleNames}</p>
-          {dateLabel && <p className={cn(smallCaps, "mt-4 text-[#9b7b62]")}>{dateLabel}</p>}
+          <p className={cn(scriptFont, "text-4xl", ink.footer)}>{coupleNames}</p>
+          {dateLabel && <p className={cn(proposalSmallCaps, "mt-4", ink.muted)}>{dateLabel}</p>}
         </footer>
       </div>
     </main>
   );
 }
 
+function ProposalGalleryLightbox({
+  images,
+  index,
+  onIndexChange,
+  onClose,
+}: {
+  images: GalleryImage[];
+  index: number;
+  onIndexChange: (index: number) => void;
+  onClose: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+  const onCloseRef = React.useRef(onClose);
+  const onIndexChangeRef = React.useRef(onIndexChange);
+  const indexRef = React.useRef(index);
+  const [direction, setDirection] = React.useState(0);
+
+  onCloseRef.current = onClose;
+  onIndexChangeRef.current = onIndexChange;
+  indexRef.current = index;
+
+  const item = images[index];
+  const count = images.length;
+
+  const goTo = React.useCallback(
+    (nextIndex: number, dir: number) => {
+      setDirection(dir);
+      onIndexChangeRef.current(wrapIndex(nextIndex, count));
+    },
+    [count],
+  );
+
+  const goPrev = React.useCallback(() => goTo(indexRef.current - 1, -1), [goTo]);
+  const goNext = React.useCallback(() => goTo(indexRef.current + 1, 1), [goTo]);
+
+  React.useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goPrev();
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [goPrev, goNext]);
+
+  React.useEffect(() => {
+    if (count < 2) return;
+    const neighbors = [images[wrapIndex(index - 1, count)], images[wrapIndex(index + 1, count)]];
+    for (const neighbor of neighbors) {
+      if (!neighbor) continue;
+      const img = new window.Image();
+      img.src = neighbor.src;
+    }
+  }, [images, index, count]);
+
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    if (offset.x < -SWIPE_OFFSET || velocity.x < -SWIPE_VELOCITY) {
+      goNext();
+      return;
+    }
+    if (offset.x > SWIPE_OFFSET || velocity.x > SWIPE_VELOCITY) {
+      goPrev();
+    }
+  };
+
+  if (!item) return null;
+
+  const slideVariants = {
+    enter: (dir: number) => ({
+      x: reduceMotion ? 0 : dir > 0 ? 72 : -72,
+      opacity: 0,
+    }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({
+      x: reduceMotion ? 0 : dir > 0 ? -56 : 56,
+      opacity: 0,
+    }),
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[130] flex touch-none items-center justify-center p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.caption || "Photograph gallery"}
+      onClick={onClose}
+      onPointerUp={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-[#120814]/72 backdrop-blur-2xl backdrop-saturate-150"
+        onClick={onClose}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#120814]/45 via-transparent to-[#120814]/55"
+      />
+
+      <button
+        ref={closeRef}
+        type="button"
+        className="absolute right-3 top-3 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-5 sm:top-5"
+        aria-label="Close photo"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+      >
+        <X className="h-[18px] w-[18px]" strokeWidth={1.8} />
+      </button>
+
+      {count > 1 ? (
+        <>
+          <button
+            type="button"
+            className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:left-4 sm:grid"
+            aria-label="Previous photo"
+            onClick={(event) => {
+              event.stopPropagation();
+              goPrev();
+            }}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-4 sm:grid"
+            aria-label="Next photo"
+            onClick={(event) => {
+              event.stopPropagation();
+              goNext();
+            }}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
+      ) : null}
+
+      <div
+        className="relative z-10 flex h-full w-full max-w-[min(96vw,1400px)] flex-col items-center justify-center"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.figure
+            key={item.src}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              duration: reduceMotion ? 0.01 : 0.28,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            drag={count > 1 ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.18}
+            onDragEnd={onDragEnd}
+            className="relative flex max-h-full w-full cursor-grab flex-col items-center gap-3 active:cursor-grabbing"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- fullscreen HD source, not a layout image */}
+            <img
+              src={item.src}
+              alt={item.caption || "Wedding photograph"}
+              decoding="async"
+              className="max-h-[min(84dvh,920px)] max-w-full select-none object-contain"
+              style={{
+                width: "auto",
+                height: "auto",
+                imageRendering: "auto",
+                touchAction: "none",
+              }}
+              draggable={false}
+            />
+            <figcaption className="flex max-w-[min(90vw,36rem)] flex-col items-center gap-1.5 text-center">
+              {item.caption ? (
+                <span className={cn(proposalSmallCaps, "text-[#FFFDF8]")}>{item.caption}</span>
+              ) : null}
+              <span className={cn(proposalSmallCaps, "text-[#FFEFD6]")}>
+                {index + 1} / {count}
+                {count > 1 ? " · swipe for more" : null}
+              </span>
+            </figcaption>
+          </motion.figure>
+        </AnimatePresence>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function ProposalGallerySlide({
   image,
   size,
+  onOpen,
 }: {
   image: GalleryImage;
   size: number;
+  onOpen: () => void;
 }) {
   return (
-    <div
-      className="group relative shrink-0 overflow-hidden border border-[#DDBF8D]/45 bg-[#1c1619] text-left shadow-[0_16px_36px_-24px_rgba(74,50,54,0.55)]"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative shrink-0 overflow-hidden border border-[#DDBF8D]/45 bg-[#1c1619] text-left shadow-[0_16px_36px_-24px_rgba(74,50,54,0.55)] outline-none focus-visible:ring-2 focus-visible:ring-[#C9A66B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFDF8]"
       style={{ width: size, height: Math.round(size * (2 / 3)) }}
+      aria-label={`View ${image.caption}`}
     >
       <Image
         src={image.src}
@@ -633,14 +855,27 @@ function ProposalGallerySlide({
         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
         draggable={false}
       />
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1c1619]/75 to-transparent px-2.5 pb-2 pt-8 opacity-0 transition group-hover:opacity-100">
-        <span className={cn(smallCaps, "block truncate text-[9px] text-[#FFFDF8]/90")}>
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1c1619]/75 to-transparent px-2.5 pb-2 pt-8 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+        <span className={cn(proposalSmallCaps, "block truncate text-[11px] text-[#FFFDF8]")}>
           {image.caption}
         </span>
       </span>
-    </div>
+    </button>
   );
 }
+
+type GalleryRow = {
+  id: string;
+  images: GalleryImage[];
+  reverse?: boolean;
+  duration: number;
+};
+
+type LightboxState = {
+  rowId: string;
+  images: GalleryImage[];
+  index: number;
+};
 
 function ProposalPhotoRows({
   calm,
@@ -651,35 +886,59 @@ function ProposalPhotoRows({
 }) {
   const cardSize = compact ? 168 : 220;
   const gap = compact ? 12 : 16;
+  const rows: GalleryRow[] = gallerySets.map((set, index) => ({
+    id: set.id,
+    images: set.images,
+    reverse: index % 2 === 1,
+    duration: Math.round(set.images.length * 10) + index * 8,
+  }));
+  const [lightbox, setLightbox] = React.useState<LightboxState | null>(null);
+
+  const openPhoto = React.useCallback((row: GalleryRow, image: GalleryImage) => {
+    const found = row.images.findIndex((photo) => photo.src === image.src);
+    setLightbox({
+      rowId: row.id,
+      images: row.images,
+      index: found >= 0 ? found : 0,
+    });
+  }, []);
 
   return (
-    <div
-      className="relative z-10 mt-8 w-full sm:mt-10"
-      aria-label="Photo gallery"
-    >
-      <div className="flex flex-col justify-center gap-3 sm:gap-4">
-        {gallerySets.map((set, index) => (
-          <InfiniteSlider
-            key={set.id}
-            direction="horizontal"
-            reverse={index % 2 === 1}
-            gap={gap}
-            duration={calm ? 120 : Math.round(set.images.length * 10) + index * 8}
-            durationOnHover={calm ? undefined : (Math.round(set.images.length * 10) + index * 8) * 2.4}
-            draggable
-            className="w-full"
-          >
-            {set.images.map((image) => (
-              <ProposalGallerySlide
-                key={`${set.id}-${image.src}`}
-                image={image}
-                size={cardSize}
-              />
-            ))}
-          </InfiniteSlider>
-        ))}
+    <>
+      <div className="relative z-10 mt-8 w-full sm:mt-10" aria-label="Photo gallery">
+        <div className="flex flex-col justify-center gap-3 sm:gap-4">
+          {rows.map((row) => (
+            <InfiniteSlider
+              key={row.id}
+              direction="horizontal"
+              reverse={row.reverse}
+              gap={gap}
+              duration={calm ? 120 : row.duration}
+              durationOnHover={calm ? undefined : row.duration * 2.4}
+              draggable
+              className="w-full"
+            >
+              {row.images.map((image) => (
+                <ProposalGallerySlide
+                  key={`${row.id}-${image.src}`}
+                  image={image}
+                  size={cardSize}
+                  onOpen={() => openPhoto(row, image)}
+                />
+              ))}
+            </InfiniteSlider>
+          ))}
+        </div>
       </div>
-    </div>
+      {lightbox ? (
+        <ProposalGalleryLightbox
+          images={lightbox.images}
+          index={lightbox.index}
+          onIndexChange={(next) => setLightbox((current) => (current ? { ...current, index: next } : current))}
+          onClose={() => setLightbox(null)}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -775,7 +1034,7 @@ function CinematicFrame({
         className="absolute inset-[-8%]"
         initial={{ scale: reduceMotion ? 1 : 1.04 }}
         animate={{ scale: reduceMotion ? 1 : scale }}
-        transition={{ duration: playing && scale === 1.1 ? 7 : 0, ease: "linear" }}
+        transition={{ duration: playing && scale === 1.1 ? HERO_ROTATE_MS / 1000 : 0, ease: "linear" }}
       >
         <Image
           src={photo.url}
@@ -816,14 +1075,15 @@ function ChapterIntro({
       <motion.div {...rise}>
         <Fleuron className="mx-auto" />
       </motion.div>
-      <motion.p {...rise} className={cn(smallCaps, "mt-5 text-[#B76E79]")}>
+      <motion.p {...rise} className={cn(proposalSmallCaps, "mt-5", ink.accent)}>
         {kicker}
       </motion.p>
       <motion.h2
         {...rise}
         className={cn(
           displayFont,
-          "mt-3 text-balance text-4xl font-light leading-tight text-[#4a3236] sm:text-5xl",
+          "mt-3 text-balance text-4xl font-normal leading-tight sm:text-5xl",
+          ink.heading,
         )}
       >
         {title}
@@ -831,7 +1091,7 @@ function ChapterIntro({
       {note && (
         <motion.p
           {...rise}
-          className={cn(displayFont, "mt-3 text-lg italic leading-relaxed text-[#6d4a50]")}
+          className={cn(displayFont, "mt-3 text-lg font-normal italic leading-relaxed", ink.secondary)}
         >
           {note}
         </motion.p>
@@ -861,17 +1121,18 @@ function Detail({
       viewport={{ once: true, amount: 0.6 }}
       transition={{ duration: 0.75, delay: calm ? 0 : delay, ease }}
     >
-      <dt className={cn(smallCaps, "text-[#9b7b62]")}>{label}</dt>
+      <dt className={cn(proposalSmallCaps, ink.muted)}>{label}</dt>
       <dd
         className={cn(
           displayFont,
-          "mt-3 text-balance text-2xl font-light leading-snug text-[#4a3236] sm:text-3xl",
+          "mt-3 text-balance text-2xl font-normal leading-snug sm:text-3xl",
+          ink.heading,
         )}
       >
         {value}
       </dd>
       {note && (
-        <dd className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-[#7a5d62]">
+        <dd className={cn("mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed", ink.secondary)}>
           {note}
         </dd>
       )}

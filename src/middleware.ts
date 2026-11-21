@@ -15,6 +15,9 @@ const SHARE_BOT_UA =
 const INVITE_TITLE = "You're Invited — Lemuel &amp; Grazielle's Wedding";
 const INVITE_DESCRIPTION =
   "Join us as we celebrate our wedding day. Open your invitation to view the details and RSVP.";
+const PROPOSAL_TITLE = "A Special Wedding Proposal";
+const PROPOSAL_DESCRIPTION =
+  "You have been invited to hold a special place in our wedding.";
 
 function escapeHtml(value: string) {
   return value
@@ -24,38 +27,53 @@ function escapeHtml(value: string) {
     .replaceAll(">", "&gt;");
 }
 
-function inviteShareHtml(inviteUrl: string, imageUrl: string) {
-  const url = escapeHtml(inviteUrl);
+function sharePreviewHtml({
+  pageUrl,
+  imageUrl,
+  title,
+  description,
+  imageAlt,
+  ctaLabel,
+}: {
+  pageUrl: string;
+  imageUrl: string;
+  title: string;
+  description: string;
+  imageAlt: string;
+  ctaLabel: string;
+}) {
+  const url = escapeHtml(pageUrl);
   const image = escapeHtml(imageUrl);
+  const alt = escapeHtml(imageAlt);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>${INVITE_TITLE}</title>
-<meta name="description" content="${INVITE_DESCRIPTION}"/>
+<title>${title}</title>
+<meta name="description" content="${description}"/>
 <link rel="canonical" href="${url}"/>
 <link rel="image_src" href="${image}"/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="Lemuel &amp; Grazielle"/>
-<meta property="og:title" content="${INVITE_TITLE}"/>
-<meta property="og:description" content="${INVITE_DESCRIPTION}"/>
+<meta property="og:title" content="${title}"/>
+<meta property="og:description" content="${description}"/>
 <meta property="og:url" content="${url}"/>
 <meta property="og:image" content="${image}"/>
 <meta property="og:image:secure_url" content="${image}"/>
 <meta property="og:image:type" content="image/jpeg"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
-<meta property="og:image:alt" content="Lemuel and Grazielle — You're invited"/>
+<meta property="og:image:alt" content="${alt}"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="${INVITE_TITLE}"/>
-<meta name="twitter:description" content="${INVITE_DESCRIPTION}"/>
+<meta name="twitter:title" content="${title}"/>
+<meta name="twitter:description" content="${description}"/>
 <meta name="twitter:image" content="${image}"/>
 </head>
 <body>
-  <h1>${INVITE_TITLE}</h1>
-  <p>${INVITE_DESCRIPTION}</p>
-  <p><a href="${url}">Open invitation</a></p>
-  <img src="${image}" alt="Lemuel and Grazielle — You're invited" width="1200" height="630"/>
+  <h1>${title}</h1>
+  <p>${description}</p>
+  <p><a href="${url}">${ctaLabel}</a></p>
+  <img src="${image}" alt="${alt}" width="1200" height="630"/>
 </body>
 </html>`;
 }
@@ -68,17 +86,51 @@ export default auth((req) => {
 
   // Serve a tiny OG document to chat crawlers so Messenger/Instagram/WhatsApp
   // get a clean preview (no auth cookies / RSC stream). Humans still get the app.
-  if (path.startsWith("/invite") && SHARE_BOT_UA.test(userAgent)) {
+  if (SHARE_BOT_UA.test(userAgent)) {
     const origin = nextUrl.origin;
-    const inviteUrl = `${origin}${path}`;
-    const imageUrl = `${origin}/og-invite-share.jpg`;
-    return new NextResponse(inviteShareHtml(inviteUrl, imageUrl), {
-      status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=300",
-      },
-    });
+    if (path.startsWith("/invite")) {
+      const inviteUrl = `${origin}${path}`;
+      const imageUrl = `${origin}/og-invite-share.jpg`;
+      return new NextResponse(
+        sharePreviewHtml({
+          pageUrl: inviteUrl,
+          imageUrl,
+          title: INVITE_TITLE,
+          description: INVITE_DESCRIPTION,
+          imageAlt: "Lemuel and Grazielle — You're invited",
+          ctaLabel: "Open invitation",
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "public, max-age=300",
+          },
+        },
+      );
+    }
+
+    if (path.startsWith("/proposal")) {
+      const proposalUrl = `${origin}${path}`;
+      const imageUrl = `${origin}/og-proposal-share.jpg`;
+      return new NextResponse(
+        sharePreviewHtml({
+          pageUrl: proposalUrl,
+          imageUrl,
+          title: PROPOSAL_TITLE,
+          description: PROPOSAL_DESCRIPTION,
+          imageAlt: "Lemuel and Grazielle — A special wedding proposal",
+          ctaLabel: "Open proposal",
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "public, max-age=300",
+          },
+        },
+      );
+    }
   }
 
   if (

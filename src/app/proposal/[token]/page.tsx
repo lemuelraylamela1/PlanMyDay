@@ -8,11 +8,46 @@ import {
   resolveSponsorProposal,
 } from "@/features/sponsor-proposals/service";
 import { entouragePlace } from "@/features/sponsor-proposals/schemas";
+import { env } from "@/lib/env";
 import { formatDate } from "@/lib/utils";
 
+const siteOrigin = (env.appUrl || "https://lemuelandgrazielle-wedding.vercel.app").replace(
+  /\/+$/,
+  "",
+);
+
+const proposalTitle = "A Special Wedding Proposal";
+const proposalDescription =
+  "You have been invited to hold a special place in our wedding.";
+const proposalImageUrl = `${siteOrigin}/og-proposal-share.jpg`;
+
 export const metadata: Metadata = {
-  title: "A Special Wedding Proposal",
-  description: "You have been invited to hold a special place in our wedding.",
+  metadataBase: new URL(siteOrigin),
+  title: { absolute: proposalTitle },
+  description: proposalDescription,
+  openGraph: {
+    type: "website",
+    title: proposalTitle,
+    description: proposalDescription,
+    siteName: "Lemuel & Grazielle",
+    locale: "en_PH",
+    images: [
+      {
+        url: proposalImageUrl,
+        secureUrl: proposalImageUrl,
+        type: "image/jpeg",
+        width: 1200,
+        height: 630,
+        alt: "Lemuel and Grazielle — A special wedding proposal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: proposalTitle,
+    description: proposalDescription,
+    images: [proposalImageUrl],
+  },
 };
 
 function formatCeremonyTime(date: Date, timeZone: string) {
@@ -79,8 +114,7 @@ export default async function SponsorProposalPage({
           ? formatCeremonyTime(wedding.ceremonyTime, wedding.timezone)
           : null
       }
-      venueName={wedding.venueName}
-      venueAddress={wedding.venueAddress}
+      venueName="Fernwood Gardens, Tagaytay"
     >
       <ProposalResponseForm
         token={token}

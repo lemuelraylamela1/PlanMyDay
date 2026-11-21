@@ -265,7 +265,7 @@ function GallerySlide({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative shrink-0 overflow-hidden rounded-xl border border-[#2a1540]/10 bg-white/40 text-left shadow-[0_10px_28px_rgb(42_21_64_/_0.12)] outline-none transition hover:border-[#2a1540]/25 focus-visible:ring-2 focus-visible:ring-[#2a1540]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7efe8]"
+      className="group relative shrink-0 overflow-hidden rounded-none border border-[#2a1540]/10 bg-white/40 text-left shadow-[0_10px_28px_rgb(42_21_64_/_0.12)] outline-none transition hover:border-[#2a1540]/25 focus-visible:ring-2 focus-visible:ring-[#2a1540]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7efe8]"
       style={{ width: size, height: Math.round(size * (2 / 3)) }}
       aria-label={`View ${image.caption}`}
     >
