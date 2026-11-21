@@ -23,15 +23,27 @@ function pickRandomIndex(exclude: number, length: number) {
 
 /**
  * Second hero: exact viewport height; gallery photos hard-cut to a
- * random next frame every 2 seconds (no crossfade).
+ * random next frame every 2 seconds (no crossfade, no backdrop flash).
  */
 export function PortraitHero() {
   const wedding = useLanternContent();
   const reduceMotion = useReducedMotion();
   const { isMobile, isCompact, isShort, height } = useInviteViewport();
-  const [active, setActive] = React.useState(0);
+  const [baseIndex, setBaseIndex] = React.useState(0);
+  const [pendingIndex, setPendingIndex] = React.useState<number | null>(null);
+  const [pendingReady, setPendingReady] = React.useState(false);
   const sectionRef = React.useRef<HTMLElement>(null);
   const [inView, setInView] = React.useState(false);
+  const baseIndexRef = React.useRef(baseIndex);
+  const pendingIndexRef = React.useRef(pendingIndex);
+
+  React.useEffect(() => {
+    baseIndexRef.current = baseIndex;
+  }, [baseIndex]);
+
+  React.useEffect(() => {
+    pendingIndexRef.current = pendingIndex;
+  }, [pendingIndex]);
 
   React.useEffect(() => {
     const el = sectionRef.current;
@@ -47,10 +59,34 @@ export function PortraitHero() {
   React.useEffect(() => {
     if (reduceMotion || !inView || portraitHeroImages.length < 2) return;
     const id = window.setInterval(() => {
-      setActive((current) => pickRandomIndex(current, portraitHeroImages.length));
+      // Wait until the current swap finishes before queuing another.
+      if (pendingIndexRef.current !== null) return;
+      setPendingReady(false);
+      setPendingIndex(
+        pickRandomIndex(baseIndexRef.current, portraitHeroImages.length),
+      );
     }, ROTATE_MS);
     return () => window.clearInterval(id);
   }, [inView, reduceMotion]);
+
+  // Promote the preloaded frame with an instant hard cut (no fade).
+  // Keep the overlay up for two frames so the base image can adopt the
+  // new src underneath without exposing the section background.
+  React.useEffect(() => {
+    if (pendingIndex === null || !pendingReady) return;
+    setBaseIndex(pendingIndex);
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setPendingIndex(null);
+        setPendingReady(false);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [pendingIndex, pendingReady]);
 
   const dateLine = wedding.event.dateLong.toLowerCase().startsWith(
     wedding.event.dayOfWeek.toLowerCase(),
@@ -58,13 +94,15 @@ export function PortraitHero() {
     ? wedding.event.dateLong
     : `${wedding.event.dayOfWeek}, ${wedding.event.dateLong}`;
 
-  const image = portraitHeroImages[active] ?? portraitHeroImages[0]!;
+  const baseImage = portraitHeroImages[baseIndex] ?? portraitHeroImages[0]!;
+  const pendingImage =
+    pendingIndex !== null ? portraitHeroImages[pendingIndex] : null;
 
   return (
     <section
       ref={sectionRef}
       id="portrait"
-      className="relative w-full max-w-[100vw] shrink-0 overflow-hidden bg-night"
+      className="relative w-full max-w-[100vw] shrink-0 overflow-hidden bg-black"
       style={{
         height: height
           ? `${height}px`
@@ -72,34 +110,60 @@ export function PortraitHero() {
         minHeight: "100svh",
       }}
     >
-      <div
-        className="absolute inset-0"
-        style={
-          {
-            "--mobile-position": image.mobileObjectPosition,
-            "--desktop-position": image.objectPosition,
-          } as React.CSSProperties
-        }
-      >
-        <Image
-          key={image.src}
-          src={image.src}
-          alt={image.alt}
-          fill
-          priority={active === 0}
-          sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1440px"
-          quality={isMobile ? 70 : 82}
-          className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
-        />
+      <div className="absolute inset-0">
+        <div
+          className="absolute inset-0"
+          style={
+            {
+              "--mobile-position": baseImage.mobileObjectPosition,
+              "--desktop-position": baseImage.objectPosition,
+            } as React.CSSProperties
+          }
+        >
+          <Image
+            src={baseImage.src}
+            alt={baseImage.alt}
+            fill
+            priority
+            sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1440px"
+            quality={isMobile ? 70 : 82}
+            className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
+          />
+        </div>
+
+        {pendingImage ? (
+          <div
+            className="absolute inset-0"
+            style={
+              {
+                opacity: pendingReady ? 1 : 0,
+                "--mobile-position": pendingImage.mobileObjectPosition,
+                "--desktop-position": pendingImage.objectPosition,
+              } as React.CSSProperties
+            }
+          >
+            <Image
+              src={pendingImage.src}
+              alt={pendingImage.alt}
+              fill
+              sizes="(max-width: 639px) 100vw, (max-width: 1280px) 100vw, 1440px"
+              quality={isMobile ? 70 : 82}
+              className="object-cover [object-position:var(--mobile-position)] sm:[object-position:var(--desktop-position)]"
+              onLoadingComplete={() => {
+                requestAnimationFrame(() => setPendingReady(true));
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night via-night/50 to-night/25"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/25"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(13,7,32,0.5)_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.45)_100%)]"
       />
 
       <div
