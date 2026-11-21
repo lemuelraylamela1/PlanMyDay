@@ -89,7 +89,8 @@ export default auth((req) => {
     path.startsWith("/invite") ||
     path.startsWith("/proposal") ||
     path.startsWith("/upload") ||
-    path.startsWith("/check-in/")
+    path.startsWith("/check-in/") ||
+    path.startsWith("/dev/")
   ) {
     return NextResponse.next();
   }

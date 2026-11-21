@@ -437,6 +437,16 @@ body.experience-locked {
     box-shadow 0.45s var(--ease-luxury, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
+@media (max-width: 639px) {
+  .invite-root #hero .story-cta {
+    min-height: 3.45rem;
+    max-width: none;
+    padding: 1.05rem 1.75rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+  }
+}
+
 @media (min-width: 640px) {
   .invite-root .story-cta {
     width: auto;
