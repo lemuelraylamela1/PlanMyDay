@@ -20,7 +20,7 @@ export const portraitHeroImages: PortraitHeroImage[] = [
       mobileObjectPosition: "50% 36%",
     };
   }),
-  ...Array.from({ length: 14 }, (_, index) => {
+  ...Array.from({ length: 19 }, (_, index) => {
     const n = String(index + 1).padStart(2, "0");
     return {
       src: `/gallery/2/${n}.jpg`,
@@ -111,6 +111,11 @@ const GARDEN_CAPTIONS = [
   "Garden Whispers",
   "Petals and Promises",
   "Forever in Bloom",
+  "Across the Courtyard",
+  "A Breath Apart",
+  "Beneath the Ferns",
+  "Evening in the Garden",
+  "Descending in Peach Light",
 ] as const;
 
 /** Twilight, night, and intimate outdoor frames. */

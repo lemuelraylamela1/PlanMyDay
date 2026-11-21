@@ -84,14 +84,14 @@ export function OpeningSequence() {
         "dreamSky"
       );
 
-      // Phones overlap the card with the constellation so the sky never goes empty.
+      // Mobile needs a longer readable hold; desktop timing stays as-is.
       const chapterAt = lightOpening ? 0.12 : 0.22;
-      const titleOutAt = lightOpening ? 0.92 : 1.57;
-      const starsAt = lightOpening ? 0.78 : 2.1;
+      const titleOutAt = lightOpening ? 4.6 : 3.55;
+      const starsAt = lightOpening ? 4.4 : 4.0;
       const starsOutAt = starsAt + (lightOpening ? 1.05 : 1.5);
-      const lanternAt = lightOpening ? 1.95 : 3.55;
-      const worldAt = lightOpening ? 2.85 : 4.55;
-      const pushAt = lightOpening ? 3.75 : 5.85;
+      const lanternAt = lightOpening ? 5.55 : 5.45;
+      const worldAt = lightOpening ? 6.45 : 6.45;
+      const pushAt = lightOpening ? 7.35 : 7.75;
 
       // Phase 2: chapter card appears alone.
       // Layout centering is flex-based — animate only y/opacity/scale so GSAP
