@@ -181,6 +181,8 @@ function ChapterPhoto({ chapter }: { chapter: StoryChapter }) {
 }
 
 const STORY_DRAG_AXIS_SLOP = 8;
+/** Slow crawl so guests can read without fighting page turns. */
+const STORY_AUTO_SCROLL_PX_PER_SEC = 10;
 
 /**
  * Transform-based vertical reading (native overflow is flaky inside PageFlip
@@ -201,6 +203,11 @@ function ChapterParchment({
   const contentRef = React.useRef<HTMLDivElement>(null);
   const offsetRef = React.useRef(0);
   const maxOffsetRef = React.useRef(0);
+  const frameRef = React.useRef<number | null>(null);
+  const lastTsRef = React.useRef<number | null>(null);
+  const pausedRef = React.useRef(false);
+  const resumeTimerRef = React.useRef<number | null>(null);
+  const onScreenRef = React.useRef(false);
   const dragRef = React.useRef<{
     pointerId: number;
     startY: number;
@@ -221,23 +228,139 @@ function ChapterParchment({
   const measure = React.useCallback(() => {
     const viewport = viewportRef.current;
     const content = contentRef.current;
-    if (!viewport || !content) return;
-    maxOffsetRef.current = Math.max(0, content.scrollHeight - viewport.clientHeight);
+    if (!viewport || !content) return 0;
+    const max = Math.max(0, content.scrollHeight - viewport.clientHeight);
+    maxOffsetRef.current = max;
     applyOffset(offsetRef.current);
+    return max;
   }, [applyOffset]);
+
+  const stopLoop = React.useCallback(() => {
+    if (frameRef.current != null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    lastTsRef.current = null;
+  }, []);
+
+  const tick = React.useCallback(
+    (now: number) => {
+      if (pausedRef.current || !onScreenRef.current) {
+        frameRef.current = null;
+        return;
+      }
+      const max = maxOffsetRef.current;
+      if (max <= 1) {
+        frameRef.current = null;
+        return;
+      }
+      if (lastTsRef.current == null) lastTsRef.current = now;
+      const dt = Math.min(48, now - lastTsRef.current) / 1000;
+      lastTsRef.current = now;
+      const next = applyOffset(offsetRef.current + STORY_AUTO_SCROLL_PX_PER_SEC * dt);
+      if (next < max - 0.5) {
+        frameRef.current = requestAnimationFrame(tick);
+      } else {
+        frameRef.current = null;
+      }
+    },
+    [applyOffset],
+  );
+
+  const startAuto = React.useCallback(() => {
+    if (pausedRef.current || !onScreenRef.current) return;
+    const max = measure();
+    if (max <= 1) return;
+    if (offsetRef.current >= max - 0.5) return;
+    if (frameRef.current != null) return;
+    lastTsRef.current = null;
+    frameRef.current = requestAnimationFrame(tick);
+  }, [measure, tick]);
+
+  const pauseAuto = React.useCallback(() => {
+    pausedRef.current = true;
+    stopLoop();
+    if (resumeTimerRef.current != null) {
+      window.clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
+  }, [stopLoop]);
+
+  const scheduleResume = React.useCallback(() => {
+    if (resumeTimerRef.current != null) {
+      window.clearTimeout(resumeTimerRef.current);
+    }
+    resumeTimerRef.current = window.setTimeout(() => {
+      resumeTimerRef.current = null;
+      pausedRef.current = false;
+      startAuto();
+    }, 1400);
+  }, [startAuto]);
 
   React.useEffect(() => {
     measure();
     const viewport = viewportRef.current;
     if (!viewport || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => measure());
+    const ro = new ResizeObserver(() => {
+      measure();
+      if (!pausedRef.current) startAuto();
+    });
     ro.observe(viewport);
     if (contentRef.current) ro.observe(contentRef.current);
     return () => ro.disconnect();
-  }, [measure, chapter.description, chapter.title]);
+  }, [measure, startAuto, chapter.description, chapter.title]);
+
+  React.useEffect(() => {
+    const viewport = viewportRef.current;
+    let kick: number | null = null;
+    if (!viewport || typeof IntersectionObserver === "undefined") {
+      onScreenRef.current = true;
+      startAuto();
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        onScreenRef.current = Boolean(entry?.isIntersecting);
+        if (kick != null) {
+          window.clearTimeout(kick);
+          kick = null;
+        }
+        if (!onScreenRef.current) {
+          stopLoop();
+          return;
+        }
+        // Fresh page in view — start the crawl from the top.
+        offsetRef.current = 0;
+        applyOffset(0);
+        pausedRef.current = false;
+        kick = window.setTimeout(() => {
+          kick = null;
+          startAuto();
+        }, 420);
+      },
+      { threshold: 0.45 },
+    );
+    io.observe(viewport);
+    return () => {
+      if (kick != null) window.clearTimeout(kick);
+      io.disconnect();
+      stopLoop();
+    };
+  }, [applyOffset, startAuto, stopLoop]);
+
+  React.useEffect(
+    () => () => {
+      stopLoop();
+      if (resumeTimerRef.current != null) {
+        window.clearTimeout(resumeTimerRef.current);
+      }
+    },
+    [stopLoop],
+  );
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    pauseAuto();
     dragRef.current = {
       pointerId: event.pointerId,
       startY: event.clientY,
@@ -261,6 +384,7 @@ function ChapterParchment({
       // Horizontal motion belongs to PageFlip — release and let events bubble.
       if (Math.abs(dx) >= Math.abs(dy)) {
         dragRef.current = null;
+        scheduleResume();
         return;
       }
       drag.axis = "vertical";
@@ -272,8 +396,12 @@ function ChapterParchment({
 
   const endPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      scheduleResume();
+      return;
+    }
     dragRef.current = null;
+    scheduleResume();
   };
 
   return (
@@ -296,7 +424,9 @@ function ChapterParchment({
         onPointerCancel={endPointer}
         onWheel={(event) => {
           if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+          pauseAuto();
           applyOffset(offsetRef.current + event.deltaY);
+          scheduleResume();
         }}
       >
         <div
