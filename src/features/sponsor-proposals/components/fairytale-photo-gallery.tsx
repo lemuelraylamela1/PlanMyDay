@@ -15,6 +15,8 @@ import {
   smallCaps,
 } from "@/features/invitations/components/fairytale/ornaments";
 import { grainOverlay, pageParchment } from "@/features/invitations/components/fairytale/textures";
+import { gallerySets, type GalleryImage } from "@/features/invitations/components/lantern/media";
+import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
 
 const PROPOSAL_MUSIC_SRC = "/proposal-audio/marry-me.mp3";
 const SAVE_THE_DATE_VIDEO_SRC = "/proposal-video/save-the-date.mp4";
@@ -26,34 +28,38 @@ export interface ProposalImage {
   caption: string | null;
 }
 
+/** Opening hero slides for the entourage proposal. */
 export const proposalHeroImages: ProposalImage[] = [
-  { id: "hero-01", url: "/proposal-photos/hero-01.jpg", fileName: "By the carriage", caption: "By the carriage" },
-  { id: "hero-02", url: "/proposal-photos/hero-02.jpg", fileName: "At Fernwood", caption: "At Fernwood" },
-  { id: "hero-03", url: "/proposal-photos/hero-03.jpg", fileName: "Hand in hand", caption: "Hand in hand" },
-  { id: "hero-04", url: "/proposal-photos/hero-04.jpg", fileName: "Our carriage", caption: "Our carriage" },
-  { id: "hero-05", url: "/proposal-photos/hero-05.jpg", fileName: "A look back", caption: "A look back" },
-  { id: "hero-06", url: "/proposal-photos/hero-06.jpg", fileName: "By the fountain", caption: "By the fountain" },
-  { id: "hero-07", url: "/proposal-photos/hero-07.jpg", fileName: "A quiet moment", caption: "A quiet moment" },
-  { id: "hero-08", url: "/proposal-photos/hero-08.jpg", fileName: "Stepping out", caption: "Stepping out" },
-  { id: "hero-09", url: "/proposal-photos/hero-09.jpg", fileName: "Together", caption: "Together" },
+  {
+    id: "hero-07",
+    url: "/proposal-photos/hero-07.jpg",
+    fileName: "In the carriage",
+    caption: "In the carriage",
+  },
+  {
+    id: "hero-08",
+    url: "/proposal-photos/hero-08.jpg",
+    fileName: "Stepping out",
+    caption: "Stepping out",
+  },
+  {
+    id: "hero-09",
+    url: "/proposal-photos/hero-09.jpg",
+    fileName: "By the fountain",
+    caption: "By the fountain",
+  },
+  {
+    id: "hero-10",
+    url: "/proposal-photos/hero-10.jpg",
+    fileName: "Hand in hand",
+    caption: "Hand in hand",
+  },
 ];
 
-const useIsoLayoutEffect =
-  typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+
+const useIsoLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
 const ease = [0.22, 1, 0.36, 1] as const;
-
-const gallerySpans = [
-  "col-span-2 row-span-2 md:col-span-2",
-  "col-span-1 md:col-span-2",
-  "col-span-1 md:col-span-2",
-  "col-span-1",
-  "col-span-1",
-  "col-span-2 md:col-span-2",
-  "col-span-1",
-  "col-span-1",
-  "col-span-2 md:col-span-2",
-];
 
 const lightMotes = [
   { left: "8%", size: 3, duration: 16, delay: 0, drift: 14 },
@@ -98,9 +104,19 @@ export function ProposalExperience({
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const musicPausedByVideoRef = React.useRef(false);
   const activeRef = React.useRef(0);
-  const photos = [...proposalHeroImages, ...images];
-  const galleryPhotos = photos.slice(0, 9);
+  const photos = proposalHeroImages.length > 0 ? proposalHeroImages : images;
   const cover = photos[0];
+  const [compactGallery, setCompactGallery] = React.useState(false);
+
+  useIsoLayoutEffect(() => {
+    const query = window.matchMedia("(max-width: 640px)");
+    const apply = () => setCompactGallery(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+
+
 
   useIsoLayoutEffect(() => {
     if (calm) setOpened(true);
@@ -147,12 +163,15 @@ export function ProposalExperience({
     audio.loop = true;
     audio.volume = 0.7;
 
-    void audio.play().then(() => {
-      setMusicPlaying(true);
-      setOpened(true);
-    }).catch(() => {
-      // Browsers often block sound until the guest taps Open.
-    });
+    void audio
+      .play()
+      .then(() => {
+        setMusicPlaying(true);
+        setOpened(true);
+      })
+      .catch(() => {
+        // Browsers often block sound until the guest taps Open.
+      });
 
     return () => {
       audio.pause();
@@ -240,14 +259,7 @@ export function ProposalExperience({
 
   return (
     <main className="bg-[#FFFDF8] text-[#5c3d43]">
-      <audio
-        ref={audioRef}
-        src={PROPOSAL_MUSIC_SRC}
-        preload="auto"
-        autoPlay
-        loop
-        playsInline
-      />
+      <audio ref={audioRef} src={PROPOSAL_MUSIC_SRC} preload="auto" autoPlay loop playsInline />
       <AnimatePresence>
         {!opened && (
           <motion.div
@@ -343,10 +355,7 @@ export function ProposalExperience({
           {musicPlaying ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
         </button>
       )}
-      <section
-        className="relative h-svh overflow-hidden bg-[#1c1619]"
-        inert={!opened}
-      >
+      <section className="relative h-svh overflow-hidden bg-[#1c1619]" inert={!opened}>
         {photos.map((photo, index) =>
           visibleSlides.has(index) ? (
             <CinematicFrame
@@ -417,7 +426,10 @@ export function ProposalExperience({
           >
             Will you be {rolePhrase}?
           </motion.p>
-          <motion.p {...rise(0.7)} className={cn(scriptFont, "mt-3 text-4xl text-[#F3E6C8] sm:text-5xl")}>
+          <motion.p
+            {...rise(0.7)}
+            className={cn(scriptFont, "mt-3 text-4xl text-[#F3E6C8] sm:text-5xl")}
+          >
             {honoreeName}
           </motion.p>
           <motion.a
@@ -467,7 +479,10 @@ export function ProposalExperience({
           >
             {honoreeName}
           </motion.h1>
-          <motion.p {...arrive(0.28)} className={cn(scriptFont, "mt-5 text-4xl text-[#B76E79] sm:text-5xl")}>
+          <motion.p
+            {...arrive(0.28)}
+            className={cn(scriptFont, "mt-5 text-4xl text-[#B76E79] sm:text-5xl")}
+          >
             {coupleNames}
           </motion.p>
           <motion.p
@@ -484,14 +499,12 @@ export function ProposalExperience({
           </motion.div>
         </section>
 
-        <section id="wedding-details" className="relative mx-auto max-w-4xl px-6 pb-20 pt-10 sm:pb-28 sm:pt-12">
+        <section
+          id="wedding-details"
+          className="relative mx-auto max-w-4xl px-6 pb-20 pt-10 sm:pb-28 sm:pt-12"
+        >
           <dl className="grid gap-8 divide-y divide-[#DDBF8D]/55 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-y-0">
-            <Detail
-              label="The date"
-              value={dateLabel ?? "To be announced"}
-              calm={calm}
-              delay={0}
-            />
+            <Detail label="The date" value={dateLabel ?? "To be announced"} calm={calm} delay={0} />
             <Detail
               label="Ceremony"
               value={timeLabel ?? "To be announced"}
@@ -523,68 +536,42 @@ export function ProposalExperience({
             transition={{ duration: 0.8, ease }}
           >
             <video
-            ref={videoRef}
-            className="block h-auto w-full"
-            width={1920}
-            height={1080}
-            controls
-            muted
-            playsInline
-            preload="metadata"
-            poster="/proposal-photos/hero-02.jpg"
-            onPlay={handleVideoPlay}
-          >
-            <source src={SAVE_THE_DATE_VIDEO_SRC} type="video/mp4" />
-            Your browser does not support this video.
-          </video>
-        </motion.div>
-      </section>
+              ref={videoRef}
+              className="block h-auto w-full"
+              width={1920}
+              height={1080}
+              controls
+              muted
+              playsInline
+              preload="metadata"
+              poster="/proposal-photos/hero-08.jpg"
+              onPlay={handleVideoPlay}
+            >
+              <source src={SAVE_THE_DATE_VIDEO_SRC} type="video/mp4" />
+              Your browser does not support this video.
+            </video>
+          </motion.div>
+        </section>
 
-        <section className="relative mx-auto max-w-5xl px-4 pb-16 sm:px-6 sm:pb-24">
-          <ChapterIntro
-            calm={calm}
-            kicker="Our photographs"
-            title="Nine moments with us"
-            note="Tap a photograph to bring it into the opening scene."
-          />
-          <div className="grid grid-flow-dense grid-cols-2 auto-rows-[8.75rem] gap-2 sm:auto-rows-[11rem] sm:gap-3 md:grid-cols-4 md:auto-rows-[12.5rem]">
-            {galleryPhotos.map((photo, index) => (
-              <motion.button
-                key={photo.id}
-                type="button"
-                onClick={() => showPhoto(index)}
-                className={cn(
-                  "group relative min-h-0 overflow-hidden bg-[#1c1619] text-left shadow-[0_16px_36px_-24px_rgba(74,50,54,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A66B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF6EE]",
-                  gallerySpans[index] ?? "col-span-1",
-                  index === active && "ring-2 ring-[#C9A66B] ring-offset-2 ring-offset-[#FBF6EE]",
-                )}
-                initial={calm ? false : { opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.25 }}
-                transition={{ duration: 0.7, delay: calm ? 0 : (index % 4) * 0.06, ease }}
-                aria-label={`Show ${photo.caption || photo.fileName} in the hero`}
-                aria-current={index === active ? "true" : undefined}
-              >
-                <div className="absolute inset-0">
-                  <Image
-                    src={photo.url}
-                    alt={photo.caption || photo.fileName}
-                    fill
-                    unoptimized
-                    sizes="(min-width: 768px) 40vw, 50vw"
-                    className="object-cover transition duration-700 group-hover:scale-[1.04]"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1c1619]/70 via-transparent to-transparent" />
-                </div>
-                {photo.caption && (
-                  <p className={cn(displayFont, "absolute inset-x-0 bottom-0 px-3 py-3 text-sm italic text-[#FFFDF8] sm:px-4 sm:text-base")}>
-                    {photo.caption}
-                  </p>
-                )}
-            </motion.button>
-          ))}
-        </div>
-      </section>
+        <section className="relative overflow-hidden pb-16 sm:pb-24">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <ChapterIntro
+              calm={calm}
+              kicker="Our photographs"
+              title="Moments with us"
+              note="Drag a row to find a moment — swipe stays in that row."
+            />
+          </div>
+          <ProposalPhotoRows calm={calm} compact={compactGallery} />
+          <p
+            className={cn(
+              smallCaps,
+              "relative z-10 mt-5 text-center text-[#9b7b62]/70 sm:mt-6",
+            )}
+          >
+            Drag to find · Swipe stays in that row
+          </p>
+        </section>
 
         <section className="relative mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-12">
           <motion.div
@@ -613,12 +600,86 @@ export function ProposalExperience({
         <section className="relative mx-auto max-w-xl px-5 pb-6 pt-4 sm:px-6">{children}</section>
 
         <footer className="relative mx-auto flex max-w-xl flex-col items-center px-6 pb-16 pt-8 text-center">
-          <span aria-hidden className="mb-5 h-12 w-px bg-gradient-to-b from-transparent to-[#DDBF8D]" />
+          <span
+            aria-hidden
+            className="mb-5 h-12 w-px bg-gradient-to-b from-transparent to-[#DDBF8D]"
+          />
           <p className={cn(scriptFont, "text-4xl text-[#C9A66B]")}>{coupleNames}</p>
           {dateLabel && <p className={cn(smallCaps, "mt-4 text-[#9b7b62]")}>{dateLabel}</p>}
         </footer>
       </div>
     </main>
+  );
+}
+
+function ProposalGallerySlide({
+  image,
+  size,
+}: {
+  image: GalleryImage;
+  size: number;
+}) {
+  return (
+    <div
+      className="group relative shrink-0 overflow-hidden border border-[#DDBF8D]/45 bg-[#1c1619] text-left shadow-[0_16px_36px_-24px_rgba(74,50,54,0.55)]"
+      style={{ width: size, height: Math.round(size * (2 / 3)) }}
+    >
+      <Image
+        src={image.src}
+        alt={image.caption}
+        width={1920}
+        height={1280}
+        sizes={`${size}px`}
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+        draggable={false}
+      />
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1c1619]/75 to-transparent px-2.5 pb-2 pt-8 opacity-0 transition group-hover:opacity-100">
+        <span className={cn(smallCaps, "block truncate text-[9px] text-[#FFFDF8]/90")}>
+          {image.caption}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function ProposalPhotoRows({
+  calm,
+  compact,
+}: {
+  calm: boolean;
+  compact: boolean;
+}) {
+  const cardSize = compact ? 168 : 220;
+  const gap = compact ? 12 : 16;
+
+  return (
+    <div
+      className="relative z-10 mt-8 w-full sm:mt-10"
+      aria-label="Photo gallery"
+    >
+      <div className="flex flex-col justify-center gap-3 sm:gap-4">
+        {gallerySets.map((set, index) => (
+          <InfiniteSlider
+            key={set.id}
+            direction="horizontal"
+            reverse={index % 2 === 1}
+            gap={gap}
+            duration={calm ? 120 : Math.round(set.images.length * 10) + index * 8}
+            durationOnHover={calm ? undefined : (Math.round(set.images.length * 10) + index * 8) * 2.4}
+            draggable
+            className="w-full"
+          >
+            {set.images.map((image) => (
+              <ProposalGallerySlide
+                key={`${set.id}-${image.src}`}
+                image={image}
+                size={cardSize}
+              />
+            ))}
+          </InfiniteSlider>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -760,12 +821,18 @@ function ChapterIntro({
       </motion.p>
       <motion.h2
         {...rise}
-        className={cn(displayFont, "mt-3 text-balance text-4xl font-light leading-tight text-[#4a3236] sm:text-5xl")}
+        className={cn(
+          displayFont,
+          "mt-3 text-balance text-4xl font-light leading-tight text-[#4a3236] sm:text-5xl",
+        )}
       >
         {title}
       </motion.h2>
       {note && (
-        <motion.p {...rise} className={cn(displayFont, "mt-3 text-lg italic leading-relaxed text-[#6d4a50]")}>
+        <motion.p
+          {...rise}
+          className={cn(displayFont, "mt-3 text-lg italic leading-relaxed text-[#6d4a50]")}
+        >
           {note}
         </motion.p>
       )}
@@ -795,10 +862,19 @@ function Detail({
       transition={{ duration: 0.75, delay: calm ? 0 : delay, ease }}
     >
       <dt className={cn(smallCaps, "text-[#9b7b62]")}>{label}</dt>
-      <dd className={cn(displayFont, "mt-3 text-balance text-2xl font-light leading-snug text-[#4a3236] sm:text-3xl")}>
+      <dd
+        className={cn(
+          displayFont,
+          "mt-3 text-balance text-2xl font-light leading-snug text-[#4a3236] sm:text-3xl",
+        )}
+      >
         {value}
       </dd>
-      {note && <dd className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-[#7a5d62]">{note}</dd>}
+      {note && (
+        <dd className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-[#7a5d62]">
+          {note}
+        </dd>
+      )}
     </motion.div>
   );
 }
