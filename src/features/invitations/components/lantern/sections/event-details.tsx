@@ -85,6 +85,13 @@ export function EventDetails() {
             {ceremony.timezoneNote}
           </p>
 
+          <p className="mt-5 max-w-md font-cinzel text-[11px] font-semibold uppercase leading-relaxed tracking-[0.18em] text-lantern sm:mt-6 sm:text-[12px] sm:tracking-[0.22em]">
+            Please arrive 15–30 minutes early
+          </p>
+          <p className="mt-2 max-w-sm font-serif text-sm leading-relaxed text-cream/85 sm:text-base">
+            Kindly be seated before the ceremony begins so we may start on time.
+          </p>
+
           <div className="mx-auto my-8 h-px w-16 bg-gradient-to-r from-transparent via-lantern/60 to-transparent sm:my-10 sm:w-24" />
 
           <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.3em] text-cream/88">

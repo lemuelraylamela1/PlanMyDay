@@ -9,15 +9,16 @@ export function OrnateScrollRod({ position }: { position: "top" | "bottom" }) {
     <div
       aria-hidden
       className={cn(
-        "pointer-events-none absolute inset-x-[-0.65rem] z-20 flex h-4 items-center sm:inset-x-[-0.85rem] sm:h-5",
-        position === "top" ? "-top-2 sm:-top-2.5" : "-bottom-2 sm:-bottom-2.5",
+        "pointer-events-none absolute inset-x-[-0.85rem] z-30 flex items-center sm:inset-x-[-1.1rem]",
+        "h-5 sm:h-6",
+        position === "top" ? "-top-2.5 sm:-top-3" : "-bottom-2.5 sm:-bottom-3",
       )}
     >
-      <span className="scroll-rod-finial h-6 w-6 shrink-0 sm:h-8 sm:w-8" />
-      <span className="scroll-rod-cap h-5 w-5 shrink-0 rounded-full sm:h-7 sm:w-7" />
-      <span className="scroll-rod h-full flex-1 rounded-full" />
-      <span className="scroll-rod-cap h-5 w-5 shrink-0 rounded-full sm:h-7 sm:w-7" />
-      <span className="scroll-rod-finial h-6 w-6 shrink-0 sm:h-8 sm:w-8" />
+      <span className="scroll-rod-finial h-7 w-7 shrink-0 sm:h-9 sm:w-9" />
+      <span className="scroll-rod-cap h-6 w-6 shrink-0 rounded-full sm:h-8 sm:w-8" />
+      <span className="scroll-rod h-full min-h-[1.15rem] flex-1 rounded-full sm:min-h-[1.35rem]" />
+      <span className="scroll-rod-cap h-6 w-6 shrink-0 rounded-full sm:h-8 sm:w-8" />
+      <span className="scroll-rod-finial h-7 w-7 shrink-0 sm:h-9 sm:w-9" />
     </div>
   );
 }
@@ -73,16 +74,19 @@ export function OrnateSideFiligree({ side }: { side: "left" | "right" }) {
   );
 }
 
-export function OrnateWaxSeal({ className }: { className?: string }) {
+type OrnateWaxSealProps = {
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  /** Accessible name when the seal is interactive. */
+  label?: string;
+};
+
+function WaxSealFace() {
   return (
-    <div
-      aria-hidden
-      className={cn(
-        "relative mx-auto flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16",
-        className,
-      )}
-    >
+    <>
       <span
+        aria-hidden
         className="absolute inset-0 rounded-full"
         style={{
           background:
@@ -91,10 +95,155 @@ export function OrnateWaxSeal({ className }: { className?: string }) {
             "0 8px 18px -6px rgba(60, 30, 8, 0.55), inset 0 2px 4px rgba(255, 245, 210, 0.45), inset 0 -3px 6px rgba(80, 40, 10, 0.35)",
         }}
       />
-      <svg viewBox="0 0 48 48" className="relative h-8 w-8 text-[#5c3a12] sm:h-9 sm:w-9" fill="currentColor">
+      <svg
+        aria-hidden
+        viewBox="0 0 48 48"
+        className="relative h-8 w-8 text-[#5c3a12] sm:h-9 sm:w-9"
+        fill="currentColor"
+      >
         <path d="M24 8c-1.2 5.5-4.8 9.2-9.5 11.2 3.2.4 6.2-.2 8.8-1.6-.6 3.8-2.2 7-4.8 9.4 3.4-.8 6.2-2.6 8-5.2.6 3.6.2 7-1.4 10.2 2.8-2.2 4.6-5.4 5.2-9 1.8 2.8 4.6 4.8 8 5.6-2.6-2.6-4.2-6-4.8-10 2.6 1.6 5.6 2.4 8.8 2-4.7-2-8.3-5.7-9.5-11.2-.4 1.6-1.2 3-2.4 4.2C25.2 11 24.4 9.6 24 8z" />
         <circle cx="24" cy="28" r="1.5" opacity="0.55" />
       </svg>
+    </>
+  );
+}
+
+/** Turned wooden spindle end (matches Torah-scroll reference). */
+function ScrollSpindle({
+  side,
+  row,
+}: {
+  side: "left" | "right";
+  row: "top" | "bottom";
+}) {
+  const mirror = side === "right";
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 56 36"
+      className={cn(
+        "scroll-spindle h-9 w-14 shrink-0 sm:h-11 sm:w-[4.25rem]",
+        mirror && "scale-x-[-1]",
+        row === "top" ? "self-end" : "self-start",
+      )}
+    >
+      <defs>
+        <linearGradient id={`wood-${side}-${row}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#8a5a38" />
+          <stop offset="35%" stopColor="#a56f45" />
+          <stop offset="70%" stopColor="#6b4228" />
+          <stop offset="100%" stopColor="#4a2c18" />
+        </linearGradient>
+        <linearGradient id={`wood-hi-${side}-${row}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#c4895a" stopOpacity="0.85" />
+          <stop offset="45%" stopColor="#c4895a" stopOpacity="0" />
+          <stop offset="100%" stopColor="#2a160c" stopOpacity="0.35" />
+        </linearGradient>
+      </defs>
+      {/* Outer knob */}
+      <ellipse cx="10" cy="18" rx="9" ry="10" fill={`url(#wood-${side}-${row})`} />
+      <ellipse cx="10" cy="18" rx="9" ry="10" fill={`url(#wood-hi-${side}-${row})`} />
+      {/* Neck */}
+      <rect x="16" y="13" width="10" height="10" rx="3" fill={`url(#wood-${side}-${row})`} />
+      <rect x="16" y="13" width="10" height="10" rx="3" fill={`url(#wood-hi-${side}-${row})`} />
+      {/* Guard disc */}
+      <ellipse cx="32" cy="18" rx="7" ry="14" fill={`url(#wood-${side}-${row})`} />
+      <ellipse cx="32" cy="18" rx="7" ry="14" fill={`url(#wood-hi-${side}-${row})`} />
+      {/* Stub into parchment */}
+      <rect x="36" y="12" width="14" height="12" rx="2" fill={`url(#wood-${side}-${row})`} />
+    </svg>
+  );
+}
+
+function ParchmentCylinder({ seam }: { seam: "top" | "bottom" | "none" }) {
+  return (
+    <div
+      className={cn(
+        "scroll-cylinder relative h-11 flex-1 overflow-hidden rounded-[999px] sm:h-[3.15rem]",
+        seam === "top" && "scroll-cylinder-seam-top",
+        seam === "bottom" && "scroll-cylinder-seam-bottom",
+      )}
+    >
+      <span aria-hidden className="scroll-cylinder-fill" />
+      <span aria-hidden className="scroll-cylinder-highlight" />
+      <span aria-hidden className="scroll-cylinder-rings" />
+    </div>
+  );
+}
+
+/**
+ * Closed Torah-style double roll — decorative sealed state before auto-unroll.
+ */
+export function ClosedScroll({
+  className,
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative mx-auto flex w-full flex-col items-center",
+        className,
+      )}
+      aria-hidden
+    >
+      <div
+        className={cn(
+          "scroll-closed relative w-full",
+          compact ? "max-w-[20.5rem]" : "max-w-lg",
+        )}
+      >
+        <span aria-hidden className="scroll-closed-glow" />
+        <div className="scroll-closed-stack">
+          <div className="scroll-closed-row">
+            <ScrollSpindle side="left" row="top" />
+            <ParchmentCylinder seam="bottom" />
+            <ScrollSpindle side="right" row="top" />
+          </div>
+          <div className="scroll-closed-row -mt-[0.35rem] sm:-mt-1.5">
+            <ScrollSpindle side="left" row="bottom" />
+            <ParchmentCylinder seam="top" />
+            <ScrollSpindle side="right" row="bottom" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function OrnateWaxSeal({
+  className,
+  onClick,
+  disabled = false,
+  label = "Open the scroll",
+}: OrnateWaxSealProps) {
+  const shellClass = cn(
+    "relative mx-auto flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16",
+    className,
+  );
+
+  if (typeof onClick === "function") {
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        onClick={onClick}
+        className={cn(
+          shellClass,
+          "cursor-pointer border-0 bg-transparent p-0 outline-none transition-transform duration-300 hover:scale-105 focus-visible:scale-105 focus-visible:ring-2 focus-visible:ring-[#b8860b]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f4ead8] active:scale-95 disabled:cursor-default disabled:opacity-80 disabled:hover:scale-100",
+        )}
+      >
+        <WaxSealFace />
+      </button>
+    );
+  }
+
+  return (
+    <div aria-hidden className={shellClass}>
+      <WaxSealFace />
     </div>
   );
 }

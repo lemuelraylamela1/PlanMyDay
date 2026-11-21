@@ -1074,25 +1074,170 @@ body.experience-locked {
     inset 0 2px 3px rgba(255, 250, 235, 0.5);
 }
 
-.invite-root .scroll-rod {
-  background: linear-gradient(180deg, #6b4a26 0%, #8a5f30 18%, #a9773f 50%, #7c5228 82%, #543a1c 100%);
+@keyframes invite-seal-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(240, 208, 137, 0));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 14px rgba(240, 208, 137, 0.55));
+  }
+}
+
+.invite-root .invite-seal-pulse {
+  animation: invite-seal-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-root .invite-seal-pulse {
+    animation: none;
+  }
+}
+
+/* —— Closed Torah-style double roll (scene 1) —— */
+.invite-root .scroll-closed {
+  position: relative;
+  filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.42));
+}
+.invite-root .scroll-closed-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: -18% -6%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(244, 196, 68, 0.22),
+    transparent 62%
+  );
+  animation: invite-seal-pulse 2.8s ease-in-out infinite;
+  opacity: 0.85;
+}
+.invite-root .scroll-closed-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+.invite-root .scroll-closed-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+}
+
+.invite-root .scroll-cylinder {
+  margin-inline: -0.35rem;
+  z-index: 1;
+}
+.invite-root .scroll-cylinder-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    #c4a574 0%,
+    #e8d4b0 16%,
+    #f5e6c8 36%,
+    #fbf3e0 50%,
+    #f0dfb8 64%,
+    #d4b484 84%,
+    #a8824e 100%
+  );
   box-shadow:
-    inset 0 2px 2px rgba(255, 220, 160, 0.4),
-    inset 0 -3px 5px rgba(40, 24, 8, 0.55),
-    0 8px 22px -8px rgba(0, 0, 0, 0.6);
+    inset 0 2px 3px rgba(255, 250, 240, 0.65),
+    inset 0 -4px 8px rgba(90, 55, 22, 0.28),
+    0 0 0 1px rgba(120, 80, 40, 0.18);
+}
+.invite-root .scroll-cylinder-highlight {
+  position: absolute;
+  inset: 18% 4% 42%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 252, 245, 0.7),
+    rgba(255, 252, 245, 0)
+  );
+  pointer-events: none;
+}
+.invite-root .scroll-cylinder-rings {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 14px,
+    rgba(120, 80, 40, 0.045) 14px 15px
+  );
+  pointer-events: none;
+  opacity: 0.85;
+}
+.invite-root .scroll-cylinder-seam-top::before,
+.invite-root .scroll-cylinder-seam-bottom::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 40%;
+  pointer-events: none;
+  z-index: 2;
+}
+.invite-root .scroll-cylinder-seam-bottom::after {
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(70, 42, 16, 0.22) 70%,
+    rgba(50, 30, 10, 0.32)
+  );
+}
+.invite-root .scroll-cylinder-seam-top::before {
+  top: 0;
+  background: linear-gradient(
+    0deg,
+    transparent,
+    rgba(70, 42, 16, 0.2) 70%,
+    rgba(50, 30, 10, 0.3)
+  );
+}
+
+.invite-root .scroll-spindle {
+  position: relative;
+  z-index: 2;
+}
+
+.invite-root .scroll-rod {
+  background: linear-gradient(
+    180deg,
+    #5a3a1c 0%,
+    #8a5f30 14%,
+    #c4893a 38%,
+    #a9773f 52%,
+    #7c5228 78%,
+    #3f2812 100%
+  );
+  box-shadow:
+    inset 0 2px 3px rgba(255, 230, 180, 0.55),
+    inset 0 -3px 6px rgba(30, 16, 6, 0.65),
+    0 10px 24px -8px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(90, 55, 22, 0.35);
 }
 .invite-root .scroll-rod-cap {
-  background: radial-gradient(circle at 35% 30%, #d9a24e, #8a5a26 60%, #4d3116 100%);
-  box-shadow: 0 0 0 2px rgba(244, 196, 68, 0.35), 0 6px 14px -4px rgba(0, 0, 0, 0.6);
+  background: radial-gradient(circle at 35% 30%, #e0b45a, #8a5a26 58%, #4d3116 100%);
+  box-shadow:
+    0 0 0 2px rgba(244, 196, 68, 0.4),
+    inset 0 2px 3px rgba(255, 240, 200, 0.35),
+    0 6px 14px -4px rgba(0, 0, 0, 0.65);
 }
 .invite-root .scroll-rod-finial {
   border-radius: 9999px;
   background:
-    radial-gradient(circle at 32% 28%, #f0d089 0%, #c4893a 45%, #7a4e22 78%, #3f2812 100%);
+    radial-gradient(circle at 32% 28%, #f6dfa0 0%, #d4a840 40%, #8a5a26 74%, #3f2812 100%);
   box-shadow:
-    0 0 0 1.5px rgba(212, 168, 64, 0.45),
-    inset 0 2px 3px rgba(255, 240, 200, 0.4),
-    0 6px 14px -4px rgba(0, 0, 0, 0.65);
+    0 0 0 1.5px rgba(212, 168, 64, 0.55),
+    inset 0 2px 3px rgba(255, 245, 210, 0.5),
+    0 8px 16px -4px rgba(0, 0, 0, 0.7);
 }
 .invite-root .ornate-scroll-body {
   border-radius: 0.35rem;
