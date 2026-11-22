@@ -246,14 +246,15 @@ export function Hero() {
           className="absolute left-1/2 top-[10%] h-[34vh] w-[90vw] -translate-x-1/2 sm:top-[18%] sm:h-[40vh] sm:w-[70vw]"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 40%, rgba(255,223,112,0.12) 0%, rgba(232,130,154,0.08) 38%, transparent 72%)",
+              // closest-side: fully transparent before the box edge (no visible rectangle).
+              "radial-gradient(closest-side at 50% 50%, rgba(255,223,112,0.12) 0%, rgba(232,130,154,0.08) 45%, transparent 100%)",
           }}
         />
         <div
           className="absolute bottom-0 left-1/2 h-[35vh] w-[55vw] -translate-x-1/2"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 100%, rgba(244,196,68,0.22) 0%, rgba(200,80,100,0.12) 45%, transparent 70%)",
+              "radial-gradient(farthest-side at 50% 100%, rgba(244,196,68,0.22) 0%, rgba(200,80,100,0.12) 45%, transparent 100%)",
           }}
         />
         <div
@@ -360,15 +361,16 @@ export function Hero() {
         )}
       </AnimatePresence>
 
-      {/* Phone: denser stack in the band above the castle. Desktop: parallax center. */}
+      {/* Phone: copy is optically centred in the open sky between the top edge
+          and the castle band (no more empty top third). Desktop: parallax center. */}
       <motion.div
-        className="pointer-events-none absolute inset-0 z-[5] flex px-5 text-center max-sm:items-end max-sm:justify-center sm:items-center sm:justify-center"
+        className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-6 text-center"
         style={
           onPhone
             ? {
-                paddingTop: "max(0.75rem, env(safe-area-inset-top, 0px))",
-                // Sit the copy just above the taller castle / hills band.
-                paddingBottom: "max(8.75rem, 31vh)",
+                paddingTop: "calc(max(1rem, env(safe-area-inset-top, 0px)) + 7svh)",
+                // Reserve the castle / hills band so the CTA never sits on the roofs.
+                paddingBottom: "max(9rem, 30svh)",
               }
             : { y: contentY, opacity: contentOp, paddingBottom: "18vh" }
         }
@@ -380,7 +382,7 @@ export function Hero() {
             className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[130%] w-[125%] max-w-[42rem] -translate-x-1/2 -translate-y-[48%]"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 42%, rgba(7,3,20,0.72) 0%, rgba(7,3,20,0.42) 42%, transparent 72%)",
+                "radial-gradient(closest-side at 50% 50%, rgba(7,3,20,0.62) 0%, rgba(7,3,20,0.36) 50%, transparent 100%)",
             }}
           />
 
@@ -414,39 +416,47 @@ export function Hero() {
             }
           >
             <span className="block text-center">{firstName}</span>
+            {/* Heart ornament framed by hairlines \u2014 reads as a deliberate
+                monogram divider instead of a stray glyph between the names. */}
             <span
-              className="mt-0.5 block text-center text-[0.5em] leading-none text-blush sm:mt-2 sm:text-[0.55em]"
+              aria-hidden
+              className="my-1.5 flex items-center justify-center gap-3 text-[0.42em] leading-none sm:my-3 sm:text-[0.45em]"
               style={
                 onPhone
-                  ? { color: "#f0c4cc", WebkitTextFillColor: "#f0c4cc" }
-                  : undefined
+                  ? { color: "#f0c4cc", WebkitTextFillColor: "#f0c4cc", textShadow: "none" }
+                  : { color: "#f0c4cc", WebkitTextFillColor: "#f0c4cc" }
               }
-              aria-hidden
             >
+              <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#f0c4cc]/70 sm:w-14" />
               {"\u2661"}
+              <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#f0c4cc]/70 sm:w-14" />
             </span>
             <span className="sr-only"> and </span>
-            <span className="mt-0.5 block text-center sm:mt-2">{secondName}</span>
+            <span className="block text-center">{secondName}</span>
           </motion.h1>
 
           <motion.div
             {...enter(0.95, { y: 0, scaleX: 0.3 })}
-            className="mx-auto my-2.5 rose-rule w-32 sm:my-7 sm:w-40"
+            className="mx-auto mb-3 mt-4 rose-rule w-24 sm:my-7 sm:w-40"
           />
 
           <motion.p
             {...enter(1.1)}
-            className="mx-auto w-full max-w-[21rem] px-1 text-center font-serif text-[1.05rem] leading-7 text-cream sm:max-w-2xl sm:text-lg sm:leading-8"
-            style={{ textShadow: "0 2px 16px rgba(0,0,0,0.85), 0 8px 28px rgba(0,0,0,0.55)" }}
+            className="mx-auto mt-1 w-full max-w-[19rem] text-center font-serif text-[1.08rem] italic leading-[1.6] text-cream/95 sm:mt-4 sm:max-w-2xl sm:text-lg sm:leading-8"
+            style={{
+              textShadow: "0 2px 16px rgba(0,0,0,0.85), 0 8px 28px rgba(0,0,0,0.55)",
+              // Balanced lines \u2014 no lone "begins." on the last row.
+              textWrap: "balance",
+            }}
           >
             {wedding.hero.closing}
           </motion.p>
 
           <motion.div
             {...enter(1.3)}
-            className="mt-4 flex w-full max-w-[22rem] justify-center sm:mt-9 sm:max-w-none"
+            className="mt-7 flex w-full justify-center sm:mt-9"
           >
-            <StoryCta href="#portrait" onClick={enterStory} className="max-sm:!max-w-none">
+            <StoryCta href="#portrait" onClick={enterStory}>
               Enter Our Story
             </StoryCta>
           </motion.div>
@@ -472,7 +482,7 @@ export function Hero() {
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={revealed ? { opacity: 1 } : undefined}
         transition={{ delay: 2, duration: 0.8 }}
-        className="absolute bottom-[max(1.15rem,env(safe-area-inset-bottom))] left-1/2 z-[5] -translate-x-1/2 text-lantern-soft sm:bottom-8"
+        className="absolute bottom-[max(1.15rem,env(safe-area-inset-bottom))] left-1/2 z-[5] -translate-x-1/2 text-lantern-soft drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] sm:bottom-8"
       >
         <motion.span
           animate={mounted ? { y: [0, 8, 0] } : false}
