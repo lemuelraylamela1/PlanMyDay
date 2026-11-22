@@ -251,7 +251,7 @@ export const weddingDefaults = {
       {
         question: "What is the dress code?",
         answer:
-          "* Secondary Sponsors: Women: Formal Dresses in Shades of Pink. Men: Cream Barong Tagalog.\n* Principal Sponsors: Formal Attire in Shades of Cream and Champagne.\n* Team Bride: Light pink attire (provided by the couple).\n* Team Groom: Cream suit with pink tie (provided by the couple).\n* Guests: Semi-Formal to Formal Attire in Any Shade of Pink or Cream.\n\n* Please take note: White attire, jeans/denim, and T-shirts are strictly prohibited.",
+          "* Secondary Sponsors: Dark or muted shades of pink formal attire.\n* Principal Sponsors: Cream or champagne-colored formal attire.\n* Team Bride: Light pink dresses.\n* Team Groom: Cream suits paired with pink ties.\n* Guests: Any shade of pink, cream, or champagne in formal or semi-formal attire.\n\n* Please take note: White attire, jeans/denim, and T-shirts are strictly prohibited.",
       },
       {
         question: "Can I bring a plus one or children?",
