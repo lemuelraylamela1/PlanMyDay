@@ -2,7 +2,23 @@
 
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Heart, Loader2, Sparkles } from "lucide-react";
+import {
+  Beef,
+  CalendarHeart,
+  Check,
+  CircleAlert,
+  Drumstick,
+  Fish,
+  Heart,
+  HeartCrack,
+  Leaf,
+  Loader2,
+  Pencil,
+  Salad,
+  Sparkles,
+  UtensilsCrossed,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -24,13 +40,14 @@ import {
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
 
-const labelCls =
-  "font-cinzel text-[12px] font-semibold uppercase tracking-[0.14em] text-[#4a2f0c] sm:text-[11px] sm:tracking-[0.22em]";
+// Small caps eyebrow only for the section title; form labels use readable sentence case.
+const eyebrowCls =
+  "font-cinzel text-[12px] font-semibold uppercase tracking-[0.2em] text-[#5c3a12] sm:tracking-[0.28em]";
+const fieldLabelCls = "font-serif text-[1.05rem] font-semibold leading-snug text-[#2a1540]";
 const inputCls =
   "w-full rounded-xl border border-[#b8860b]/40 bg-[#fffaf0] px-3.5 py-3.5 font-serif text-[1.08rem] leading-relaxed text-[#2a1540] outline-none transition placeholder:text-[#2a1540]/45 focus:border-[#b8860b]/70 focus:ring-2 focus:ring-[#b8860b]/25 min-[380px]:px-4";
-const errCls = "mt-1.5 text-center font-serif text-[0.95rem] font-medium text-[#8b1a1a]";
 const bodyCls = "font-serif text-[1.05rem] leading-[1.75] text-[#2a1540] sm:text-[1.1rem] sm:leading-[1.85]";
-const mutedCls = "font-serif text-[1rem] leading-relaxed text-[#3a2410]";
+const mutedCls = "font-serif text-[1.02rem] leading-relaxed text-[#3a2410]";
 
 const statusHeadline: Record<Exclude<RsvpStatusValue, "PENDING">, string> = {
   ACCEPTED: "Joyfully accepted",
@@ -191,6 +208,10 @@ export function Rsvp({ token, guest, response }: Props) {
     return null;
   }
 
+  // Steps renumber themselves: declining skips the meal step.
+  const mealStep = attending === true ? 2 : null;
+  const noteStep = attending === true ? 3 : 2;
+
   return (
     <section
       id="rsvp"
@@ -217,18 +238,17 @@ export function Rsvp({ token, guest, response }: Props) {
           className="relative"
         >
           <OrnateScroll>
-            <header className="mb-6 flex flex-col items-center text-center sm:mb-8">
-              <p className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.18em] text-[#5c3a12] sm:text-[11px] sm:tracking-[0.32em]">
-                {wedding.rsvp.eyebrow}
-              </p>
-              <h2 className="mt-3 font-display text-[2rem] font-medium leading-[1.08] tracking-[-0.02em] text-[#2a1540] min-[380px]:text-[2.45rem] sm:text-5xl">
+            <header className="mb-7 flex flex-col items-center text-center sm:mb-9">
+              <p className={eyebrowCls}>{wedding.rsvp.eyebrow}</p>
+              <h2 className="mt-3 font-display text-[2.1rem] font-medium leading-[1.08] tracking-[-0.02em] text-[#2a1540] min-[380px]:text-[2.5rem] sm:text-5xl">
                 {wedding.rsvp.title}
               </h2>
-              <p className={cn("mt-3 max-w-md italic", bodyCls)}>
-                {wedding.rsvp.intro}
-              </p>
-              <p className="mt-4 font-cinzel text-[12px] font-semibold uppercase tracking-[0.14em] text-[#4a2f0c] sm:text-[11px] sm:tracking-[0.24em]">
-                Kindly respond by {wedding.rsvp.deadline}
+              <Divider />
+              <p className={cn("max-w-md", bodyCls)}>{wedding.rsvp.intro}</p>
+              <p className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 rounded-full border border-[#b8860b]/35 bg-[#fffaf0]/85 px-4 py-2 font-serif text-[1rem] text-[#3a2410] shadow-[0_2px_8px_-6px_rgba(74,47,12,0.4)]">
+                <CalendarHeart className="h-4 w-4 shrink-0 text-[#8b3a4a]" aria-hidden />
+                Kindly respond by
+                <span className="font-semibold text-[#2a1540]">{wedding.rsvp.deadline}</span>
               </p>
             </header>
 
@@ -239,7 +259,7 @@ export function Rsvp({ token, guest, response }: Props) {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.6, ease: LUXURY }}
-                  className="relative flex flex-col items-center py-4 text-center sm:py-6"
+                  className="relative flex flex-col items-center py-2 text-center sm:py-4"
                   role="status"
                   aria-live="polite"
                 >
@@ -254,24 +274,40 @@ export function Rsvp({ token, guest, response }: Props) {
                       boxShadow: "0 0 32px rgba(196,137,58,0.45)",
                     }}
                   >
-                    <Check className="h-8 w-8 sm:h-9 sm:w-9" />
+                    {status === "DECLINED" ? (
+                      <Heart className="h-8 w-8 sm:h-9 sm:w-9" />
+                    ) : (
+                      <Check className="h-8 w-8 sm:h-9 sm:w-9" />
+                    )}
                   </motion.span>
-                  <h3 className="mt-5 font-display text-3xl font-medium text-[#2a1540] sm:text-4xl">
-                    {justSubmitted ? "Thank You!" : statusHeadline[status]}
+                  <h3 className="mt-5 font-display text-[2rem] font-medium leading-tight text-[#2a1540] sm:text-4xl">
+                    {justSubmitted ? "Thank you!" : statusHeadline[status]}
                   </h3>
                   <p className={cn("mt-3 max-w-md", bodyCls)}>
                     {status === "DECLINED"
                       ? "We'll miss you dearly, but we're so grateful you let us know. Sending love your way."
                       : "Your response has been received. We can't wait to celebrate our happily ever after with you!"}
                   </p>
+
                   {status === "ACCEPTED" && savedResponse && (
-                    <p className={cn("mt-3", mutedCls)}>
-                      {savedResponse.mealPreference
-                        ? `Meal: ${savedResponse.mealPreference}`
-                        : "Meal to be confirmed"}
-                      {savedResponse.plusOneName ? `, with ${savedResponse.plusOneName}` : ""}
-                    </p>
+                    <dl className="mt-6 w-full max-w-sm divide-y divide-[#b8860b]/15 overflow-hidden rounded-2xl border border-[#b8860b]/25 bg-[#fffaf0]/85 text-left shadow-[0_6px_18px_-12px_rgba(74,47,12,0.45)]">
+                      <SummaryRow label="Attending" value="Yes, joyfully" />
+                      <SummaryRow
+                        label="Meal"
+                        value={savedResponse.mealPreference || "To be confirmed"}
+                      />
+                      {savedResponse.plusOneName ? (
+                        <SummaryRow label="Plus one" value={savedResponse.plusOneName} />
+                      ) : null}
+                      {savedResponse.dietaryRestrictions ? (
+                        <SummaryRow
+                          label="Dietary needs"
+                          value={savedResponse.dietaryRestrictions}
+                        />
+                      ) : null}
+                    </dl>
                   )}
+
                   {status === "ACCEPTED" && checkIn ? (
                     <GuestCheckInQrCard
                       qrDataUrl={checkIn.qrDataUrl}
@@ -280,15 +316,17 @@ export function Rsvp({ token, guest, response }: Props) {
                       variant="invite"
                     />
                   ) : null}
-                  <div className="mt-6 flex items-center gap-2 font-serif text-[1.05rem] italic text-[#5c3a12]">
-                    <Heart className="h-4 w-4" />
+
+                  <div className="mt-6 flex items-center gap-2 font-serif text-[1.1rem] italic text-[#5c3a12]">
+                    <Heart className="h-4 w-4" aria-hidden />
                     {wedding.meta.hashtag}
                   </div>
                   <button
                     type="button"
                     onClick={startChange}
-                    className="mt-8 font-cinzel text-[12px] font-semibold uppercase tracking-[0.16em] text-[#5c3a12] underline decoration-[#5c3a12]/50 underline-offset-8 transition hover:text-[#2a1540]"
+                    className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#b8860b]/45 bg-[#fffaf0]/70 px-5 py-2.5 font-serif text-[1rem] font-semibold text-[#3a2410] transition hover:border-[#b8860b] hover:bg-[#fffaf0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8860b]/45"
                   >
+                    <Pencil className="h-4 w-4" aria-hidden />
                     Change my response
                   </button>
                 </motion.div>
@@ -299,42 +337,39 @@ export function Rsvp({ token, guest, response }: Props) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex flex-col gap-6"
+                  className="flex flex-col gap-4 sm:gap-5"
                   noValidate
                 >
-                  <div className="flex items-center justify-center gap-2 text-[#5c3a12]">
-                    <Sparkles className="h-4 w-4 shrink-0" />
-                    <p className={cn("text-center italic", mutedCls)}>
-                      {status !== "PENDING" ? (
-                        <>
-                          Your current reply is{" "}
-                          <span className="font-medium text-[#2a1540]">
-                            {statusHeadline[status].toLowerCase()}
-                          </span>
-                          . Sending this form will replace it.
-                        </>
-                      ) : (
-                        <>Dear {guestName}, we&apos;d be honored by your reply.</>
-                      )}
+                  {/* Who is replying + current status — replaces the disabled name input. */}
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <p className={mutedCls}>
+                      {status !== "PENDING" ? "Updating the reply for" : "Replying as"}
                     </p>
-                    <Sparkles className="h-4 w-4 shrink-0" />
+                    <p className="inline-flex items-center gap-2 rounded-full bg-[#2a1540] px-4 py-1.5 font-serif text-[1.08rem] font-semibold text-[#fff4d2] shadow-[0_6px_16px_-10px_rgba(42,21,64,0.8)]">
+                      <Sparkles className="h-4 w-4 text-[#f0d089]" aria-hidden />
+                      {guestName}
+                    </p>
+                    {status !== "PENDING" && (
+                      <p className={cn("max-w-sm", mutedCls)}>
+                        Your current reply is{" "}
+                        <span className="font-semibold text-[#2a1540]">
+                          {statusHeadline[status].toLowerCase()}
+                        </span>
+                        . Sending this form will replace it.
+                      </p>
+                    )}
                   </div>
 
-                  <Field label="Full Name" htmlFor="guest-name">
-                    <input
-                      id="guest-name"
-                      type="text"
-                      value={guestName}
-                      disabled
-                      className={cn(inputCls, "cursor-not-allowed bg-[#f0e2c4] text-[#2a1540]")}
-                    />
-                  </Field>
-
-                  <div>
-                    <span className={labelCls}>Will you attend?</span>
-                    <div className="mt-3 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+                  <Step number={1} id="step-attend" title="Will you attend?" hint="Tap one option.">
+                    <div
+                      role="radiogroup"
+                      aria-labelledby="step-attend"
+                      className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 sm:gap-3"
+                    >
                       <RadioCard
-                        label="Joyfully Accept"
+                        icon={Heart}
+                        label="Joyfully accept"
+                        description="I'll be there!"
                         checked={attending === true}
                         onSelect={() => {
                           setAttending(true);
@@ -342,7 +377,9 @@ export function Rsvp({ token, guest, response }: Props) {
                         }}
                       />
                       <RadioCard
-                        label="Regretfully Decline"
+                        icon={HeartCrack}
+                        label="Regretfully decline"
+                        description="Celebrating in spirit"
                         checked={attending === false}
                         onSelect={() => {
                           setAttending(false);
@@ -350,10 +387,10 @@ export function Rsvp({ token, guest, response }: Props) {
                         }}
                       />
                     </div>
-                  </div>
+                  </Step>
 
                   <AnimatePresence initial={false}>
-                    {attending === true && (
+                    {mealStep !== null && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
@@ -361,122 +398,152 @@ export function Rsvp({ token, guest, response }: Props) {
                         transition={{ duration: 0.4, ease: LUXURY }}
                         className="overflow-hidden"
                       >
-                        <div className="flex flex-col gap-6 border-t border-[#b8860b]/25 pt-6">
-                          <div>
-                            <span className={labelCls}>Meal Preference</span>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {mealChoices.map((meal) => {
-                                const selected = mealPreference === meal;
-                                return (
-                                  <button
-                                    key={meal}
-                                    type="button"
-                                    onClick={() => {
-                                      setMealPreference(meal);
-                                      setError(null);
-                                    }}
-                                    className={cn(
-                                      "rounded-full border px-4 py-2.5 font-serif text-[0.98rem] transition",
-                                      selected
-                                        ? "border-[#b8860b]/80 bg-[#d4a840]/25 text-[#2a1540] shadow-[0_0_0_3px_rgba(184,134,11,0.14)]"
-                                        : "border-[#b8860b]/35 bg-[#fffaf0] text-[#2a1540] hover:border-[#b8860b]/55",
-                                    )}
-                                  >
-                                    {meal}
-                                  </button>
-                                );
-                              })}
-                            </div>
+                        <Step
+                          number={mealStep}
+                          id="step-meal"
+                          title="Choose your meal"
+                          hint="Pick one main course for the reception."
+                        >
+                          <div
+                            role="radiogroup"
+                            aria-labelledby="step-meal"
+                            className="grid grid-cols-2 gap-2.5 sm:gap-3"
+                          >
+                            {mealChoices.map((meal, i) => (
+                              <MealOption
+                                key={meal}
+                                label={meal}
+                                selected={mealPreference === meal}
+                                // Odd one out spans the full row so the grid stays balanced.
+                                wide={mealChoices.length % 2 === 1 && i === mealChoices.length - 1}
+                                onSelect={() => {
+                                  setMealPreference(meal);
+                                  setError(null);
+                                }}
+                              />
+                            ))}
                           </div>
 
-                          <Field label="Allergies / Dietary Needs" htmlFor="dietary">
-                            <input
-                              id="dietary"
-                              type="text"
-                              value={dietaryRestrictions}
-                              onChange={(e) => setDietaryRestrictions(e.target.value)}
-                              placeholder="Optional"
-                              className={inputCls}
-                            />
-                          </Field>
-
-                          {plusOneAllowed && (
-                            <Field label="Plus One Name" htmlFor="plusOneName">
+                          <div className="mt-5 flex flex-col gap-5">
+                            <Field label="Allergies or dietary needs" htmlFor="dietary" optional>
                               <input
-                                id="plusOneName"
+                                id="dietary"
                                 type="text"
-                                value={plusOneName}
-                                onChange={(e) => setPlusOneName(e.target.value)}
+                                value={dietaryRestrictions}
+                                onChange={(e) => setDietaryRestrictions(e.target.value)}
+                                placeholder="e.g. no nuts, halal, gluten-free"
                                 className={inputCls}
                               />
                             </Field>
-                          )}
-                        </div>
+
+                            {plusOneAllowed && (
+                              <Field
+                                label="Your plus one's name"
+                                htmlFor="plusOneName"
+                                optional
+                                hint="Leave blank if you're coming alone."
+                              >
+                                <input
+                                  id="plusOneName"
+                                  type="text"
+                                  autoComplete="off"
+                                  value={plusOneName}
+                                  onChange={(e) => setPlusOneName(e.target.value)}
+                                  placeholder="Full name"
+                                  className={inputCls}
+                                />
+                              </Field>
+                            )}
+                          </div>
+                        </Step>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
                   {attending !== null && (
-                    <div className="flex flex-col gap-6 border-t border-[#b8860b]/25 pt-2">
-                      <Field label="Special Requests / Message" htmlFor="message">
-                        <textarea
-                          id="message"
-                          rows={3}
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          placeholder="A note for the couple, a song request..."
-                          className={cn(inputCls, "resize-none")}
-                        />
-                      </Field>
+                    <Step
+                      number={noteStep}
+                      id="step-note"
+                      title="A note for the couple"
+                      hint="Optional. Share a wish, a song request or a hashtag idea."
+                    >
+                      <div className="flex flex-col gap-5">
+                        <Field label="Message or special request" htmlFor="message" optional>
+                          <textarea
+                            id="message"
+                            rows={3}
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="Write your wishes or a song request..."
+                            className={cn(inputCls, "resize-none")}
+                          />
+                        </Field>
 
-                      <Field label="Suggest Wedding Hashtags" htmlFor="suggestedHashtags">
-                        <input
-                          id="suggestedHashtags"
-                          type="text"
-                          value={suggestedHashtags}
-                          onChange={(e) => setSuggestedHashtags(e.target.value)}
-                          placeholder="#LemuelAndGrazielle #OurHappilyEverAfter"
-                          className={inputCls}
-                        />
-                      </Field>
-                    </div>
+                        <Field label="Suggest a wedding hashtag" htmlFor="suggestedHashtags" optional>
+                          <input
+                            id="suggestedHashtags"
+                            type="text"
+                            autoCapitalize="off"
+                            value={suggestedHashtags}
+                            onChange={(e) => setSuggestedHashtags(e.target.value)}
+                            placeholder="#OurHappilyEverAfter"
+                            className={inputCls}
+                          />
+                        </Field>
+                      </div>
+                    </Step>
                   )}
 
-                  {error && <p className={errCls}>{error}</p>}
+                  {error && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-2.5 rounded-xl border border-[#8b1a1a]/25 bg-[#fdeeee] px-4 py-3 text-left text-[#7a1616]"
+                    >
+                      <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                      <p className="font-serif text-[1.02rem] font-medium leading-snug">{error}</p>
+                    </div>
+                  )}
                   {!effectiveToken && (
                     <p className={cn("text-center italic", mutedCls)}>
                       Preview mode: open a personalized invitation link to submit RSVP.
                     </p>
                   )}
 
-                  <GoldButton
-                    type="submit"
-                    size="lg"
-                    disabled={pending || attending === null || !effectiveToken}
-                    className="mt-1 w-full text-[0.8rem] tracking-[0.18em] sm:text-sm"
-                  >
-                    {pending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Sending...
-                      </>
-                    ) : status === "PENDING" ? (
-                      "Send My RSVP"
-                    ) : (
-                      "Update My RSVP"
-                    )}
-                  </GoldButton>
-
-                  {status !== "PENDING" && (
-                    <button
-                      type="button"
-                      onClick={keepCurrentReply}
-                      disabled={pending}
-                      className="font-cinzel text-[12px] font-semibold uppercase tracking-[0.16em] text-[#3a2410] transition hover:text-[#2a1540]"
+                  <div className="mt-1 flex flex-col items-center gap-3">
+                    <GoldButton
+                      type="submit"
+                      size="lg"
+                      disabled={pending || attending === null || !effectiveToken}
+                      className="w-full text-[0.85rem] tracking-[0.16em] sm:text-sm"
                     >
-                      Keep my current reply
-                    </button>
-                  )}
+                      {pending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : status === "PENDING" ? (
+                        "Send My RSVP"
+                      ) : (
+                        "Update My RSVP"
+                      )}
+                    </GoldButton>
+                    {attending === null && !pending && (
+                      <p className={cn("text-center", mutedCls)}>
+                        Choose whether you&apos;ll attend to continue.
+                      </p>
+                    )}
+
+                    {status !== "PENDING" && (
+                      <button
+                        type="button"
+                        onClick={keepCurrentReply}
+                        disabled={pending}
+                        className="rounded-full px-4 py-2 font-serif text-[1rem] font-semibold text-[#3a2410] underline decoration-[#b8860b]/50 underline-offset-4 transition hover:text-[#2a1540]"
+                      >
+                        Keep my current reply
+                      </button>
+                    )}
+                  </div>
                 </motion.form>
               )}
             </AnimatePresence>
@@ -500,31 +567,174 @@ export function Rsvp({ token, guest, response }: Props) {
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
+function Divider() {
   return (
-    <div>
-      <label htmlFor={htmlFor} className={labelCls}>
-        {label}
-      </label>
-      <div className="mt-2.5">{children}</div>
+    <div aria-hidden className="my-4 flex items-center gap-3 text-[#b8860b]">
+      <span className="h-px w-10 bg-gradient-to-r from-transparent to-[#b8860b]/60 sm:w-16" />
+      <Heart className="h-3.5 w-3.5 fill-[#b8860b]/30" />
+      <span className="h-px w-10 bg-gradient-to-l from-transparent to-[#b8860b]/60 sm:w-16" />
     </div>
   );
 }
 
-function RadioCard({
+/** A numbered, card-like group so the form reads as short, clear steps. */
+function Step({
+  number,
+  id,
+  title,
+  hint,
+  children,
+}: {
+  number: number;
+  id: string;
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      role="group"
+      aria-labelledby={id}
+      className="rounded-2xl border border-[#b8860b]/20 bg-[#fffaf0]/60 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_4px_14px_-12px_rgba(74,47,12,0.5)] sm:p-5"
+    >
+      <div className="mb-4 flex items-start gap-3">
+        <span
+          aria-hidden
+          className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#8b3a4a] font-cinzel text-[13px] font-bold text-[#fff4d2] shadow-[0_3px_8px_-4px_rgba(139,58,74,0.8)]"
+        >
+          {number}
+        </span>
+        <div className="min-w-0">
+          <h3
+            id={id}
+            className="font-display text-[1.4rem] font-medium leading-tight text-[#2a1540] sm:text-[1.55rem]"
+          >
+            {title}
+          </h3>
+          {hint ? <p className={cn("mt-1", mutedCls)}>{hint}</p> : null}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Field({
   label,
-  checked,
+  htmlFor,
+  optional,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  optional?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={htmlFor} className="flex items-baseline justify-between gap-3">
+        <span className={fieldLabelCls}>{label}</span>
+        {optional ? (
+          <span className="shrink-0 font-serif text-[0.92rem] italic text-[#5c3a12]/80">
+            Optional
+          </span>
+        ) : null}
+      </label>
+      {hint ? <p className="mt-0.5 font-serif text-[0.95rem] text-[#5c3a12]">{hint}</p> : null}
+      <div className="mt-2">{children}</div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 px-4 py-3">
+      <dt className="shrink-0 font-serif text-[0.98rem] text-[#5c3a12]">{label}</dt>
+      <dd className="text-right font-serif text-[1.05rem] font-semibold text-[#2a1540]">{value}</dd>
+    </div>
+  );
+}
+
+function mealIcon(label: string): LucideIcon {
+  const l = label.toLowerCase();
+  if (/beef|steak|pork|lamb|meat/.test(l)) return Beef;
+  if (/chicken|poultry|turkey|duck/.test(l)) return Drumstick;
+  if (/fish|seafood|salmon|prawn|shrimp/.test(l)) return Fish;
+  if (/vegan/.test(l)) return Leaf;
+  if (/veg|salad|plant/.test(l)) return Salad;
+  return UtensilsCrossed;
+}
+
+function MealOption({
+  label,
+  selected,
+  wide,
   onSelect,
 }: {
   label: string;
+  selected: boolean;
+  wide?: boolean;
+  onSelect: () => void;
+}) {
+  const Icon = mealIcon(label);
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      className={cn(
+        "group relative flex min-h-[3.75rem] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8860b]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6ead0] active:scale-[0.98] sm:px-4",
+        wide && "col-span-2 justify-center",
+        selected
+          ? "border-[#b8860b] bg-gradient-to-br from-[#fff4d2] via-[#f6e0a4] to-[#e9c46a] shadow-[0_8px_20px_-10px_rgba(139,90,11,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
+          : "border-[#b8860b]/30 bg-[#fffaf0]/90 shadow-[0_2px_6px_-4px_rgba(74,47,12,0.25)] hover:-translate-y-0.5 hover:border-[#b8860b]/60 hover:shadow-[0_8px_18px_-12px_rgba(139,90,11,0.5)]",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors duration-300",
+          selected
+            ? "border-[#8b5a0b]/30 bg-[#8b3a4a] text-[#fff4d2]"
+            : "border-[#b8860b]/30 bg-[#f6ead0] text-[#8b5a0b] group-hover:bg-[#f0dcae]",
+        )}
+      >
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </span>
+      <span
+        className={cn(
+          "font-serif text-[1.02rem] leading-tight text-[#2a1540] sm:text-[1.08rem]",
+          selected && "font-semibold",
+        )}
+      >
+        {label}
+      </span>
+      <span
+        aria-hidden
+        className={cn(
+          "absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[#8b3a4a] text-white shadow-md ring-2 ring-[#fffaf0] transition-all duration-300",
+          selected ? "scale-100 opacity-100" : "scale-50 opacity-0",
+        )}
+      >
+        <Check className="h-3 w-3" strokeWidth={3} />
+      </span>
+    </button>
+  );
+}
+
+function RadioCard({
+  icon: Icon,
+  label,
+  description,
+  checked,
+  onSelect,
+}: {
+  icon: LucideIcon;
+  label: string;
+  description?: string;
   checked: boolean;
   onSelect: () => void;
 }) {
@@ -535,13 +745,47 @@ function RadioCard({
       aria-checked={checked}
       onClick={onSelect}
       className={cn(
-        "flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-4 py-3.5 text-center font-serif text-[1.05rem] font-medium transition-all duration-300 sm:text-[1.1rem]",
+        "group relative flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8860b]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6ead0] active:scale-[0.98] sm:px-4",
         checked
-          ? "border-[#b8860b]/80 bg-[#d4a840]/25 text-[#2a1540] shadow-[0_0_0_3px_rgba(184,134,11,0.16)]"
-          : "border-[#b8860b]/40 bg-[#fffaf0] text-[#2a1540] hover:border-[#b8860b]/60",
+          ? "border-[#b8860b] bg-gradient-to-br from-[#fff4d2] via-[#f6e0a4] to-[#e9c46a] shadow-[0_8px_20px_-10px_rgba(139,90,11,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
+          : "border-[#b8860b]/30 bg-[#fffaf0]/90 shadow-[0_2px_6px_-4px_rgba(74,47,12,0.25)] hover:-translate-y-0.5 hover:border-[#b8860b]/60 hover:shadow-[0_8px_18px_-12px_rgba(139,90,11,0.5)]",
       )}
     >
-      {label}
+      <span
+        aria-hidden
+        className={cn(
+          "grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors duration-300",
+          checked
+            ? "border-[#8b5a0b]/30 bg-[#8b3a4a] text-[#fff4d2]"
+            : "border-[#b8860b]/30 bg-[#f6ead0] text-[#8b5a0b] group-hover:bg-[#f0dcae]",
+        )}
+      >
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
+      </span>
+      <span className="flex min-w-0 flex-col">
+        <span
+          className={cn(
+            "font-serif text-[1.1rem] leading-tight text-[#2a1540]",
+            checked ? "font-bold" : "font-semibold",
+          )}
+        >
+          {label}
+        </span>
+        {description ? (
+          <span className="mt-0.5 font-serif text-[0.95rem] leading-snug text-[#5c3a12]">
+            {description}
+          </span>
+        ) : null}
+      </span>
+      <span
+        aria-hidden
+        className={cn(
+          "absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[#8b3a4a] text-white shadow-md ring-2 ring-[#fffaf0] transition-all duration-300",
+          checked ? "scale-100 opacity-100" : "scale-50 opacity-0",
+        )}
+      >
+        <Check className="h-3 w-3" strokeWidth={3} />
+      </span>
     </button>
   );
 }
