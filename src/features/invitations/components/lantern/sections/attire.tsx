@@ -39,11 +39,7 @@ function rgbString(r: number, g: number, b: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function mixToward(
-  hex: string,
-  target: { r: number; g: number; b: number },
-  amount: number,
-) {
+function mixToward(hex: string, target: { r: number; g: number; b: number }, amount: number) {
   const { r, g, b } = hexToRgb(hex);
   const t = Math.min(1, Math.max(0, amount));
   const mix = (from: number, to: number) => Math.round(from + (to - from) * t);
@@ -76,13 +72,7 @@ function paletteForSwatch(swatch: string) {
   };
 }
 
-function HexSwatch({
-  hex,
-  label,
-}: {
-  hex: string;
-  label: string;
-}) {
+function HexSwatch({ hex, label }: { hex: string; label: string }) {
   const [open, setOpen] = React.useState(false);
   const value = hex.toUpperCase();
 
@@ -228,8 +218,7 @@ export function Attire() {
   const activeSwatches = activeRole?.swatches ?? [];
   const activeSwatch = activeSwatches[0] ?? "#f5c0cf";
   const colors = paletteForSwatch(activeSwatch);
-  const lightboxRole =
-    lightboxIndex !== null ? roles[lightboxIndex] ?? null : null;
+  const lightboxRole = lightboxIndex !== null ? (roles[lightboxIndex] ?? null) : null;
 
   React.useEffect(() => {
     if (activeIndex >= roles.length) setActiveIndex(0);
@@ -243,9 +232,7 @@ export function Attire() {
       className="relative overflow-hidden lantern-section"
       initial={false}
       animate={{ background: backgroundForSwatch(activeSwatch) }}
-      transition={
-        reduceMotion ? { duration: 0 } : { duration: 0.85, ease: LUXURY }
-      }
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.85, ease: LUXURY }}
       style={{ color: colors.body }}
     >
       <motion.div
@@ -261,9 +248,7 @@ export function Attire() {
           `,
         }}
         key={activeSwatch}
-        transition={
-          reduceMotion ? { duration: 0 } : { duration: 0.85, ease: LUXURY }
-        }
+        transition={reduceMotion ? { duration: 0 } : { duration: 0.85, ease: LUXURY }}
       />
       <MagicDust count={12} intensity="soft" className="opacity-35" />
       <SceneAtmosphere tone="lantern-rose" className="opacity-35" />
@@ -371,16 +356,14 @@ export function Attire() {
         </motion.div>
 
         <div
-          className="mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:mt-10"
-          role="list"
-          aria-label={`${activeRole.role} color palette`}
+          className={
+            activeSwatches.length === 10
+              ? "mt-8 mx-auto grid w-fit grid-cols-5 justify-items-center gap-2.5 sm:mt-10 sm:gap-3"
+              : "mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:mt-10"
+          }
         >
           {activeSwatches.map((hex) => (
-            <HexSwatch
-              key={`${activeRole.role}-${hex}`}
-              hex={hex}
-              label={activeRole.role}
-            />
+            <HexSwatch key={`${activeRole.role}-${hex}`} hex={hex} label={activeRole.role} />
           ))}
         </div>
       </div>
