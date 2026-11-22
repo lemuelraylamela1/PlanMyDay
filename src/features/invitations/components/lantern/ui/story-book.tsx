@@ -320,7 +320,6 @@ function ChapterParchment({
   React.useEffect(() => {
     const viewport = viewportRef.current;
     let kick: number | null = null;
-    let wasOnScreen = false;
     if (!viewport || typeof IntersectionObserver === "undefined") {
       onScreenRef.current = true;
       startAuto();
@@ -328,35 +327,25 @@ function ChapterParchment({
     }
     const io = new IntersectionObserver(
       ([entry]) => {
-        const nowOn = Boolean(entry?.isIntersecting);
+        onScreenRef.current = Boolean(entry?.isIntersecting);
         if (kick != null) {
           window.clearTimeout(kick);
           kick = null;
         }
-        if (!nowOn) {
-          onScreenRef.current = false;
-          wasOnScreen = false;
+        if (!onScreenRef.current) {
           stopLoop();
           return;
         }
-        const justEntered = !wasOnScreen;
-        onScreenRef.current = true;
-        wasOnScreen = true;
-        // Only reset scroll when the page newly enters view — not on
-        // threshold flicker while the guest swipes the invite up/down.
-        if (justEntered) {
-          offsetRef.current = 0;
-          applyOffset(0);
-          pausedRef.current = false;
-          kick = window.setTimeout(() => {
-            kick = null;
-            startAuto();
-          }, 420);
-        } else if (!pausedRef.current) {
+        // Fresh page in view — start the crawl from the top.
+        offsetRef.current = 0;
+        applyOffset(0);
+        pausedRef.current = false;
+        kick = window.setTimeout(() => {
+          kick = null;
           startAuto();
-        }
+        }, 420);
       },
-      { threshold: [0.35, 0.55], rootMargin: "0px" },
+      { threshold: 0.45 },
     );
     io.observe(viewport);
     return () => {
@@ -378,8 +367,6 @@ function ChapterParchment({
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
-    // Nothing to scroll inside the page — let the invite scroll freely.
-    if (maxOffsetRef.current <= 1) return;
     pauseAuto();
     dragRef.current = {
       pointerId: event.pointerId,
@@ -401,8 +388,8 @@ function ChapterParchment({
       if (Math.abs(dx) < STORY_DRAG_AXIS_SLOP && Math.abs(dy) < STORY_DRAG_AXIS_SLOP) {
         return;
       }
-      // Prefer page scroll / page-turn over in-page crawl when intent is mixed.
-      if (Math.abs(dx) * 1.15 >= Math.abs(dy)) {
+      // Horizontal motion belongs to PageFlip — release and let events bubble.
+      if (Math.abs(dx) >= Math.abs(dy)) {
         dragRef.current = null;
         scheduleResume();
         return;
@@ -411,8 +398,6 @@ function ChapterParchment({
     }
 
     if (drag.axis !== "vertical") return;
-    // Keep PageFlip from seeing this move after we've claimed vertical reading.
-    event.stopPropagation();
     applyOffset(drag.origin - dy);
   };
 
@@ -437,7 +422,7 @@ function ChapterParchment({
       <div
         ref={viewportRef}
         className="story-book-page-scroll absolute inset-0 z-[1] overflow-hidden px-4 py-4 sm:px-6 sm:py-6"
-        style={{ touchAction: "pan-y" }}
+        style={{ touchAction: "none" }}
         role="region"
         aria-label="Chapter story. Drag up or down to read, sideways to turn pages."
         onPointerDown={onPointerDown}
@@ -612,7 +597,7 @@ export function StoryBook({ className }: { className?: string }) {
             ? "Tap the left page, or drag right, to turn back through your story."
             : hintQuiet
               ? "Tap a page to turn — or drag left and right like a real book."
-              : "Tap the book cover to open. Then tap a page, or drag left and right, to keep turning."}
+              : "Tap the cover or any page to turn. You can also drag left or right — just like a real storybook."}
         </p>
         <p className="font-cinzel text-[11px] uppercase tracking-[0.28em] text-cream/70">
           {chapterView} / {chapters.length}

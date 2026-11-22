@@ -55,18 +55,9 @@ const EASE_CSS: Record<EaseName, string> = {
 };
 
 const DRAG_SLOP = 6;
-const AXIS_LOCK_SLOP = 12; // decide horizontal page-turn vs vertical page-scroll
-/** Bias toward vertical scroll so diagonal swipes don't start a page turn. */
-const HORIZONTAL_AXIS_BIAS = 1.2;
+const AXIS_LOCK_SLOP = 10; // decide horizontal page-turn vs vertical page-scroll
 const FLICK_VELOCITY = 0.55; // px/ms — commit a turn on a quick flick
 const COMMIT_RATIO = 0.42;
-
-/** Chapter parchment owns vertical reading — PageFlip must not capture those pointers. */
-function isStoryChapterScrollTarget(event: React.PointerEvent | PointerEvent) {
-  const target = event.target;
-  if (!(target instanceof Element)) return false;
-  return Boolean(target.closest(".story-book-page-scroll"));
-}
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
@@ -311,7 +302,7 @@ function StackPageFlip({
       // Wait for a clear axis before capturing — vertical swipes must scroll the invite.
       if (drag.axis === null) {
         if (absDx < AXIS_LOCK_SLOP && absDy < AXIS_LOCK_SLOP) return;
-        if (absDy * HORIZONTAL_AXIS_BIAS >= absDx) {
+        if (absDy > absDx) {
           drag.axis = "vertical";
           clearDragUi();
           return;
@@ -366,7 +357,6 @@ function StackPageFlip({
     if (!interactive || event.button !== 0 || leafCount === 0) return;
     // One swipe, one page — a leaf already turning must finish first.
     if (animatingLeaf != null || dragRef.current) return;
-    if (isStoryChapterScrollTarget(event)) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     // Closed / fully ended books are visually centered; map presses to the only valid turn.
@@ -979,16 +969,8 @@ function FlatPageFlip({
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!interactive || event.button !== 0 || leafCount === 0) return;
     if (glidingRef.current || dragRef.current) return;
-    // Let ChapterParchment handle reading gestures — don't start a competing flip.
-    if (isStoryChapterScrollTarget(event)) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
-    // Closed/end covers are centered in a 2-page stage — ignore taps in the empty half.
-    if (turned === 0 || turned >= leafCount) {
-      const coverLeft = pageWidth * 0.5;
-      const coverRight = pageWidth * 1.5;
-      if (x < coverLeft || x > coverRight) return;
-    }
     const mode: "forward" | "back" =
       turned === 0 ? "forward" : turned >= leafCount ? "back" : x >= pageWidth ? "forward" : "back";
     if (mode === "forward" && turned >= leafCount) return;
@@ -1013,17 +995,12 @@ function FlatPageFlip({
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId || glidingRef.current) return;
-    if (isStoryChapterScrollTarget(event) && drag.axis !== "horizontal") {
-      dragRef.current = null;
-      return;
-    }
     const now = performance.now();
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
     if (drag.axis === null) {
       if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
-      // Vertical (or mostly vertical) swipes scroll the invite — never start a flip.
-      if (Math.abs(dy) * HORIZONTAL_AXIS_BIAS >= Math.abs(dx)) {
+      if (Math.abs(dy) > Math.abs(dx)) {
         drag.axis = "vertical";
         dragRef.current = null;
         return;
@@ -1121,8 +1098,6 @@ function FlatPageFlip({
         height: pageHeight,
         perspective: `${perspective}px`,
         touchAction: "pan-y",
-        // Empty half of the stage must not steal taps outside the visible cover/pages.
-        pointerEvents: "none",
         ...style,
       }}
       onPointerDown={onPointerDown}
@@ -1135,37 +1110,25 @@ function FlatPageFlip({
           cannot drop them while the leaf rotates. */}
       <div
         className="relative h-full w-full"
-        style={{ transform: `translateX(${shift}px)`, pointerEvents: "none" }}
+        style={{ transform: `translateX(${shift}px)` }}
       >
         {underLeft ? (
-          <div
-            className="absolute top-0 z-[1] overflow-hidden"
-            style={{ ...slot("left"), pointerEvents: "auto" }}
-          >
+          <div className="absolute top-0 z-[1] overflow-hidden" style={slot("left")}>
             {underLeft}
           </div>
         ) : null}
         {underRight ? (
-          <div
-            className="absolute top-0 z-[1] overflow-hidden"
-            style={{ ...slot("right"), pointerEvents: "auto" }}
-          >
+          <div className="absolute top-0 z-[1] overflow-hidden" style={slot("right")}>
             {underRight}
           </div>
         ) : null}
         {showStaticLeft ? (
-          <div
-            className="absolute top-0 z-[2] overflow-hidden"
-            style={{ ...slot("left"), pointerEvents: "auto" }}
-          >
+          <div className="absolute top-0 z-[2] overflow-hidden" style={slot("left")}>
             {pages[turned - 1]?.back}
           </div>
         ) : null}
         {showStaticRight ? (
-          <div
-            className="absolute top-0 z-[2] overflow-hidden"
-            style={{ ...slot("right"), pointerEvents: "auto" }}
-          >
+          <div className="absolute top-0 z-[2] overflow-hidden" style={slot("right")}>
             {pages[turned]?.front}
           </div>
         ) : null}
@@ -1178,7 +1141,6 @@ function FlatPageFlip({
               height: pageHeight,
               perspective: `${perspective}px`,
               transformStyle: "preserve-3d",
-              pointerEvents: "auto",
             }}
           >
             <div
