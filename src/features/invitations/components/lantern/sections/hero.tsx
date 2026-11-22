@@ -63,6 +63,22 @@ export function Hero() {
   const lanternFade = reduceMotion
     ? { duration: 0 }
     : { duration: onPhone ? 0.7 : 1, ease: [0.22, 1, 0.36, 1] as const };
+  // Hero entrance plays when the opening light clears (phase "revealed"), NOT on
+  // mount: the hero mounts hidden behind the gate, so mount-time animations were
+  // finished before anyone could see them (and phones had them switched off).
+  // Only opacity/transform — cheap enough for Messenger WebViews.
+  const enter = (delay: number, from: Record<string, number> = {}) =>
+    reduceMotion
+      ? { initial: false as const }
+      : {
+          initial: { opacity: 0, y: onPhone ? 14 : 18, ...from },
+          animate: revealed ? { opacity: 1, y: 0, scale: 1, scaleX: 1 } : undefined,
+          transition: {
+            duration: onPhone ? 0.85 : 1.1,
+            ease: [0.16, 1, 0.3, 1] as const,
+            delay,
+          },
+        };
   const wedding = useLanternContent();
   const [firstRole, secondRole] = wedding.couple.order;
   const firstName = wedding.couple[firstRole].first;
@@ -185,6 +201,10 @@ export function Hero() {
         style={{ y: skyY }}
         className="pointer-events-none absolute inset-0 -top-[10%] z-[1] h-[120%] overflow-hidden"
         aria-hidden
+        // Camera "lands": continues the opening's push-in, then settles.
+        initial={reduceMotion ? false : { scale: 1.08 }}
+        animate={revealed ? { scale: 1 } : undefined}
+        transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Desktop only — phone WebGL compile froze Messenger right after reveal. */}
         {!onPhone && revealed && lanternsReady ? (
@@ -251,7 +271,9 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[2]"
         aria-hidden
       >
-        <HillSilhouette className="h-[28vh] w-full max-sm:opacity-95 sm:h-auto sm:min-h-0" />
+        <motion.div {...enter(0.05, { y: 28 })}>
+          <HillSilhouette className="h-[28vh] w-full max-sm:opacity-95 sm:h-auto sm:min-h-0" />
+        </motion.div>
       </motion.div>
 
       <motion.div
@@ -259,7 +281,10 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] origin-bottom"
         aria-hidden
       >
-        <CastleSilhouette className="h-[30vh] w-full max-sm:max-h-[34vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
+        {/* The castle rises out of the evening mist as the light clears. */}
+        <motion.div {...enter(0.15, { y: 46 })}>
+          <CastleSilhouette className="h-[30vh] w-full max-sm:max-h-[34vh] sm:h-auto sm:min-h-[26vh] sm:max-h-[42vh]" />
+        </motion.div>
       </motion.div>
 
       <motion.div
@@ -298,18 +323,20 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[4] h-28 bg-gradient-to-t from-night/80 via-night/30 to-transparent sm:h-36"
       />
 
+      {/* Afterglow: picks up the opening's lantern-light bloom the moment the
+          hero is revealed and lets it dissipate over the sky (phones included). */}
       <AnimatePresence>
-        {mounted && decorReady && !onPhone && (
+        {mounted && revealed && !reduceMotion && (
           <motion.div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-[4]"
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.7, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+            transition={{ duration: 1.9, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
           >
             <motion.div
-              className="absolute left-1/2 top-[36%] h-[42vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl sm:top-[42%]"
+              className={`absolute left-1/2 top-[36%] h-[42vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 rounded-full sm:top-[42%] ${onPhone ? "" : "blur-3xl"}`}
               style={{
                 background:
                   "radial-gradient(ellipse, rgba(255,247,210,0.34), rgba(244,196,68,0.16) 42%, rgba(232,130,154,0.1) 62%, transparent 75%)",
@@ -358,13 +385,7 @@ export function Hero() {
           />
 
           <motion.p
-            initial={onPhone ? false : { opacity: 0, y: 10 }}
-            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
-            transition={
-              onPhone
-                ? { duration: 0 }
-                : { duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }
-            }
+            {...enter(0.35)}
             className="w-full text-center font-cinzel text-[12px] font-semibold uppercase tracking-[0.3em] text-[#f7d4dc] min-[380px]:text-[13px] sm:tracking-[0.36em]"
             style={{ textShadow: "0 2px 18px rgba(0,0,0,0.75)" }}
           >
@@ -372,13 +393,7 @@ export function Hero() {
           </motion.p>
 
           <motion.h1
-            initial={onPhone ? false : { opacity: 0, y: 12 }}
-            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
-            transition={
-              onPhone
-                ? { duration: 0 }
-                : { duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }
-            }
+            {...enter(0.55, { y: 24, scale: 0.94 })}
             className="mt-2.5 w-full text-center text-gold-foil font-display text-[clamp(2.75rem,12.5vw,3.75rem)] font-light leading-[0.94] tracking-[-0.02em] sm:mt-6 sm:text-7xl lg:text-8xl"
             style={
               onPhone
@@ -415,16 +430,12 @@ export function Hero() {
           </motion.h1>
 
           <motion.div
-            initial={onPhone ? false : { opacity: 0, scaleX: 0.6 }}
-            animate={mounted || onPhone ? { opacity: 1, scaleX: 1 } : false}
-            transition={onPhone ? { duration: 0 } : { duration: 1, delay: 0.7 }}
+            {...enter(0.95, { y: 0, scaleX: 0.3 })}
             className="mx-auto my-2.5 rose-rule w-32 sm:my-7 sm:w-40"
           />
 
           <motion.p
-            initial={onPhone ? false : { opacity: 0, y: 10 }}
-            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
-            transition={onPhone ? { duration: 0 } : { duration: 1, delay: 0.85 }}
+            {...enter(1.1)}
             className="mx-auto w-full max-w-[21rem] px-1 text-center font-serif text-[1.05rem] leading-7 text-cream sm:max-w-2xl sm:text-lg sm:leading-8"
             style={{ textShadow: "0 2px 16px rgba(0,0,0,0.85), 0 8px 28px rgba(0,0,0,0.55)" }}
           >
@@ -432,9 +443,7 @@ export function Hero() {
           </motion.p>
 
           <motion.div
-            initial={onPhone ? false : { opacity: 0, y: 10 }}
-            animate={mounted || onPhone ? { opacity: 1, y: 0 } : false}
-            transition={onPhone ? { duration: 0 } : { duration: 1, delay: 1.05 }}
+            {...enter(1.3)}
             className="mt-4 flex w-full max-w-[22rem] justify-center sm:mt-9 sm:max-w-none"
           >
             <StoryCta href="#portrait" onClick={enterStory} className="max-sm:!max-w-none">
@@ -460,9 +469,9 @@ export function Hero() {
         href="#portrait"
         aria-label="Scroll to our portrait"
         onClick={enterStory}
-        initial={false}
-        animate={mounted ? { opacity: 1 } : false}
-        transition={{ delay: 1.6 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={revealed ? { opacity: 1 } : undefined}
+        transition={{ delay: 2, duration: 0.8 }}
         className="absolute bottom-[max(1.15rem,env(safe-area-inset-bottom))] left-1/2 z-[5] -translate-x-1/2 text-lantern-soft sm:bottom-8"
       >
         <motion.span

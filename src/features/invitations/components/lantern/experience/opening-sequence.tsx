@@ -39,6 +39,18 @@ export function OpeningSequence() {
   // Mobile uses exactCount so lanternScale/density trimming cannot collapse the sky to 1–2 lanterns.
   const lanternCount = lightOpening ? 20 : 30;
   const [settled, setSettled] = React.useState(false);
+  const tlRef = React.useRef<gsap.core.Timeline | null>(null);
+  const [skipped, setSkipped] = React.useState(false);
+
+  // Jump to the closing light-bloom instead of cutting: the guest still gets
+  // the transition into the hero, just without the full story.
+  const skipIntro = React.useCallback(() => {
+    const tl = tlRef.current;
+    if (!tl || skipped) return;
+    setSkipped(true);
+    const bloomAt = tl.labels.pushReveal ?? 0;
+    if (tl.time() < bloomAt) tl.seek(bloomAt);
+  }, [skipped]);
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -53,6 +65,7 @@ export function OpeningSequence() {
           reveal();
         },
       });
+      tlRef.current = tl;
 
       gsap.set(
         [
@@ -76,6 +89,19 @@ export function OpeningSequence() {
       // Keep a soft moon already lit so the first frames aren't an empty void
       // while this layer crossfades over the invitation gate.
       gsap.set(".seq-moon-glow", { scale: 0.78, opacity: 0.42, force3D: true });
+      gsap.set(".seq-flash", { scale: 0.35, force3D: true });
+
+      // The hero lantern gently sways and bobs once it is aloft (separate tween so
+      // it keeps breathing while the main timeline moves on).
+      gsap.to(".seq-hero-lantern-float", {
+        rotation: 2.5,
+        y: -7,
+        duration: 2.1,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: -1,
+        transformOrigin: "50% 0%",
+      });
 
       // Phase 1: the dream sky opens.
       tl.add("dreamSky", 0.12);
@@ -86,13 +112,14 @@ export function OpeningSequence() {
       );
 
       // Keep identical animation timing across desktop and mobile.
-      const chapterAt = 0.55;
-      const titleOutAt = 2;
-      const starsAt = 2.5;
-      const starsOutAt = starsAt + 2;
-      const lanternAt = 5.45;
-      const worldAt = 6.45;
-      const pushAt = 7.75;
+      // Tightened (~1.3s shorter) so no beat lingers on an empty sky.
+      const chapterAt = 0.45;
+      const titleOutAt = 1.9;
+      const starsAt = 2.3;
+      const starsOutAt = starsAt + 1.75;
+      const lanternAt = 4.55;
+      const worldAt = 5.45;
+      const pushAt = 6.6;
 
       // Phase 2: chapter card appears alone.
       // Layout centering is flex-based — animate only y/opacity/scale so GSAP
@@ -215,12 +242,26 @@ export function OpeningSequence() {
         "pushReveal",
       );
 
-      tl.to(".seq-flash", { opacity: 1, duration: 0.85, ease: "power1.inOut" }, "pushReveal+=0.2");
+      // The lantern drifts up toward the camera and its light blooms outward,
+      // so the hero is "lit" by the lantern instead of a flat white flash.
+      tl.to(
+        ".seq-hero-lantern",
+        { y: -70, scale: 1.55, duration: 1.15, ease: "power2.in" },
+        "pushReveal",
+      );
+      tl.to(
+        ".seq-flash",
+        { opacity: 1, scale: 1.9, duration: 1.05, ease: "power2.in" },
+        "pushReveal+=0.15",
+      );
 
       tl.to({}, { duration: 0.2 });
     }, root);
 
-    return () => ctx.revert();
+    return () => {
+      tlRef.current = null;
+      ctx.revert();
+    };
   }, [lightOpening, reducedMotion, reveal, stageScale]);
 
   return (
@@ -333,7 +374,7 @@ export function OpeningSequence() {
         </div>
 
         <div className="seq-hero-lantern absolute left-1/2 top-[50svh] z-20 -translate-x-1/2 opacity-0 sm:top-[48svh]">
-          <div className="relative h-28 w-20 sm:h-40 sm:w-28">
+          <div className="seq-hero-lantern-float relative h-28 w-20 sm:h-40 sm:w-28">
             <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-lantern/35 blur-2xl sm:h-44 sm:w-44" />
             <svg
               viewBox="0 0 100 140"
@@ -381,12 +422,29 @@ export function OpeningSequence() {
         </div>
       </div>
 
+      {/* Warm lantern-light bloom centred on the rising lantern. Edges stay night
+          so the handoff into the dark hero sky never strobes white. */}
       <div
         className="seq-flash pointer-events-none absolute inset-0 opacity-0"
         style={{
-          background: "linear-gradient(180deg, rgba(244,196,68,0.85) 0%, rgba(253,246,236,1) 100%)",
+          background:
+            "radial-gradient(circle at 50% 46%, rgba(255,250,228,1) 0%, rgba(255,223,112,0.88) 20%, rgba(232,130,154,0.42) 44%, rgba(30,15,58,0.35) 64%, rgba(13,7,32,0) 80%)",
         }}
       />
+
+      {!reducedMotion && (
+        <motion.button
+          type="button"
+          onClick={skipIntro}
+          disabled={skipped}
+          initial={{ opacity: 0, y: 8 }}
+          animate={skipped ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
+          transition={{ delay: skipped ? 0 : 1.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2 rounded-full border border-lantern/35 bg-night/55 px-5 py-2.5 font-cinzel text-[11px] font-semibold uppercase tracking-[0.22em] text-lantern-soft/90 transition-colors hover:border-lantern hover:text-lantern focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lantern/60 sm:bottom-8"
+        >
+          Skip intro
+        </motion.button>
+      )}
     </motion.div>
   );
 }
