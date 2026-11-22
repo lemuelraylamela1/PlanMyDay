@@ -159,7 +159,7 @@ export function MusicPlayer() {
             whileTap={{ scale: 0.94 }}
             aria-label={muted ? "Unmute music" : "Mute music"}
             aria-pressed={!muted}
-            className="invite-fab-br fixed z-[120] flex h-12 w-12 items-center justify-center rounded-full border border-lantern/55 bg-night/75 text-lantern shadow-[0_0_34px_rgba(244,196,68,0.28)] backdrop-blur-md transition-colors hover:bg-dusk sm:h-14 sm:w-14"
+            className="invite-fab-br fixed z-[120] flex h-12 w-12 items-center justify-center rounded-full border border-lantern/55 bg-night/90 text-lantern shadow-[0_0_34px_rgba(244,196,68,0.28)] sm:bg-night/75 sm:backdrop-blur-md transition-colors hover:bg-dusk sm:h-14 sm:w-14"
           >
             {!muted && !ambientSuspended && (
               <motion.span

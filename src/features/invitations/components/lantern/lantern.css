@@ -44,9 +44,10 @@ html:has(.invite-root) body {
   --background: #0d0720;
   --foreground: #fdf6ec;
 
-  /* Live visual-viewport size (updated from ExperienceShell on phones). */
+  /* Stable viewport size. Uses svh (not dvh / live px) so the layout does NOT
+     resize while the phone address bar slides in and out during scroll. */
   --invite-vvw: 100vw;
-  --invite-vvh: 100dvh;
+  --invite-vvh: 100svh;
 
   background: var(--color-night);
   color: var(--color-ink-light);
@@ -54,7 +55,7 @@ html:has(.invite-root) body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   min-height: 100%;
-  min-height: var(--invite-vvh, 100dvh);
+  min-height: 100svh;
   font-size: 16px;
   overflow-x: clip;
   -webkit-tap-highlight-color: transparent;
@@ -64,11 +65,17 @@ html:has(.invite-root) body {
 }
 
 /* Skip layout and paint for sections below the hero until they near the screen.
-   Keep the placeholder on the night palette so phones never flash a white gap. */
+   Desktop only: on phones the 80vh placeholder swapping for the real section
+   height shifts the page mid-scroll (iOS Safari has no scroll anchoring), which
+   reads as the view "jumping". */
 .invite-root main > :not(#hero) {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 80vh;
   background-color: var(--color-night);
+}
+@media (min-width: 640px) {
+  .invite-root main > :not(#hero) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 80vh;
+  }
 }
 
 /* Compact phones: keep type readable without blowing the scroll frame. */
@@ -1410,5 +1417,15 @@ html[data-lantern-perf="low"] .invite-root .story-chapter {
 
   .invite-root .story-wand {
     visibility: hidden;
+  }
+}
+
+/* Phones: backdrop-filter re-blurs everything behind the panel on every scroll
+   frame — a major source of mobile scroll jank. Use a denser solid tint instead. */
+@media (max-width: 639px) {
+  .invite-root .dark-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(30, 15, 58, 0.9);
   }
 }

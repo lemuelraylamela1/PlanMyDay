@@ -43,7 +43,7 @@ const SmoothScroll = dynamic(
 
 function ExperienceShell({ children }: { children: React.ReactNode }) {
   const { phase } = useExperience();
-  const { width, height, isMobile, isCompact, isShort } = useInviteViewport();
+  const { isMobile, isCompact, isShort } = useInviteViewport();
   const revealed = phase === "revealed";
   const transitionActive = phase === "opening";
   // Paint the page while the guest is still reading the gate, so the
@@ -81,18 +81,16 @@ function ExperienceShell({ children }: { children: React.ReactNode }) {
     }
   }, [phase]);
 
-  // Broadcast live phone screen metrics so section CSS can keep alignment intact.
+  // Broadcast device-size flags for section CSS. Deliberately NOT the live
+  // viewport height: it changes on every address-bar slide while scrolling,
+  // which re-rendered this shell and re-laid out the page (the mobile "glitch").
   React.useEffect(() => {
     const root = document.querySelector(".invite-root") as HTMLElement | null;
     if (!root) return;
-    const vvW = width || window.innerWidth;
-    const vvH = height || window.innerHeight;
-    root.style.setProperty("--invite-vvw", `${vvW}px`);
-    root.style.setProperty("--invite-vvh", `${vvH}px`);
     root.dataset.inviteMobile = isMobile ? "true" : "false";
     root.dataset.inviteCompact = isCompact ? "true" : "false";
     root.dataset.inviteShort = isShort ? "true" : "false";
-  }, [width, height, isMobile, isCompact, isShort]);
+  }, [isMobile, isCompact, isShort]);
 
   return (
     <LanternPerfProvider transitionActive={transitionActive}>

@@ -28,7 +28,7 @@ function pickRandomIndex(exclude: number, length: number) {
 export function PortraitHero() {
   const wedding = useLanternContent();
   const reduceMotion = useReducedMotion();
-  const { isMobile, isCompact, isShort, height } = useInviteViewport();
+  const { isMobile, isCompact, isShort } = useInviteViewport();
   const [baseIndex, setBaseIndex] = React.useState(0);
   const [pendingIndex, setPendingIndex] = React.useState<number | null>(null);
   const [pendingReady, setPendingReady] = React.useState(false);
@@ -104,10 +104,9 @@ export function PortraitHero() {
       id="portrait"
       className="relative w-full max-w-[100vw] shrink-0 overflow-hidden bg-black"
       style={{
-        height: height
-          ? `${height}px`
-          : "100dvh",
-        minHeight: "100svh",
+        // Fixed svh: a live px height re-laid out the page every time the
+        // phone address bar moved, so everything below jumped mid-scroll.
+        height: "100svh",
       }}
     >
       <div className="absolute inset-0">

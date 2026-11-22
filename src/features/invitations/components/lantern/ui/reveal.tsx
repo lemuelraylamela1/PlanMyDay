@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { motion, type Variants } from "framer-motion";
+import { useLanternPerf } from "../performance/lantern-perf-provider";
 
 const variants: Variants = {
   hidden: { opacity: 0, y: 36 },
@@ -27,6 +28,21 @@ const cinematicVariants: Variants = {
       duration: 1,
       ease: [0.16, 1, 0.3, 1],
       delay: i * 0.14,
+    },
+  }),
+};
+
+/** Phones: same motion minus the animated blur, which forces a full repaint per frame. */
+const cinematicPhoneVariants: Variants = {
+  hidden: { opacity: 0, y: 40, scale: 0.97 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.9,
+      ease: [0.16, 1, 0.3, 1],
+      delay: i * 0.12,
     },
   }),
 };
@@ -59,9 +75,12 @@ export function Reveal({
   variant?: "fade-up" | "cinematic-card" | "float-in";
 }) {
   const MotionTag = motion[as];
+  const { compact } = useLanternPerf();
   const selectedVariants =
     variant === "cinematic-card"
-      ? cinematicVariants
+      ? compact
+        ? cinematicPhoneVariants
+        : cinematicVariants
       : variant === "float-in"
         ? floatVariants
         : variants;

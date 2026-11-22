@@ -19,6 +19,12 @@ type Star = {
 
 const STAR_COLORS = ["#ffffff", "#fce8ef", "#ffdf70", "#e8c880", "#f5c0cf"];
 
+/** Deterministic 0–1 value per star so rebuilds (quality change, rotate) keep the same sky. */
+function seededUnit(index: number, salt: number) {
+  const x = Math.sin(index * 57.3 + salt * 149.9) * 43758.5453;
+  return x - Math.floor(x);
+}
+
 /**
  * Canvas twinkling star field for dark night-sky sections.
  * Parallax: stars shift vertically at a gentle rate as the page scrolls.
@@ -67,14 +73,14 @@ export function StarField({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const n = Math.min(500, Math.max(40, effectiveCount));
-      stars = Array.from({ length: n }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: Math.random() * 1.3 + 0.3,
-        baseAlpha: Math.random() * 0.5 + 0.35,
-        phase: Math.random() * Math.PI * 2,
-        speed: Math.random() * 0.018 + 0.006,
-        color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)] ?? "#ffffff",
+      stars = Array.from({ length: n }, (_, i) => ({
+        x: seededUnit(i, 1) * w,
+        y: seededUnit(i, 2) * h,
+        r: seededUnit(i, 3) * 1.3 + 0.3,
+        baseAlpha: seededUnit(i, 4) * 0.5 + 0.35,
+        phase: seededUnit(i, 5) * Math.PI * 2,
+        speed: seededUnit(i, 6) * 0.018 + 0.006,
+        color: STAR_COLORS[Math.floor(seededUnit(i, 7) * STAR_COLORS.length)] ?? "#ffffff",
       }));
     };
 
@@ -109,6 +115,10 @@ export function StarField({
     };
 
     const onResize = () => {
+      // Phones fire resize whenever the address bar slides in/out while
+      // scrolling. Resetting the canvas then cleared and redrew every star
+      // (flicker). Only rebuild on a real width change (rotation, desktop resize).
+      if (canvas.clientWidth === w) return;
       cancelAnimationFrame(raf);
       raf = 0;
       build();

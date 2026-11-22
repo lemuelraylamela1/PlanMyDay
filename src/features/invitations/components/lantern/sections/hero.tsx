@@ -171,10 +171,10 @@ export function Hero() {
       className="relative flex w-full shrink-0 flex-col overflow-hidden px-0"
       style={{
         background: "#0d0720",
-        // Live visual-viewport height on phones avoids a white strip under the
-        // night sky when Messenger / browser chrome resizes the frame.
-        minHeight: onPhone ? "var(--invite-vvh, 100dvh)" : "100svh",
-        height: onPhone ? "var(--invite-vvh, 100dvh)" : "100dvh",
+        // svh on phones: a fixed height that does not change while the address
+        // bar collapses / expands during scroll (dvh / live px made the page jump).
+        minHeight: "100svh",
+        height: onPhone ? "100svh" : "100dvh",
       }}
     >
       {!onPhone && decorReady ? (

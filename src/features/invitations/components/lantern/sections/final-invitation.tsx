@@ -57,7 +57,7 @@ export function FinalInvitation() {
   return (
     <section
       id="final"
-      className="relative flex min-h-[90svh] min-h-[90dvh] items-center justify-center overflow-hidden px-0 py-16 sm:min-h-[95svh]"
+      className="relative flex min-h-[90svh] items-center justify-center overflow-hidden px-0 py-16 sm:min-h-[95svh]"
       style={{
         background:
           "linear-gradient(180deg, #1e0f3a 0%, #0d0720 40%, #1a0830 80%, #2d1b5e 100%)",
