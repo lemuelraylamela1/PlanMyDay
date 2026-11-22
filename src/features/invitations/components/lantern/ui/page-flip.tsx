@@ -890,12 +890,16 @@ function FlatPageFlip({
           return;
         }
         glideFrame.current = null;
-        glidingRef.current = false;
         if (commit) {
-          setTurned((n) =>
-            mode === "forward" ? Math.min(leafCount, n + 1) : Math.max(0, n - 1),
-          );
+          const n = turnedRef.current;
+          const next = mode === "forward" ? Math.min(leafCount, n + 1) : Math.max(0, n - 1);
+          // Update the ref now, not on the next render: a tap landing between this
+          // frame and React's re-render would otherwise read the old page and
+          // re-flip the leaf that just turned.
+          turnedRef.current = next;
+          setTurned(next);
         }
+        glidingRef.current = false;
         setFlip(null);
       };
       glideFrame.current = requestAnimationFrame(step);
@@ -948,6 +952,10 @@ function FlatPageFlip({
           ? 0
           : -turnAngle;
       setFlip({ leafIndex: drag.leafIndex, mode: drag.mode });
+      // Reset the angle in the same render as the new flip. Without this the leaf
+      // rendered for one frame at the PREVIOUS flip's final angle (-180°) — the
+      // new page flashed fully turned, then snapped back (the double-tap glitch).
+      setAngle(drag.angle);
       startGlide(drag.angle, to, drag.mode, commit);
     },
     [startGlide, trigger, turnAngle],
@@ -971,6 +979,8 @@ function FlatPageFlip({
     if (glidingRef.current || dragRef.current) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
+    // Ref, not render state — always the latest page even right after a flip ends.
+    const turned = turnedRef.current;
     const mode: "forward" | "back" =
       turned === 0 ? "forward" : turned >= leafCount ? "back" : x >= pageWidth ? "forward" : "back";
     if (mode === "forward" && turned >= leafCount) return;

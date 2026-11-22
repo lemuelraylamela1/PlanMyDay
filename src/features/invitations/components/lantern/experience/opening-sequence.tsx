@@ -39,18 +39,6 @@ export function OpeningSequence() {
   // Mobile uses exactCount so lanternScale/density trimming cannot collapse the sky to 1–2 lanterns.
   const lanternCount = lightOpening ? 20 : 30;
   const [settled, setSettled] = React.useState(false);
-  const tlRef = React.useRef<gsap.core.Timeline | null>(null);
-  const [skipped, setSkipped] = React.useState(false);
-
-  // Jump to the closing light-bloom instead of cutting: the guest still gets
-  // the transition into the hero, just without the full story.
-  const skipIntro = React.useCallback(() => {
-    const tl = tlRef.current;
-    if (!tl || skipped) return;
-    setSkipped(true);
-    const bloomAt = tl.labels.pushReveal ?? 0;
-    if (tl.time() < bloomAt) tl.seek(bloomAt);
-  }, [skipped]);
 
   React.useEffect(() => {
     if (reducedMotion) {
@@ -65,7 +53,6 @@ export function OpeningSequence() {
           reveal();
         },
       });
-      tlRef.current = tl;
 
       gsap.set(
         [
@@ -258,10 +245,7 @@ export function OpeningSequence() {
       tl.to({}, { duration: 0.2 });
     }, root);
 
-    return () => {
-      tlRef.current = null;
-      ctx.revert();
-    };
+    return () => ctx.revert();
   }, [lightOpening, reducedMotion, reveal, stageScale]);
 
   return (
@@ -430,21 +414,6 @@ export function OpeningSequence() {
           background:
             "radial-gradient(circle at 50% 46%, rgba(255,250,228,1) 0%, rgba(255,223,112,0.88) 20%, rgba(232,130,154,0.42) 44%, rgba(30,15,58,0.35) 64%, rgba(13,7,32,0) 80%)",
         }}
-      />
-
-      {!reducedMotion && (
-        <motion.button
-          type="button"
-          onClick={skipIntro}
-          disabled={skipped}
-          initial={{ opacity: 0, y: 8 }}
-          animate={skipped ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
-          transition={{ delay: skipped ? 0 : 1.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2 rounded-full border border-lantern/35 bg-night/55 px-5 py-2.5 font-cinzel text-[11px] font-semibold uppercase tracking-[0.22em] text-lantern-soft/90 transition-colors hover:border-lantern hover:text-lantern focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lantern/60 sm:bottom-8"
-        >
-          Skip intro
-        </motion.button>
-      )}
-    </motion.div>
+      />    </motion.div>
   );
 }
