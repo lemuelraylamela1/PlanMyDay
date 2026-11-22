@@ -77,7 +77,22 @@ export function Rsvp({ token, guest, response }: Props) {
   const [justSubmitted, setJustSubmitted] = React.useState(false);
 
   const [attending, setAttending] = React.useState<boolean | null>(response?.attending ?? null);
-  const [mealPreference, setMealPreference] = React.useState(response?.mealPreference ?? "");
+  // Multi-select. Stored in the existing mealPreference text column as
+  // "Beef, Chicken" so dashboards, exports and seating keep working unchanged.
+  const [meals, setMeals] = React.useState<string[]>(() =>
+    parseMeals(response?.mealPreference, mealChoices),
+  );
+
+  function toggleMeal(meal: string) {
+    setError(null);
+    setMeals((current) => {
+      const isNoPref = meal.toLowerCase() === NO_PREFERENCE.toLowerCase();
+      if (current.includes(meal)) return current.filter((m) => m !== meal);
+      // "No preference" is exclusive: it clears dishes, and a dish clears it.
+      if (isNoPref) return [meal];
+      return [...current.filter((m) => m.toLowerCase() !== NO_PREFERENCE.toLowerCase()), meal];
+    });
+  }
   const [dietaryRestrictions, setDietaryRestrictions] = React.useState(
     response?.dietaryRestrictions ?? "",
   );
@@ -94,7 +109,7 @@ export function Rsvp({ token, guest, response }: Props) {
   function loadResponse(next: InvitationResponse | null) {
     const parts = splitRsvpMessage(next?.message);
     setAttending(next?.attending ?? null);
-    setMealPreference(next?.mealPreference ?? "");
+    setMeals(parseMeals(next?.mealPreference, mealChoices));
     setDietaryRestrictions(next?.dietaryRestrictions ?? "");
     setPlusOneName(next?.plusOneName ?? "");
     setMessage(parts.note);
@@ -125,10 +140,12 @@ export function Rsvp({ token, guest, response }: Props) {
       setError("Please let us know if you can make it.");
       return;
     }
-    if (attending && !mealChoices.includes(mealPreference)) {
-      setError("Please choose a meal preference.");
+    if (attending && meals.length === 0) {
+      setError("Please choose at least one meal.");
       return;
     }
+    // Canonical order (as listed on the card), regardless of tap order.
+    const mealPreference = mealChoices.filter((m) => meals.includes(m)).join(", ");
 
     const reply: InvitationResponse = {
       attending,
@@ -402,10 +419,10 @@ export function Rsvp({ token, guest, response }: Props) {
                           number={mealStep}
                           id="step-meal"
                           title="Choose your meal"
-                          hint="Pick one main course for the reception."
+                          hint="Pick one or more. Tap again to remove."
                         >
                           <div
-                            role="radiogroup"
+                            role="group"
                             aria-labelledby="step-meal"
                             className="grid grid-cols-2 gap-2.5 sm:gap-3"
                           >
@@ -413,16 +430,18 @@ export function Rsvp({ token, guest, response }: Props) {
                               <MealOption
                                 key={meal}
                                 label={meal}
-                                selected={mealPreference === meal}
+                                selected={meals.includes(meal)}
                                 // Odd one out spans the full row so the grid stays balanced.
                                 wide={mealChoices.length % 2 === 1 && i === mealChoices.length - 1}
-                                onSelect={() => {
-                                  setMealPreference(meal);
-                                  setError(null);
-                                }}
+                                onSelect={() => toggleMeal(meal)}
                               />
                             ))}
                           </div>
+                          {meals.length > 1 ? (
+                            <p className={cn("mt-2.5 text-center", mutedCls)}>
+                              {meals.length} meals selected
+                            </p>
+                          ) : null}
 
                           <div className="mt-5 flex flex-col gap-5">
                             <Field label="Allergies or dietary needs" htmlFor="dietary" optional>
@@ -667,6 +686,18 @@ function mealIcon(label: string): LucideIcon {
   return UtensilsCrossed;
 }
 
+const NO_PREFERENCE = "No preference";
+
+/** "Beef, Chicken" → ["Beef", "Chicken"], keeping only options on the card. */
+function parseMeals(value: string | null | undefined, choices: readonly string[]): string[] {
+  if (!value) return [];
+  const picked = value
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return choices.filter((c) => picked.includes(c.toLowerCase()));
+}
+
 function MealOption({
   label,
   selected,
@@ -682,7 +713,7 @@ function MealOption({
   return (
     <button
       type="button"
-      role="radio"
+      role="checkbox"
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
