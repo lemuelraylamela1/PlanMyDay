@@ -276,6 +276,7 @@ export function Rsvp({ token, guest, response }: Props) {
                     <GuestCheckInQrCard
                       qrDataUrl={checkIn.qrDataUrl}
                       fullName={checkIn.fullName}
+                      downloadUrl={checkIn.downloadUrl}
                       variant="invite"
                     />
                   ) : null}

@@ -12,7 +12,13 @@ import { ensureGuestCheckInCredential, getGuestCheckInPayload } from "@/features
 export type RsvpCheckInPayload = {
   qrDataUrl: string;
   fullName: string;
+  /** HTTP URL for the PNG — needed for in-app browsers (Messenger) that block blob/data downloads. */
+  downloadUrl: string;
 };
+
+export function weddingIdDownloadUrl(guestCode: string) {
+  return `/api/public/wedding-id/${encodeURIComponent(guestCode)}`;
+}
 
 type SubmitRsvpInput = {
   weddingId: string;
@@ -35,7 +41,11 @@ function normalizeOptional(value?: string): string | null {
 export async function getAcceptedGuestCheckIn(guestId: string): Promise<RsvpCheckInPayload | null> {
   const payload = await getGuestCheckInPayload(guestId);
   if (!payload) return null;
-  return { qrDataUrl: payload.qrDataUrl, fullName: payload.fullName };
+  return {
+    qrDataUrl: payload.qrDataUrl,
+    fullName: payload.fullName,
+    downloadUrl: weddingIdDownloadUrl(payload.guestCode),
+  };
 }
 
 export async function submitRsvpForGuest(
@@ -142,7 +152,11 @@ export async function submitRsvpForGuest(
   if (input.attending) {
     const credential = await ensureGuestCheckInCredential(input.guestId);
     if (credential) {
-      checkIn = { qrDataUrl: credential.qrDataUrl, fullName: credential.fullName };
+      checkIn = {
+        qrDataUrl: credential.qrDataUrl,
+        fullName: credential.fullName,
+        downloadUrl: weddingIdDownloadUrl(credential.guestCode),
+      };
     }
   }
 
