@@ -836,7 +836,8 @@ body.experience-locked {
 /* Chapter body — transform crawl inside a clipped viewport (3D-safe). */
 .invite-root .story-book-page-scroll {
   overscroll-behavior: contain;
-  touch-action: none;
+  /* Allow invite vertical scroll; chapter reading uses its own pointer handler. */
+  touch-action: pan-y;
 }
 
 .invite-root .story-book-glow {

@@ -125,15 +125,16 @@ export function Hero() {
   // Lock phone SVG count so FPS quality dips cannot remount lanterns mid-view.
   const phoneLanternLock = React.useRef<number | null>(null);
   if (onPhone && phoneLanternLock.current == null) {
-    phoneLanternLock.current = 6;
+    // Enough to fill the sky without remounting when FPS quality dips.
+    phoneLanternLock.current = 8;
   }
   const svgLanternCount = onPhone
-    ? (phoneLanternLock.current ?? 6)
+    ? (phoneLanternLock.current ?? 8)
     : quality === "high"
-      ? 10
+      ? 12
       : quality === "balanced"
-        ? 8
-        : 5;
+        ? 9
+        : 6;
   const [storyVeil, setStoryVeil] = React.useState(0);
   const storyBusy = React.useRef(false);
 
@@ -272,8 +273,8 @@ export function Hero() {
         {lanternsReady ? (
           <FloatingLanterns
             count={svgLanternCount}
-            intensity={onPhone ? "ambient" : "festival"}
-            sizeScale={onPhone ? 0.42 : 0.48}
+            intensity="festival"
+            sizeScale={onPhone ? 0.55 : 0.48}
             exactCount={onPhone}
           />
         ) : null}

@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { useExperience } from "./experience-provider";
 import { StarField } from "../effects/star-field";
 import { GoldButton } from "../ui/gold-button";
@@ -15,7 +15,6 @@ import { useLanternContent } from "../content-context";
 import { coupleNames } from "../config/wedding-defaults";
 import { cn } from "@/lib/utils";
 import {
-  ClosedScroll,
   OrnateFiligreeBanner,
   OrnateScrollRod,
   OrnateSideFiligree,
@@ -23,9 +22,6 @@ import {
 } from "../ui/ornate-scroll";
 
 const LUXURY = [0.16, 1, 0.3, 1] as const;
-const UNROLL_DURATION = 1.85;
-
-type GateStage = "sealed" | "unrolling" | "letterOpen" | "dissolving";
 
 /** Gold particles the scroll dissolves into when the guest opens the invitation. */
 function dissolveParticle(i: number) {
@@ -44,78 +40,38 @@ function dissolveParticle(i: number) {
   };
 }
 
+const container: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
+};
+const item: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: LUXURY } },
+};
+
 export function InvitationGate() {
   const { guestName, open, beginMusic, reducedMotion } = useExperience();
   const mounted = useMounted();
   const wedding = useLanternContent();
   const { isMobile, isCompact, isShort, height } = useInviteViewport();
 
-  const [stage, setStage] = React.useState<GateStage>(() =>
-    reducedMotion ? "letterOpen" : "sealed",
-  );
-
-  React.useEffect(() => {
-    if (reducedMotion) setStage((s) => (s === "sealed" || s === "unrolling" ? "letterOpen" : s));
-  }, [reducedMotion]);
+  const [dissolving, setDissolving] = React.useState(false);
 
   const handleOpen = React.useCallback(() => {
-    if (stage !== "letterOpen") return;
+    if (dissolving) return;
     // Start ambient music unmuted in the same user gesture as the click.
     beginMusic();
     if (reducedMotion) {
       open();
       return;
     }
-    setStage("dissolving");
+    setDissolving(true);
     // Let parchment melt into night before OpeningSequence crossfades in.
     window.setTimeout(open, 980);
-  }, [stage, reducedMotion, open, beginMusic]);
+  }, [dissolving, reducedMotion, open, beginMusic]);
 
-  const sealed = stage === "sealed";
-  const unrolling = stage === "unrolling";
-  const letterOpen = stage === "letterOpen";
-  const dissolving = stage === "dissolving";
-  const parchmentOpen = unrolling || letterOpen || dissolving || reducedMotion;
-  const showClosedOverlay = sealed || unrolling;
-
-  const letterRef = React.useRef<HTMLDivElement>(null);
-  const closedRef = React.useRef<HTMLDivElement>(null);
-  const [letterHeight, setLetterHeight] = React.useState(0);
-  const [closedHeight, setClosedHeight] = React.useState(112);
-
-  React.useLayoutEffect(() => {
-    const el = letterRef.current;
-    if (!el) return;
-    const measure = () => setLetterHeight(el.scrollHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [guestName, wedding.invitation.body, wedding.invitation.eyebrow, isCompact, isShort, isMobile]);
-
-  React.useLayoutEffect(() => {
-    const el = closedRef.current;
-    if (!el) return;
-    const measure = () => setClosedHeight(Math.max(el.offsetHeight, 96));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [sealed, isCompact]);
-
-  // Auto-unroll as soon as the gate appears — no tap or delay.
-  React.useEffect(() => {
-    if (stage !== "sealed") return;
-    setStage(reducedMotion ? "letterOpen" : "unrolling");
-  }, [stage, reducedMotion]);
-
-  // Finish unroll on a timer — more reliable than Framer onAnimationComplete.
-  React.useEffect(() => {
-    if (stage !== "unrolling") return;
-    const ms = reducedMotion ? 0 : UNROLL_DURATION * 1000;
-    const id = window.setTimeout(() => setStage("letterOpen"), ms);
-    return () => window.clearTimeout(id);
-  }, [stage, reducedMotion]);
+  // Scroll letter is already open — no sealed roll / unroll ceremony.
+  const contentActive = !dissolving;
 
   return (
     <motion.div
@@ -244,7 +200,7 @@ export function InvitationGate() {
         >
           <motion.div
             animate={
-              mounted && !reducedMotion && letterOpen && !isShort
+              mounted && !reducedMotion && !dissolving && !isShort
                 ? { y: [0, -6, 0] }
                 : undefined
             }
@@ -252,202 +208,154 @@ export function InvitationGate() {
               duration: 7,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 0.4,
+              delay: 1.5,
             }}
           >
-            <div className="relative w-full">
-            {/* Closed roll: in-flow while sealed; overlays & fades while unrolling. */}
-            <AnimatePresence>
-              {showClosedOverlay ? (
-                <motion.div
-                  key="closed-scroll"
-                  ref={closedRef}
-                  className={cn(
-                    "z-20 w-full",
-                    parchmentOpen
-                      ? "pointer-events-none absolute inset-x-0 top-0"
-                      : "relative",
-                  )}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: sealed ? 1 : 0, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: LUXURY }}
-                >
-                  <ClosedScroll compact={isCompact} />
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+            <OrnateScrollRod position="top" />
 
             <motion.div
               className={cn(
-                // Keep overflow visible so top/bottom scroll sticks aren't clipped.
-                sealed
-                  ? "pointer-events-none absolute inset-x-0 top-0"
-                  : "relative",
+                "parchment parchment-edges ornate-scroll-body relative overflow-hidden text-center",
+                isCompact
+                  ? "px-4 py-6"
+                  : isShort
+                    ? "px-5 py-7"
+                    : isMobile
+                      ? "px-6 py-8"
+                      : "px-10 py-12",
               )}
-              initial={false}
-              animate={{
-                height: parchmentOpen
-                  ? Math.max(letterHeight, closedHeight)
-                  : closedHeight,
-                opacity: parchmentOpen ? 1 : 0,
-              }}
-              transition={
-                reducedMotion
-                  ? { duration: 0 }
-                  : {
-                      height: {
-                        duration: UNROLL_DURATION,
-                        ease: LUXURY,
-                      },
-                      opacity: {
-                        duration: 0.4,
-                        ease: LUXURY,
-                      },
-                    }
-              }
-              style={{ overflow: "visible", willChange: "height, opacity" }}
+              style={{ transformOrigin: "center" }}
             >
-              <OrnateScrollRod position="top" />
+              <span
+                aria-hidden
+                className="parchment-grain pointer-events-none absolute inset-0"
+              />
+              <OrnateSideFiligree side="left" />
+              <OrnateSideFiligree side="right" />
 
-              <div className="h-full overflow-hidden">
-              <div
-                ref={letterRef}
-                className={cn(
-                  "parchment parchment-edges ornate-scroll-body relative overflow-hidden text-center",
-                  isCompact
-                    ? "px-4 py-6"
-                    : isShort
-                      ? "px-5 py-7"
-                      : isMobile
-                        ? "px-6 py-8"
-                        : "px-10 py-12",
-                )}
+              <motion.div
+                className="relative z-10"
+                variants={container}
+                initial="hidden"
+                animate={contentActive ? "show" : "hidden"}
               >
-                <span
-                  aria-hidden
-                  className="parchment-grain pointer-events-none absolute inset-0"
-                />
-                <OrnateSideFiligree side="left" />
-                <OrnateSideFiligree side="right" />
+                <OrnateFiligreeBanner position="top" />
 
-                {/* Letter is fully painted; height unroll reveals it like a real scroll. */}
-                <div className="relative z-10">
-                  <OrnateFiligreeBanner position="top" />
+                <motion.div
+                  variants={item}
+                  className={cn(
+                    "flex justify-center",
+                    isShort ? "mb-2" : "mb-3 sm:mb-4",
+                  )}
+                >
+                  <OrnateWaxSeal
+                    className={isCompact ? "h-12 w-12 sm:h-16 sm:w-16" : undefined}
+                  />
+                </motion.div>
 
-                  <div
+                <motion.p
+                  variants={item}
+                  className={cn(
+                    "font-cinzel font-semibold uppercase text-[#7a5210]",
+                    isCompact
+                      ? "text-[10px] tracking-[0.28em]"
+                      : "text-[10px] tracking-[0.32em] sm:text-[11px] sm:tracking-[0.42em]",
+                  )}
+                >
+                  {wedding.invitation.eyebrow}
+                </motion.p>
+
+                <motion.h1
+                  variants={item}
+                  className={cn(
+                    "font-display font-light leading-tight tracking-[-0.02em] text-[#3a2410]",
+                    isCompact
+                      ? "mt-2 text-[1.65rem]"
+                      : isShort
+                        ? "mt-2.5 text-[1.85rem]"
+                        : "mt-3 text-[1.95rem] min-[380px]:text-4xl sm:mt-4 sm:text-5xl",
+                  )}
+                >
+                  {coupleNames(wedding, "&")}
+                </motion.h1>
+
+                <motion.div
+                  variants={item}
+                  className={cn(
+                    "flex items-center justify-center gap-3",
+                    isShort ? "my-3" : "my-4 sm:my-5",
+                  )}
+                >
+                  <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#b8860b]/70 sm:w-12" />
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-3 w-3 text-[#b8860b] sm:h-3.5 sm:w-3.5"
+                    fill="currentColor"
+                  >
+                    <path d="M12 2l1.6 3.8L17.5 6l-2.7 2.8L15.4 13 12 10.9 8.6 13l.6-4.2L6.5 6l3.9-.2z" />
+                  </svg>
+                  <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#b8860b]/70 sm:w-12" />
+                </motion.div>
+
+                <motion.p
+                  variants={item}
+                  className={cn(
+                    "font-script leading-none text-[#3a2410]",
+                    isCompact
+                      ? "mt-3 text-[1.55rem]"
+                      : "mt-4 text-[1.85rem] sm:mt-5 sm:text-[2.35rem]",
+                  )}
+                >
+                  {guestName}
+                </motion.p>
+
+                <motion.p
+                  variants={item}
+                  className={cn(
+                    "font-serif leading-[1.7] text-[#4a3218]",
+                    isCompact
+                      ? "mt-2.5 text-[0.9rem]"
+                      : "mt-3 text-[0.95rem] sm:mt-4 sm:text-[1.02rem] sm:leading-[1.85]",
+                  )}
+                >
+                  {wedding.invitation.body}
+                </motion.p>
+
+                <motion.div
+                  variants={item}
+                  className={cn(isShort ? "mt-5" : "mt-7 sm:mt-9")}
+                >
+                  <GoldButton
+                    size="lg"
+                    onClick={handleOpen}
                     className={cn(
-                      "flex justify-center",
-                      isShort ? "mb-2" : "mb-3 sm:mb-4",
+                      "text-xs sm:text-sm",
+                      isCompact ? "h-11 px-7" : "h-12 px-8 sm:h-14 sm:px-10",
                     )}
                   >
-                    <OrnateWaxSeal
-                      className={
-                        isCompact ? "h-12 w-12 sm:h-16 sm:w-16" : undefined
-                      }
-                    />
-                  </div>
+                    Open Invitation
+                  </GoldButton>
+                </motion.div>
 
-                  <p
-                    className={cn(
-                      "font-cinzel font-semibold uppercase text-[#7a5210]",
-                      isCompact
-                        ? "text-[10px] tracking-[0.28em]"
-                        : "text-[10px] tracking-[0.32em] sm:text-[11px] sm:tracking-[0.42em]",
-                    )}
-                  >
-                    {wedding.invitation.eyebrow}
-                  </p>
+                <motion.p
+                  variants={item}
+                  className={cn(
+                    "mx-auto max-w-[18rem] font-sans font-semibold uppercase leading-snug text-[#5c3a12]",
+                    isCompact
+                      ? "mt-3 px-1 text-[11px] tracking-[0.12em]"
+                      : "mt-3.5 px-2 text-[11px] tracking-[0.14em] sm:mt-4 sm:max-w-none sm:text-xs sm:tracking-[0.18em]",
+                  )}
+                >
+                  Tap to release the lanterns — music will play
+                </motion.p>
 
-                  <h1
-                    className={cn(
-                      "font-display font-light leading-tight tracking-[-0.02em] text-[#3a2410]",
-                      isCompact
-                        ? "mt-2 text-[1.65rem]"
-                        : isShort
-                          ? "mt-2.5 text-[1.85rem]"
-                          : "mt-3 text-[1.95rem] min-[380px]:text-4xl sm:mt-4 sm:text-5xl",
-                    )}
-                  >
-                    {coupleNames(wedding, "&")}
-                  </h1>
-
-                  <div
-                    className={cn(
-                      "flex items-center justify-center gap-3",
-                      isShort ? "my-3" : "my-4 sm:my-5",
-                    )}
-                  >
-                    <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#b8860b]/70 sm:w-12" />
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-3 w-3 text-[#b8860b] sm:h-3.5 sm:w-3.5"
-                      fill="currentColor"
-                    >
-                      <path d="M12 2l1.6 3.8L17.5 6l-2.7 2.8L15.4 13 12 10.9 8.6 13l.6-4.2L6.5 6l3.9-.2z" />
-                    </svg>
-                    <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#b8860b]/70 sm:w-12" />
-                  </div>
-
-                  <p
-                    className={cn(
-                      "font-script leading-none text-[#3a2410]",
-                      isCompact
-                        ? "mt-3 text-[1.55rem]"
-                        : "mt-4 text-[1.85rem] sm:mt-5 sm:text-[2.35rem]",
-                    )}
-                  >
-                    {guestName}
-                  </p>
-
-                  <p
-                    className={cn(
-                      "font-serif leading-[1.7] text-[#4a3218]",
-                      isCompact
-                        ? "mt-2.5 text-[0.9rem]"
-                        : "mt-3 text-[0.95rem] sm:mt-4 sm:text-[1.02rem] sm:leading-[1.85]",
-                    )}
-                  >
-                    {wedding.invitation.body}
-                  </p>
-
-                  <div className={cn(isShort ? "mt-5" : "mt-7 sm:mt-9")}>
-                    <GoldButton
-                      size="lg"
-                      onClick={handleOpen}
-                      disabled={!letterOpen}
-                      className={cn(
-                        "text-xs sm:text-sm",
-                        isCompact
-                          ? "h-11 px-7"
-                          : "h-12 px-8 sm:h-14 sm:px-10",
-                      )}
-                    >
-                      Open Invitation
-                    </GoldButton>
-                  </div>
-
-                  <p
-                    className={cn(
-                      "mx-auto max-w-[18rem] font-sans font-semibold uppercase leading-snug text-[#5c3a12]",
-                      isCompact
-                        ? "mt-3 px-1 text-[11px] tracking-[0.12em]"
-                        : "mt-3.5 px-2 text-[11px] tracking-[0.14em] sm:mt-4 sm:max-w-none sm:text-xs sm:tracking-[0.18em]",
-                    )}
-                  >
-                    Tap to release the lanterns — music will play
-                  </p>
-
-                  <div className={cn(isShort ? "mt-3" : "mt-5")}>
-                    <OrnateFiligreeBanner position="bottom" />
-                  </div>
+                <div className={cn(isShort ? "mt-3" : "mt-5")}>
+                  <OrnateFiligreeBanner position="bottom" />
                 </div>
-              </div>
-              </div>
-
-              <OrnateScrollRod position="bottom" />
+              </motion.div>
             </motion.div>
-            </div>
+
+            <OrnateScrollRod position="bottom" />
           </motion.div>
         </motion.div>
       </div>

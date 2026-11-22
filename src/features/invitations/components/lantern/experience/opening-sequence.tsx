@@ -36,7 +36,8 @@ export function OpeningSequence() {
   // Phones and balanced/low quality skip the full-stage scale — it repaints every layer.
   const lightOpening = compact || quality !== "high";
   const stageScale = lightOpening ? 1 : profile.openingStageScale;
-  const lanternCount = lightOpening ? 8 : 16;
+  // Mobile uses exactCount so lanternScale/density trimming cannot collapse the sky to 1–2 lanterns.
+  const lanternCount = lightOpening ? 20 : 30;
   const [settled, setSettled] = React.useState(false);
 
   React.useEffect(() => {
@@ -85,9 +86,9 @@ export function OpeningSequence() {
       );
 
       // Keep identical animation timing across desktop and mobile.
-      const chapterAt = 0.01;
-      const titleOutAt = 2.55;
-      const starsAt = 3.0;
+      const chapterAt = 0.55;
+      const titleOutAt = 2;
+      const starsAt = 2.5;
       const starsOutAt = starsAt + 2;
       const lanternAt = 5.45;
       const worldAt = 6.45;
@@ -255,7 +256,14 @@ export function OpeningSequence() {
       />
 
       <div className="seq-lanterns absolute inset-0 opacity-0">
-        <FloatingLanterns count={lanternCount} intensity="festival" active={!settled} />
+        <FloatingLanterns
+          count={lanternCount}
+          intensity="festival"
+          sizeScale={lightOpening ? 0.78 : 1}
+          exactCount={lightOpening}
+          active={!settled}
+          className={lightOpening ? "opacity-85" : undefined}
+        />
       </div>
       {!lightOpening ? (
         <div className="seq-sparkles absolute inset-0 opacity-0">
