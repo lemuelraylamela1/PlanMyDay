@@ -119,6 +119,7 @@ function AttireLightbox({
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const onCloseRef = React.useRef(onClose);
   onCloseRef.current = onClose;
+  const [loaded, setLoaded] = React.useState(false);
 
   React.useEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -141,16 +142,23 @@ function AttireLightbox({
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div
+    <motion.div
       className="fixed inset-0 z-[130] flex touch-none items-center justify-center p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title ? `${title} attire reference` : "Attire reference"}
       onClick={onClose}
+      // Opacity-only fade: composited, no layout or repaint cost.
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
     >
+      {/* Solid dim on phones — a full-screen backdrop blur re-blurred the
+          animated section behind it every frame (the main source of lag).
+          Desktop keeps a light blur. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-[#120814]/78 backdrop-blur-2xl"
+        className="absolute inset-0 bg-[#0d0610]/[0.93] sm:bg-[#120814]/85 sm:backdrop-blur-md"
         onClick={onClose}
       />
 
@@ -162,32 +170,42 @@ function AttireLightbox({
           onClose();
         }}
         aria-label="Close fullscreen image"
-        className="absolute z-30 grid h-12 w-12 place-items-center rounded-full bg-[#f4c444] text-[#1a0a18] shadow-[0_8px_24px_rgba(0,0,0,0.55)] ring-2 ring-[#1a0a18]/85 transition hover:bg-[#ffdf70] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4c444]"
+        className="absolute z-30 grid h-12 w-12 place-items-center rounded-full border border-[#e8c880]/80 bg-[#1a0a18]/85 text-[#fff4d2] shadow-[0_6px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,244,210,0.18)] transition-colors duration-200 hover:border-[#f4c444] hover:bg-[#2a1540] hover:text-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c444]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0610]"
         style={{
           // Portal sits outside .invite-root — explicit colors + safe-area.
           top: "max(0.85rem, env(safe-area-inset-top, 0px))",
           right: "max(0.85rem, env(safe-area-inset-right, 0px))",
         }}
       >
-        <X className="h-6 w-6" strokeWidth={2.5} />
+        <X className="h-5 w-5" strokeWidth={2} />
       </button>
 
       <div
-        className="relative z-10 flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col items-center"
+        className="relative z-10 flex max-h-[min(92svh,920px)] w-full max-w-4xl flex-col items-center"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative h-[min(88vh,900px)] w-full overflow-hidden rounded-2xl bg-[#1a0f18]">
+        <div className="relative h-[min(86svh,900px)] w-full">
+          {!loaded ? (
+            <div
+              aria-hidden
+              className="absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-2 border-[#e8c880]/25 border-t-[#e8c880]"
+            />
+          ) : null}
           <Image
             src={src}
             alt={alt}
             fill
             sizes="(max-width: 896px) 94vw, 896px"
-            className="object-contain"
+            quality={80}
+            className={`object-contain drop-shadow-[0_18px_40px_rgba(0,0,0,0.55)] transition-opacity duration-300 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
+            onLoad={() => setLoaded(true)}
             priority
           />
         </div>
       </div>
-    </div>,
+    </motion.div>,
     document.body,
   );
 }
@@ -250,8 +268,13 @@ export function Attire() {
         key={activeSwatch}
         transition={reduceMotion ? { duration: 0 } : { duration: 0.85, ease: LUXURY }}
       />
-      <MagicDust count={12} intensity="soft" className="opacity-35" />
-      <SceneAtmosphere tone="lantern-rose" className="opacity-35" />
+      {/* Pause decorative motion while the fullscreen viewer covers the section. */}
+      {lightboxIndex === null ? (
+        <>
+          <MagicDust count={12} intensity="soft" className="opacity-35" />
+          <SceneAtmosphere tone="lantern-rose" className="opacity-35" />
+        </>
+      ) : null}
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
         <motion.header
