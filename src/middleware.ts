@@ -8,9 +8,14 @@ const { auth } = NextAuth(authConfig);
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-/** Social / chat crawlers that only need Open Graph HTML. */
+/**
+ * Social / chat crawlers that only need Open Graph HTML.
+ * Includes Meta's newer fetchers (meta-externalagent / meta-externalfetcher /
+ * facebookcatalog) used for Messenger link previews pasted on desktop —
+ * without them those requests got the full app instead of the OG document.
+ */
 const SHARE_BOT_UA =
-  /facebookexternalhit|Facebot|Instagram|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Discordbot|TelegramBot|SkypeUriPreview|Viber|Linespider|Pinterest|redditbot|Applebot|Googlebot/i;
+  /facebookexternalhit|Facebot|FacebookBot|meta-externalagent|meta-externalfetcher|facebookcatalog|Instagram|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Discordbot|TelegramBot|SkypeUriPreview|Viber|Linespider|Pinterest|redditbot|Applebot|Googlebot|Iframely|Embedly/i;
 
 const INVITE_TITLE = "You're Invited — Lemuel &amp; Grazielle's Wedding";
 const INVITE_DESCRIPTION =

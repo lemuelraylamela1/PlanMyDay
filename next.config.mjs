@@ -6,6 +6,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Link-preview crawlers that must receive <meta og:*> in the initial <head>
+  // (no streamed metadata). Next's default list plus Meta's newer fetchers used
+  // by Messenger desktop/web. Backstop for the middleware OG document.
+  htmlLimitedBots:
+    /[\w-]+-Google|Google-[\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Facebot|FacebookBot|meta-externalagent|meta-externalfetcher|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|TelegramBot|Viber|SkypeUriPreview|Yeti|googleweblight|Iframely|Embedly/i,
   // Required: a stray package-lock.json in the home folder otherwise becomes
   // Turbopack's workspace root, which breaks the React Client Manifest
   // (global-error / error.tsx "Could not find the module" errors).
