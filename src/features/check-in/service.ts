@@ -255,6 +255,7 @@ export async function listAcceptedGuestsForCheckIn(weddingId: string) {
       firstName: true,
       lastName: true,
       preferredName: true,
+      relationship: true,
       plusOneAllowed: true,
       plusOneName: true,
       checkInToken: true,

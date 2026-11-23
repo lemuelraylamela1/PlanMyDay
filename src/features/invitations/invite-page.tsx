@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { resolveInvitation, markInvitationOpened } from "@/features/invitations/service";
-import { formatGuestDisplayName } from "@/features/guests/display-name";
+import { formatGuestDisplayName, isPrincipalSponsor } from "@/features/guests/display-name";
 import { getAcceptedGuestCheckIn } from "@/features/invitations/rsvp-service";
 import { LanternInvitationExperience } from "@/features/invitations/components/lantern/lantern-invitation-experience";
 import { InvitationNotFound } from "@/features/invitations/components/lantern/invitation-not-found";
@@ -45,6 +45,7 @@ export async function renderInviteByToken(token: string) {
       guest={{
         name: formatGuestDisplayName(guest),
         plusOneAllowed: guest.plusOneAllowed,
+        sponsorPartnerName: isPrincipalSponsor(guest) ? guest.plusOneName : null,
         rsvpStatus: guest.rsvpStatus,
         checkIn,
       }}

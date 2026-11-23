@@ -21,6 +21,7 @@ const guestFields = {
   firstName: true,
   lastName: true,
   preferredName: true,
+  relationship: true,
   side: true,
   rsvpStatus: true,
   mealPreference: true,

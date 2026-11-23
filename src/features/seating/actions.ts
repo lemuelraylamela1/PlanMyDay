@@ -191,6 +191,7 @@ async function persistSeatNumbers(weddingId: string, tableId: string, capacity: 
           firstName: true,
           lastName: true,
           preferredName: true,
+          relationship: true,
         },
       },
     },

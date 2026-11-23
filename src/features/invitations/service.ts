@@ -32,6 +32,8 @@ async function guestDisplayName(weddingId: string, guestId: string) {
       firstName: true,
       lastName: true,
       preferredName: true,
+      relationship: true,
+      plusOneName: true,
     },
   });
   return guest ? formatGuestDisplayName(guest) : null;

@@ -9,6 +9,8 @@ export interface InvitationCheckIn {
 export interface InvitationGuest {
   name: string;
   plusOneAllowed: boolean;
+  /** Principal sponsors: the Ninang already named on the invite (no plus-one prompt). */
+  sponsorPartnerName?: string | null;
   rsvpStatus: RsvpStatusValue;
   checkIn?: InvitationCheckIn | null;
 }

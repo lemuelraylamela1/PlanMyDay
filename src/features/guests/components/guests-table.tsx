@@ -20,6 +20,7 @@ import {
   Check,
   Loader2,
   ExternalLink,
+  HandHeart,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ import { TablePagination, type PageSizeOption } from "@/components/shared/table-
 import { Users } from "lucide-react";
 import {
   GuestFormDialog,
+  type GuestFormMode,
   type GuestFormValue,
 } from "@/features/guests/components/guest-form-dialog";
 import { ImportDialog } from "@/features/guests/components/import-dialog";
@@ -68,7 +70,7 @@ import {
   bulkInviteAction,
   updateInvitationStatusAction,
 } from "@/features/guests/actions";
-import { formatGuestDisplayName } from "@/features/guests/display-name";
+import { formatGuestDisplayName, isPrincipalSponsor } from "@/features/guests/display-name";
 import { normalizeExternalUrl, type GuestSortField } from "@/features/guests/schemas";
 import { generateInviteAction, regenerateInviteAction } from "@/features/invitations/actions";
 import { getGuestCheckInQrAction } from "@/features/check-in/actions";
@@ -130,6 +132,7 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
   const [formOpen, setFormOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<GuestFormValue | undefined>();
+  const [formMode, setFormMode] = React.useState<GuestFormMode>("guest");
   const [query, setQuery] = React.useState(filter.q ?? "");
   const [pending, setPending] = React.useState(false);
   const [linkLoadingId, setLinkLoadingId] = React.useState<string | null>(null);
@@ -185,8 +188,9 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
     updateParams({ sortBy: field, sortOrder: "asc" });
   }
 
-  function openCreate() {
+  function openCreate(mode: GuestFormMode = "guest") {
     setEditing(undefined);
+    setFormMode(mode);
     setFormOpen(true);
   }
   function openEdit(g: GuestRow) {
@@ -341,7 +345,10 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
               <Download className="h-4 w-4" /> Export
             </a>
           </Button>
-          <Button onClick={openCreate}>
+          <Button variant="outline" onClick={() => openCreate("sponsor")}>
+            <HandHeart className="h-4 w-4" /> Add principal sponsor
+          </Button>
+          <Button onClick={() => openCreate("guest")}>
             <Plus className="h-4 w-4" /> Add guest
           </Button>
         </div>
@@ -367,7 +374,7 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
           title="No guests yet"
           description="Add guests one by one, or import them from a CSV file."
           action={
-            <Button onClick={openCreate}>
+            <Button onClick={() => openCreate("guest")}>
               <Plus className="h-4 w-4" /> Add your first guest
             </Button>
           }
@@ -447,10 +454,19 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
                     <span className="text-sm text-muted-foreground">{g.title || "—"}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">
-                      {g.firstName} {g.lastName}
-                    </div>
-                    {g.preferredName && (
+                    {isPrincipalSponsor(g) ? (
+                      <>
+                        <div className="font-medium">{formatGuestDisplayName(g)}</div>
+                        <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-[11px] font-medium text-accent-foreground">
+                          <HandHeart className="h-3 w-3" /> Principal sponsor · 1 QR for 2
+                        </span>
+                      </>
+                    ) : (
+                      <div className="font-medium">
+                        {g.firstName} {g.lastName}
+                      </div>
+                    )}
+                    {g.preferredName && !isPrincipalSponsor(g) && (
                       <div className="text-xs text-muted-foreground">
                         &ldquo;{g.preferredName}&rdquo;
                       </div>
@@ -574,6 +590,7 @@ export function GuestsTable({ guests, groups, page, total, pageSize, filter }: P
         onOpenChange={setFormOpen}
         groups={groups}
         initial={editing}
+        defaultMode={formMode}
       />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
 

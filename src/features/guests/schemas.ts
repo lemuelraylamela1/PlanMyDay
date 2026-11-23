@@ -1,16 +1,16 @@
 import { z } from "zod";
 
-import { GUEST_TITLE_OPTIONS } from "@/features/guests/display-name";
+import { GUEST_TITLE_OPTIONS, isPrincipalSponsor } from "@/features/guests/display-name";
 
 export const guestSideEnum = z.enum(["BRIDE", "GROOM", "BOTH"]);
 export const rsvpStatusEnum = z.enum(["PENDING", "ACCEPTED", "DECLINED", "TENTATIVE"]);
 export const invitationStatusEnum = z.enum(["NOT_SENT", "SENT", "OPENED", "RESPONDED"]);
 export const guestTitleEnum = z.enum(GUEST_TITLE_OPTIONS);
 
-export const guestSchema = z.object({
+const guestFields = z.object({
   title: guestTitleEnum.optional().or(z.literal("")),
-  firstName: z.string().min(1, "First name is required").max(80),
-  lastName: z.string().min(1, "Last name is required").max(80),
+  firstName: z.string().trim().max(80),
+  lastName: z.string().trim().max(80),
   preferredName: z.string().max(80).optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().max(40).optional().or(z.literal("")),
@@ -29,6 +29,29 @@ export const guestSchema = z.object({
   plusOneName: z.string().max(120).optional().or(z.literal("")),
   groupId: z.string().uuid().optional().or(z.literal("")),
   notes: z.string().max(1000).optional().or(z.literal("")),
+});
+
+/**
+ * Regular guests need first + last name. Principal sponsors (Ninong & Ninang)
+ * only need the name printed on the invitation; every other field is optional.
+ */
+export const guestSchema = guestFields.superRefine((value, ctx) => {
+  if (isPrincipalSponsor(value)) {
+    if (!value.preferredName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["preferredName"],
+        message: "Name on invitation is required",
+      });
+    }
+    return;
+  }
+  if (!value.firstName.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["firstName"], message: "First name is required" });
+  }
+  if (!value.lastName.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lastName"], message: "Last name is required" });
+  }
 });
 
 export const guestSortFields = [

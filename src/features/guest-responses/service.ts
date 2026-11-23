@@ -28,6 +28,8 @@ export async function listGuestResponses(weddingId: string): Promise<GuestRespon
           firstName: true,
           lastName: true,
           preferredName: true,
+          relationship: true,
+          plusOneName: true,
           deletedAt: true,
           rsvpStatus: true,
         },

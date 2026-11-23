@@ -70,6 +70,8 @@ export function Rsvp({ token, guest, response }: Props) {
   const mealChoices: readonly string[] = wedding.rsvp.mealOptions;
   const guestName = guest?.name ?? "Guest";
   const plusOneAllowed = guest?.plusOneAllowed ?? false;
+  // Ninong & Ninang share one invite — partner is already known, so no prompt.
+  const sponsorPartner = guest?.sponsorPartnerName?.trim() || null;
 
   const [status, setStatus] = React.useState<RsvpStatusValue>(guest?.rsvpStatus ?? "PENDING");
   const [savedResponse, setSavedResponse] = React.useState<InvitationResponse | null>(response ?? null);
@@ -96,7 +98,7 @@ export function Rsvp({ token, guest, response }: Props) {
   const [dietaryRestrictions, setDietaryRestrictions] = React.useState(
     response?.dietaryRestrictions ?? "",
   );
-  const [plusOneName, setPlusOneName] = React.useState(response?.plusOneName ?? "");
+  const [plusOneName, setPlusOneName] = React.useState(response?.plusOneName ?? sponsorPartner ?? "");
   const initialMessage = splitRsvpMessage(response?.message);
   const [message, setMessage] = React.useState(initialMessage.note);
   const [suggestedHashtags, setSuggestedHashtags] = React.useState(
@@ -111,7 +113,7 @@ export function Rsvp({ token, guest, response }: Props) {
     setAttending(next?.attending ?? null);
     setMeals(parseMeals(next?.mealPreference, mealChoices));
     setDietaryRestrictions(next?.dietaryRestrictions ?? "");
-    setPlusOneName(next?.plusOneName ?? "");
+    setPlusOneName(next?.plusOneName ?? sponsorPartner ?? "");
     setMessage(parts.note);
     setSuggestedHashtags(parts.hashtags);
   }
@@ -455,7 +457,7 @@ export function Rsvp({ token, guest, response }: Props) {
                               />
                             </Field>
 
-                            {plusOneAllowed && (
+                            {plusOneAllowed && !sponsorPartner && (
                               <Field
                                 label="Your plus one's name"
                                 htmlFor="plusOneName"

@@ -56,7 +56,7 @@ export async function createGuestAction(input: unknown): Promise<ActionResult> {
     userId: user.id,
     action: "CREATE",
     entityType: "Guest",
-    summary: `Added guest ${d.firstName} ${d.lastName}`,
+    summary: `Added guest ${formatGuestDisplayName(d)}`,
   });
 
   revalidatePath("/guests");
@@ -106,7 +106,7 @@ export async function updateGuestAction(id: string, input: unknown): Promise<Act
     action: "UPDATE",
     entityType: "Guest",
     entityId: id,
-    summary: `Updated guest ${d.firstName} ${d.lastName}`,
+    summary: `Updated guest ${formatGuestDisplayName(d)}`,
   });
 
   revalidatePath("/guests");
