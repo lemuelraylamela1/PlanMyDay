@@ -150,7 +150,7 @@ export const weddingDefaults = {
   invitation: {
     eyebrow: "A Lantern-Lit Invitation",
     greetingDefault: "Dear {{guestName}}",
-    body: "Together with our families, we invite you to step into the light and celebrate our happily ever after.",
+    body: "Together with our families, we invite you to celebrate our happily ever after.",
     cta: "Release the Lanterns",
   },
 
