@@ -108,8 +108,13 @@ export function Rsvp({ token, guest, response }: Props) {
   const [error, setError] = React.useState<string | null>(null);
   const [checkIn, setCheckIn] = React.useState<InvitationCheckIn | null>(guest?.checkIn ?? null);
 
+  // Bumped whenever field values are replaced programmatically, so the
+  // uncontrolled <FreeText> fields re-sync their DOM value.
+  const [fieldsKey, setFieldsKey] = React.useState(0);
+
   function loadResponse(next: InvitationResponse | null) {
     const parts = splitRsvpMessage(next?.message);
+    setFieldsKey((k) => k + 1);
     setAttending(next?.attending ?? null);
     setMeals(parseMeals(next?.mealPreference, mealChoices));
     setDietaryRestrictions(next?.dietaryRestrictions ?? "");
@@ -447,11 +452,12 @@ export function Rsvp({ token, guest, response }: Props) {
 
                           <div className="mt-5 flex flex-col gap-5">
                             <Field label="Allergies or dietary needs" htmlFor="dietary" optional>
-                              <input
+                              <FreeText
                                 id="dietary"
-                                type="text"
                                 value={dietaryRestrictions}
-                                onChange={(e) => setDietaryRestrictions(e.target.value)}
+                                onValue={setDietaryRestrictions}
+                                resetKey={fieldsKey}
+                                maxLength={DIETARY_MAX}
                                 placeholder="e.g. no nuts, halal, gluten-free"
                                 className={inputCls}
                               />
@@ -464,12 +470,12 @@ export function Rsvp({ token, guest, response }: Props) {
                                 optional
                                 hint="Leave blank if you're coming alone."
                               >
-                                <input
+                                <FreeText
                                   id="plusOneName"
-                                  type="text"
-                                  autoComplete="off"
                                   value={plusOneName}
-                                  onChange={(e) => setPlusOneName(e.target.value)}
+                                  onValue={setPlusOneName}
+                                  resetKey={fieldsKey}
+                                  maxLength={PLUS_ONE_MAX}
                                   placeholder="Full name"
                                   className={inputCls}
                                 />
@@ -490,23 +496,32 @@ export function Rsvp({ token, guest, response }: Props) {
                     >
                       <div className="flex flex-col gap-5">
                         <Field label="Message or special request" htmlFor="message" optional>
-                          <textarea
+                          <FreeText
+                            multiline
                             id="message"
-                            rows={3}
+                            rows={4}
                             value={message}
-                            onChange={(e) => setMessage(e.target.value)}
+                            onValue={setMessage}
+                            resetKey={fieldsKey}
+                            maxLength={MESSAGE_MAX}
                             placeholder="Write your wishes or a song request..."
                             className={cn(inputCls, "resize-none")}
                           />
+                          {message.length > MESSAGE_MAX * 0.8 ? (
+                            <p className={cn("mt-1 text-right text-sm tabular-nums", mutedCls)}>
+                              {message.length}/{MESSAGE_MAX}
+                            </p>
+                          ) : null}
                         </Field>
 
                         <Field label="Suggest a wedding hashtag" htmlFor="suggestedHashtags" optional>
-                          <input
+                          <FreeText
                             id="suggestedHashtags"
-                            type="text"
                             autoCapitalize="off"
                             value={suggestedHashtags}
-                            onChange={(e) => setSuggestedHashtags(e.target.value)}
+                            onValue={setSuggestedHashtags}
+                            resetKey={fieldsKey}
+                            maxLength={HASHTAG_MAX}
                             placeholder="#OurHappilyEverAfter"
                             className={inputCls}
                           />
@@ -639,6 +654,79 @@ function Step({
     </div>
   );
 }
+
+export const MESSAGE_MAX = 5000;
+const HASHTAG_MAX = 500;
+const DIETARY_MAX = 1000;
+const PLUS_ONE_MAX = 200;
+
+type FreeTextProps = {
+  id: string;
+  value: string;
+  onValue: (value: string) => void;
+  /** Change to push `value` into the DOM (e.g. after loading a saved reply). */
+  resetKey: number;
+  multiline?: boolean;
+  rows?: number;
+  maxLength?: number;
+  placeholder?: string;
+  className?: string;
+  autoCapitalize?: string;
+};
+
+/**
+ * Free-text field that accepts ANY character — letters, numbers, symbols,
+ * emoji, accented / non-Latin text.
+ *
+ * Deliberately uncontrolled: the invite re-renders often (animations, viewport
+ * changes when the phone keyboard switches to its 123 / symbol panel), and a
+ * controlled value written back mid-composition makes Android / iOS keyboards
+ * drop numbers and symbols in some WebViews (Messenger). The DOM owns the text;
+ * React only reads it. Key events are kept local so no page-level shortcut
+ * (storybook, carousel, smooth scroll) can swallow a keystroke.
+ */
+const FreeText = React.memo(function FreeText({
+  id,
+  value,
+  onValue,
+  resetKey,
+  multiline,
+  rows,
+  maxLength,
+  placeholder,
+  className,
+  autoCapitalize = "sentences",
+}: FreeTextProps) {
+  const ref = React.useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const latest = React.useRef(value);
+  latest.current = value;
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (el && el.value !== latest.current) el.value = latest.current;
+  }, [resetKey]);
+
+  const shared = {
+    id,
+    ref,
+    defaultValue: value,
+    maxLength,
+    placeholder,
+    className,
+    autoCapitalize,
+    autoComplete: "off",
+    autoCorrect: "on",
+    spellCheck: true,
+    inputMode: "text" as const,
+    enterKeyHint: multiline ? undefined : ("next" as const),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      onValue(e.currentTarget.value),
+    onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
+    onKeyUp: (e: React.KeyboardEvent) => e.stopPropagation(),
+  };
+
+  return multiline ? <textarea rows={rows} {...shared} /> : <input type="text" {...shared} />;
+});
 
 function Field({
   label,

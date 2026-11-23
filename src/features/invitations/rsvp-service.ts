@@ -33,6 +33,15 @@ type SubmitRsvpInput = {
   actorUserId?: string;
 };
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function normalizeOptional(value?: string): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -114,13 +123,13 @@ export async function submitRsvpForGuest(
 
   const emailSubject = `RSVP update: ${guest.firstName} ${guest.lastName}`;
   const emailBody = `
-    <p><strong>Guest:</strong> ${guest.firstName} ${guest.lastName}</p>
+    <p><strong>Guest:</strong> ${escapeHtml(`${guest.firstName} ${guest.lastName}`)}</p>
     <p><strong>Status:</strong> ${status}</p>
     <p><strong>Party size:</strong> ${partySize}</p>
-    <p><strong>Email:</strong> ${guestEmail ?? guest.email ?? "Not provided"}</p>
-    <p><strong>Meal preference:</strong> ${mealPreference ?? "Not specified"}</p>
-    <p><strong>Message:</strong> ${message ?? "None"}</p>
-    <p><strong>Wedding:</strong> ${guest.wedding.title}</p>
+    <p><strong>Email:</strong> ${escapeHtml(guestEmail ?? guest.email ?? "Not provided")}</p>
+    <p><strong>Meal preference:</strong> ${escapeHtml(mealPreference ?? "Not specified")}</p>
+    <p><strong>Message:</strong> ${message ? escapeHtml(message).replace(/\r?\n/g, "<br/>") : "None"}</p>
+    <p><strong>Wedding:</strong> ${escapeHtml(guest.wedding.title)}</p>
   `;
 
   const mailResult = await sendEmail({
