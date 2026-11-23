@@ -250,6 +250,11 @@ export const weddingDefaults = {
           "Kindly send your response on or before December 16, 2026 so we can finalize arrangements with our venue.",
       },
       {
+        question: "What would you prefer as a wedding gift?",
+        answer:
+          "Your presence at our wedding is the greatest gift we could ask for. However, should you wish to bless us with a gift, a monetary contribution toward our new beginning would be sincerely appreciated.",
+      },
+      {
         question: "What is the dress code?",
         answer:
           "* Secondary Sponsors: Dark or muted shades of pink formal attire.\n* Principal Sponsors: Cream or champagne-colored formal attire.\n* Bridesmaids: Light pink attire.\n* Groomsmen: Cream suits paired with pink ties.\n* Guests: Any shade of pink, cream, or champagne in formal or semi-formal attire.\n\n* Please take note: White attire, jeans/denim, and T-shirts are strictly prohibited.",
